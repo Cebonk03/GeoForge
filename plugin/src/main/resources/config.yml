@@ -1,0 +1,5 @@
+# GeoForge World Generation Configuration
+# 
+# seed: World generation seed. Change this to get different terrain.
+#       Default: 0L (produces consistent terrain across all worlds)
+seed: 0
