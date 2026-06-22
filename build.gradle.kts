@@ -1,19 +1,21 @@
 plugins {
     java
     jacoco
+    checkstyle
     id("com.gradleup.shadow") version "9.4.2" apply false
+    id("com.github.spotbugs") version "6.5.8" apply false
 }
 
 subprojects {
     apply(plugin = "java")
     apply(plugin = "jacoco")
-
+    apply(plugin = "checkstyle")
+    apply(plugin = "com.github.spotbugs")
     repositories {
         mavenCentral()
         maven("https://repo.papermc.io/repository/maven-public/")
     }
 
-    // Compile with all warnings + faster incremental
     tasks.withType<JavaCompile> {
         options.encoding = "UTF-8"
         options.isIncremental = true
@@ -26,18 +28,47 @@ subprojects {
         forkEvery = 100
         minHeapSize = "128m"
         maxHeapSize = "512m"
-        jvmArgs(
-            "-XX:+UseParallelGC",
-            "-XX:ParallelGCThreads=2",
-            "-Dorg.gradle.appname=geoforge-tests"
-        )
-    }
-    dependencies {
-        // JUnit Platform Launcher required by Gradle 9.x for test execution
-        testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+        jvmArgs("-XX:+UseParallelGC", "-XX:ParallelGCThreads=2")
     }
 
-    extensions.configure<JacocoPluginExtension> {
+    dependencies {
+        testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+        testImplementation("org.assertj:assertj-core:3.27.7")
+    }
+
+    jacoco {
         toolVersion = "0.8.15"
+    }
+
+    checkstyle {
+        toolVersion = "13.6.0"
+        isIgnoreFailures = false
+        maxWarnings = 0
+        maxErrors = 0
+        configFile = rootProject.layout.projectDirectory.file("config/checkstyle/checkstyle.xml").asFile
+    }
+
+    tasks.withType<Checkstyle> {
+        reports {
+            xml.required.set(false)
+            html.required.set(true)
+        }
+    }
+    // SpotBugs — extension-level config
+    configure<com.github.spotbugs.snom.SpotBugsExtension> {
+        toolVersion = "4.10.2"
+        ignoreFailures.set(false)
+        showStackTraces.set(true)
+        showProgress.set(true)
+    }
+
+    afterEvaluate {
+        tasks.withType<com.github.spotbugs.snom.SpotBugsTask>().configureEach {
+            excludeFilter.set(
+                project.rootProject.layout.projectDirectory.file("spotbugs-exclude.xml"))
+            reports.create("html") {
+                required.set(true)
+            }
+        }
     }
 }
