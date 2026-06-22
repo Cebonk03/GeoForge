@@ -3,7 +3,6 @@ package com.geoforge.plugin;
 import com.geoforge.api.adapter.GeoForgeAdapter;
 import com.geoforge.engine.GeoForgeEngine;
 import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.generator.BiomeProvider;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.generator.WorldInfo;
