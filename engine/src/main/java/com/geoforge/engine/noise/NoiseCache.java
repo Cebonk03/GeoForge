@@ -13,9 +13,9 @@ public final class NoiseCache {
 
     private final float[] heightmap = new float[CHUNK_SIZE * CHUNK_SIZE];
 
-    /** Returns the heightmap array (mutable, owned by the caller's thread). */
+    /** Returns a copy of the heightmap (defensive copy — array is not exposed). */
     public float[] heightmap() {
-        return heightmap;
+        return heightmap.clone();
     }
 
     /** Resets all height values to zero. */

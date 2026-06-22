@@ -11,6 +11,7 @@ Paper integration layer. ShadowJAR output — the deployable artifact.
 | Biome provider | `plugin/src/main/java/com/geoforge/plugin/GeoForgeBiomeProvider.java` |
 | Version adapter selection | `plugin/src/main/java/com/geoforge/plugin/AdapterFactory.java` |
 | Plugin metadata | `plugin/src/main/resources/plugin.yml` |
+| Seed configuration | `plugin/src/main/resources/config.yml` |
 
 ## Pass-Through Flags
 

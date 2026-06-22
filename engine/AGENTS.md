@@ -34,4 +34,4 @@ engine/src/main/java/com/geoforge/engine/
 ## Anti-Patterns
 
 - No `java.util.Random` — use `SplittableRandom`
-- No mutable shared state — use `ThreadLocal<NoiseCache>`
+- No mutable shared state — use `ThreadLocal` for per-thread caches
