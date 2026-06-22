@@ -1,0 +1,23 @@
+version: 2
+updates:
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "automerge"
+    groups:
+      test-deps:
+        patterns:
+          - "org.junit.jupiter*"
+          - "org.mockito*"
+          - "org.mockbukkit*"
+          - "com.tngtech.archunit*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
