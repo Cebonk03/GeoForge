@@ -165,7 +165,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Run SpotBugs
-        run: ./gradlew :engine:spotbugsMain :api:spotbugsMain :plugin:spotbugsMain --no-daemon
+        run: ./gradlew :engine:spotbugsMain :api:spotbugsMain :adapters:v1_21_x:spotbugsMain :adapters:v26_x:spotbugsMain :plugin:spotbugsMain --no-daemon
 
       - name: Upload SpotBugs reports
         if: always()
@@ -189,7 +189,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Run Checkstyle
-        run: ./gradlew :engine:checkstyleMain :api:checkstyleMain :plugin:checkstyleMain --no-daemon
+        run: ./gradlew :engine:checkstyleMain :api:checkstyleMain :adapters:v1_21_x:checkstyleMain :adapters:v26_x:checkstyleMain :plugin:checkstyleMain --no-daemon
 
       - name: Upload Checkstyle reports
         if: always()
