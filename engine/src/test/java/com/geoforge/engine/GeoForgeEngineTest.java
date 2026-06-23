@@ -2,30 +2,32 @@ package com.geoforge.engine;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.geoforge.engine.config.GeoForgeConfig;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class GeoForgeEngineTest {
 
     private static final long SEED = 42L;
+    private static final GeoForgeConfig CFG = GeoForgeConfig.defaults();
 
     @Test
     void getHeightAt_returnsReasonableValue() {
-        var engine = new GeoForgeEngine(SEED);
+        var engine = new GeoForgeEngine(SEED, CFG);
         double height = engine.getHeightAt(0, 0);
         assertTrue(
-                height >= -64 && height <= 180,
+                height >= CFG.minHeight() && height <= CFG.maxHeight(),
                 "Height out of reasonable range: " + height);
     }
 
     @Test
     void getHeightAt_allCoordsInRange() {
-        var engine = new GeoForgeEngine(SEED);
+        var engine = new GeoForgeEngine(SEED, CFG);
         for (int x = -100; x <= 100; x += 10) {
             for (int z = -100; z <= 100; z += 10) {
                 double h = engine.getHeightAt(x, z);
                 assertTrue(
-                        h >= -64 && h <= 180,
+                        h >= CFG.minHeight() && h <= CFG.maxHeight(),
                         "Height at (" + x + "," + z + ") = " + h + " out of range");
             }
         }
@@ -33,8 +35,8 @@ class GeoForgeEngineTest {
 
     @Test
     void determinism_sameSeedProducesSameHeight() {
-        var engine1 = new GeoForgeEngine(SEED);
-        var engine2 = new GeoForgeEngine(SEED);
+        var engine1 = new GeoForgeEngine(SEED, CFG);
+        var engine2 = new GeoForgeEngine(SEED, CFG);
         for (int i = 0; i < 50; i++) {
             int x = i * 13;
             int z = i * 17;
@@ -46,7 +48,7 @@ class GeoForgeEngineTest {
 
     @Test
     void getBiomeId_returnsValidBiome() {
-        var engine = new GeoForgeEngine(SEED);
+        var engine = new GeoForgeEngine(SEED, CFG);
         String biome = engine.getBiomeId(0, 63, 0);
         assertNotNull(biome);
         assertTrue(engine.getAllBiomeIds().contains(biome), "Unknown biome: " + biome);
@@ -54,7 +56,7 @@ class GeoForgeEngineTest {
 
     @Test
     void getBiomeId_variousPositions_allValid() {
-        var engine = new GeoForgeEngine(SEED);
+        var engine = new GeoForgeEngine(SEED, CFG);
         for (int x = -50; x <= 50; x += 25) {
             for (int z = -50; z <= 50; z += 25) {
                 String biome = engine.getBiomeId(x, 63, z);
@@ -67,7 +69,7 @@ class GeoForgeEngineTest {
 
     @Test
     void getAllBiomeIds_returnsNonEmpty() {
-        var engine = new GeoForgeEngine(SEED);
+        var engine = new GeoForgeEngine(SEED, CFG);
         Set<String> ids = engine.getAllBiomeIds();
         assertNotNull(ids);
         assertFalse(ids.isEmpty(), "Empty biome ID set");
@@ -75,7 +77,7 @@ class GeoForgeEngineTest {
 
     @Test
     void getAllBiomeIds_isCached() {
-        var engine = new GeoForgeEngine(SEED);
+        var engine = new GeoForgeEngine(SEED, CFG);
         assertSame(
                 engine.getAllBiomeIds(),
                 engine.getAllBiomeIds(),
@@ -84,8 +86,8 @@ class GeoForgeEngineTest {
 
     @Test
     void differentSeedDifferentHeight() {
-        var engine1 = new GeoForgeEngine(SEED);
-        var engine2 = new GeoForgeEngine(SEED + 9999);
+        var engine1 = new GeoForgeEngine(SEED, CFG);
+        var engine2 = new GeoForgeEngine(SEED + 9999, CFG);
         boolean anyDiff = false;
         for (int x = 0; x < 100; x += 10) {
             if (Math.abs(engine1.getHeightAt(x, x) - engine2.getHeightAt(x, x)) > 1e-6) {

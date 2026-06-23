@@ -1,57 +1,74 @@
 package com.geoforge.engine;
 
 import com.geoforge.engine.biome.BiomeLookupTable;
+import com.geoforge.engine.config.GeoForgeConfig;
 import com.geoforge.engine.density.AddDensity;
 import com.geoforge.engine.density.ClampDensity;
 import com.geoforge.engine.density.ConstantDensity;
 import com.geoforge.engine.density.DensityFunctionTree;
 import com.geoforge.engine.density.MultiplyDensity;
-import com.geoforge.engine.density.ScaledNoise;
+import com.geoforge.engine.density.PlateContinentalness;
+import com.geoforge.engine.geology.HydraulicErosion;
+import com.geoforge.engine.geology.TectonicPlateMapper;
+import com.geoforge.engine.noise.FractalNoise;
 import com.geoforge.engine.noise.SimplexNoise;
 import java.util.Set;
 
 /**
  * The core world generation engine for GeoForge.
  *
- * <p>Generates terrain height and biome assignments using seeded noise functions. This class
- * has zero Bukkit dependencies and is safe to use in any context.
+ * <p>Generates terrain height and biome assignments using multi-octave fractal noise
+ * modulated by tectonic plate continentalness. This class has zero Bukkit dependencies
+ * and is safe to use in any context.
  *
- * <p>Height generation combines continental-scale noise with tectonic plate mapping to create
- * realistic landmasses, mountain ranges, and ocean basins.
+ * <p>Height generation combines continental-scale fractal noise with tectonic plate
+ * mapping to create realistic landmasses, mountain ranges, and ocean basins.
+ * Hydraulic erosion may be applied as a post-process step (see {@link #erode}).
  */
 public final class GeoForgeEngine {
 
-    /** Sea level in block units — always use this constant, never the literal 63. */
-    public static final int SEA_LEVEL = 63;
-
-    private static final int MAX_TERRAIN_HEIGHT = 180;
-
-    private final SimplexNoise continentalNoise;
+    private final GeoForgeConfig config;
+    private final FractalNoise continentalNoise;
     private final SimplexNoise temperatureNoise;
     private final SimplexNoise humidityNoise;
-    private final SimplexNoise erosionNoise;
+    private final TectonicPlateMapper plateMapper;
     private final DensityFunctionTree heightFunction;
     private final Set<String> allBiomeIds;
+    private final HydraulicErosion erosion;
 
-    /** Creates a new engine with the given world seed. */
-    public GeoForgeEngine(long seed) {
-        this.continentalNoise = new SimplexNoise(seed ^ 0x123456789ABCDEFL);
+    /**
+     * Creates a new engine with the given world seed and configuration.
+     *
+     * @param seed   the world generation seed
+     * @param config the configuration for all terrain tuning parameters
+     */
+    public GeoForgeEngine(long seed, GeoForgeConfig config) {
+        this.config = config;
+        this.plateMapper = new TectonicPlateMapper(seed ^ 0xDEADBEEFL);
+
+        this.continentalNoise = new FractalNoise(
+                new SimplexNoise(seed ^ 0x123456789ABCDEFL),
+                config.continentalOctaves(),
+                config.continentalLacunarity(),
+                config.continentalPersistence());
         this.temperatureNoise = new SimplexNoise(seed ^ 0x23456789ABCDEF1L);
         this.humidityNoise = new SimplexNoise(seed ^ 0x3456789ABCDEF12L);
-        this.erosionNoise = new SimplexNoise(seed ^ 0x456789ABCDEF123L);
 
-        // Build a composite height function:
-        // continental base (0.003 frequency, 1.5 amplitude)
-        var continent =
-                new ScaledNoise(continentalNoise, 0.004, 0.0, 0.004);
-        // scale to [0, MAX_TERRAIN_HEIGHT]
-        var scaled = new MultiplyDensity(continent, new ConstantDensity(90.0));
-        // shift so sea level sits at ~63 for moderate continent values
-        var shifted = new AddDensity(scaled, new ConstantDensity(63.0));
-        // clamp to valid range
-        this.heightFunction = new ClampDensity(shifted, -64.0, MAX_TERRAIN_HEIGHT);
+        // Build composite height function:
+        // 1. Multi-octave fractal noise for terrain detail
+        DensityFunctionTree continent = (x, y, z) -> continentalNoise.sample2D(
+                x * config.continentalFrequency(), z * config.continentalFrequency());
+        // 2. Tectonic plate influence — land gets higher, ocean lower
+        var plates = new PlateContinentalness(
+                plateMapper, config.continentalBase(), config.continentalHeightAmplitude());
+        var combined = new MultiplyDensity(continent, plates);
+        // 3. Shift so sea level aligns with the configured value
+        var shifted = new AddDensity(combined, new ConstantDensity(config.seaLevel()));
+        // 4. Clamp to world height bounds
+        this.heightFunction = new ClampDensity(shifted, config.minHeight(), config.maxHeight());
 
         this.allBiomeIds = BiomeLookupTable.getAllBiomeIds();
+        this.erosion = new HydraulicErosion(config.erosionMaxDropletSteps());
     }
 
     /**
@@ -68,15 +85,58 @@ public final class GeoForgeEngine {
     /**
      * Returns the biome ID at the given block coordinates.
      *
+     * <p>The Y coordinate affects the temperature value via the configured vertical
+     * temperature gradient ({@link GeoForgeConfig#temperatureYFrequency()}), so
+     * altitude-aware biome transitions occur naturally when queried at the actual
+     * terrain height.
+     *
      * @param blockX the x-coordinate in block space
-     * @param blockY the y-coordinate in block space
+     * @param blockY the y-coordinate in block space (affects temperature)
      * @param blockZ the z-coordinate in block space
      * @return a valid Minecraft biome ID string
      */
     public String getBiomeId(int blockX, int blockY, int blockZ) {
-        double temp = temperatureNoise.sample(blockX * 0.001, blockY * 0.001, blockZ * 0.001);
-        double humidity = (humidityNoise.sample(blockX * 0.001, blockZ * 0.001) + 1.0) * 0.5;
+        double temp = temperatureNoise.sample(
+                blockX * config.temperatureFrequency(),
+                blockY * config.temperatureYFrequency(),
+                blockZ * config.temperatureFrequency());
+        double humidity = (humidityNoise.sample(
+                blockX * config.humidityFrequency(),
+                blockZ * config.humidityFrequency()) + 1.0) * 0.5;
         return BiomeLookupTable.lookup(temp, humidity);
+    }
+
+    /**
+     * Applies hydraulic erosion to the given heightmap in place.
+     *
+     * <p>The heightmap should be a flat float array of size {@code size × size},
+     * typically populated by calling {@link #getHeightAt} for each column and then
+     * passing the result to this method before placing blocks.
+     *
+     * @param heightmap the heightmap to erode (modified in place)
+     * @param size      the width/height of the square heightmap
+     * @param seed      a random seed for the erosion droplets
+     */
+    public void erode(float[] heightmap, int size, long seed) {
+        erosion.erode(heightmap, size, config.erosionIterations(), seed);
+    }
+
+    /**
+     * Returns the configured sea level in blocks.
+     *
+     * @return the sea level
+     */
+    public int seaLevel() {
+        return config.seaLevel();
+    }
+
+    /**
+     * Returns the engine's configuration.
+     *
+     * @return the configuration record
+     */
+    public GeoForgeConfig config() {
+        return config;
     }
 
     /**
