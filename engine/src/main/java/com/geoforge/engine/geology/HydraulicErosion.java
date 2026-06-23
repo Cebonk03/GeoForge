@@ -5,8 +5,8 @@ import java.util.SplittableRandom;
 /**
  * Hydraulic erosion simulation using a droplet-based approach.
  *
- * <p>This class contains only stateless methods. The heightmap array is provided by the
- * caller and modified in-place. No state is stored in this class.
+ * <p>Instances are configured with a maximum number of simulation steps per droplet.
+ * The heightmap array is provided by the caller and modified in-place.
  */
 public final class HydraulicErosion {
 
@@ -17,7 +17,25 @@ public final class HydraulicErosion {
     private static final float DEPOSITION = 0.5f;
     private static final float EROSION = 0.5f;
 
-    private HydraulicErosion() {}
+    private final int maxSteps;
+
+    /**
+     * Creates an erosion simulator with the default maximum of 10 steps per droplet.
+     */
+    public HydraulicErosion() {
+        this(10);
+    }
+
+    /**
+     * Creates an erosion simulator with a configurable maximum step count per droplet.
+     *
+     * @param maxSteps the maximum number of simulation steps per droplet; must be &gt; 0
+     * @throws IllegalArgumentException if {@code maxSteps <= 0}
+     */
+    public HydraulicErosion(int maxSteps) {
+        if (maxSteps <= 0) throw new IllegalArgumentException("maxSteps must be > 0");
+        this.maxSteps = maxSteps;
+    }
 
     /**
      * Applies hydraulic erosion to a heightmap. The heightmap is modified in place.
@@ -27,7 +45,7 @@ public final class HydraulicErosion {
      * @param iterations number of droplets to simulate
      * @param seed       random seed for droplet positions
      */
-    public static void erode(float[] heightmap, int size, int iterations, long seed) {
+    public void erode(float[] heightmap, int size, int iterations, long seed) {
         var rng = new SplittableRandom(seed);
 
         for (int i = 0; i < iterations; i++) {
@@ -39,7 +57,7 @@ public final class HydraulicErosion {
             float water = 1.0f;
             float sediment = 0.0f;
 
-            for (int step = 0; step < 30; step++) {
+            for (int step = 0; step < maxSteps; step++) {
                 int xi = clamp((int) posX, 0, size - 1);
                 int zi = clamp((int) posZ, 0, size - 1);
                 float h = heightmap[xi * size + zi];
@@ -90,6 +108,15 @@ public final class HydraulicErosion {
                 if (water < 0.01f) break;
             }
         }
+    }
+
+    /**
+     * Returns the maximum number of simulation steps per droplet.
+     *
+     * @return the configured maxSteps value
+     */
+    public int maxSteps() {
+        return maxSteps;
     }
 
     private static float getHeight(float[] heightmap, int size, int x, int z) {
