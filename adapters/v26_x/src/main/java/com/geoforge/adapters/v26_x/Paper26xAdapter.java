@@ -4,6 +4,7 @@ import com.geoforge.api.adapter.GeoForgeAdapter;
 import com.geoforge.api.util.FoliaDetector;
 import io.papermc.paper.registry.RegistryAccess;
 import io.papermc.paper.registry.RegistryKey;
+import java.util.function.Function;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -28,26 +29,49 @@ import org.jetbrains.annotations.NotNull;
 public final class Paper26xAdapter implements GeoForgeAdapter {
 
     private final JavaPlugin plugin;
+    private final Function<@NotNull String, Material> blockLookup;
+    private final Function<@NotNull String, Biome> biomeLookup;
 
+    /**
+     * Creates an adapter using the live Paper 26.x server registries.
+     */
     public Paper26xAdapter(@NotNull JavaPlugin plugin) {
+        this(plugin,
+                id -> Registry.MATERIAL.get(NamespacedKey.minecraft(id)),
+                id -> {
+                    var reg = RegistryAccess.registryAccess().getRegistry(RegistryKey.BIOME);
+                    return reg.get(NamespacedKey.minecraft(id));
+                });
+    }
+
+    /**
+     * Package-private constructor for testing with injected lookup functions.
+     * Allows unit tests to verify block and biome mapping without a live 26.x registry.
+     *
+     * @param plugin      the plugin instance
+     * @param blockLookup  maps engine block IDs to Paper Materials (null = not found)
+     * @param biomeLookup  maps engine biome IDs to Paper Biomes (null = not found)
+     */
+    Paper26xAdapter(
+            @NotNull JavaPlugin plugin,
+            @NotNull Function<@NotNull String, Material> blockLookup,
+            @NotNull Function<@NotNull String, Biome> biomeLookup) {
         this.plugin = plugin;
+        this.blockLookup = blockLookup;
+        this.biomeLookup = biomeLookup;
     }
 
     @Override
     public @NotNull Material mapBlock(@NotNull String engineId) {
-        Material mat = Registry.MATERIAL.get(NamespacedKey.minecraft(engineId));
-        if (mat == null) {
-            return Material.STONE;
-        }
-        return mat;
+        Material mat = blockLookup.apply(engineId);
+        return mat != null ? mat : Material.STONE;
     }
 
     @Override
     public @NotNull Biome mapBiome(@NotNull String engineId) {
-        var reg = RegistryAccess.registryAccess().getRegistry(RegistryKey.BIOME);
-        Biome biome = reg.get(NamespacedKey.minecraft(engineId));
+        Biome biome = biomeLookup.apply(engineId);
         if (biome == null) {
-            biome = reg.get(NamespacedKey.minecraft("plains"));
+            biome = biomeLookup.apply("plains");
             if (biome == null) {
                 throw new IllegalStateException(
                         "plains biome missing — corrupt server installation on "
