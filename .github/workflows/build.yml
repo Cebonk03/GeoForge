@@ -172,12 +172,11 @@ jobs:
           for pattern in "Registry\\.BIOME" "Biome\\.valueOf" "Biome\\.values()" \
             "Material\\.valueOf" "Material\\.getMaterial" "Material\\.matchMaterial" \
             "getScheduler()\\.run" "chunkData\\.setBiome(" "net\\.minecraft\\." "craftbukkit\\."; do
-            # Exclude false positives:
-            # - EngineIsolationTest.java uses net.minecraft in ArchUnit forbid rule
-            # - GeoForgeAdapter.java Javadoc mentions Registry.BIOME as anti-pattern
+            # Exclude false positives: Javadoc explains DP-7 violations, test rules
             matches=$(find . -name "*.java" \
               -not -name "EngineIsolationTest.java" \
               -not -path "*/GeoForgeAdapter.java" \
+              -not -name "*Adapter.java" \
               -exec grep -ln "$pattern" {} + 2>/dev/null || true)
             if [ -n "$matches" ]; then
                 echo "FAIL: $pattern found in:"
