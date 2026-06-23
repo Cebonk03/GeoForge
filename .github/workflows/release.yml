@@ -35,7 +35,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           java-version: ${{ matrix.java }}
-          distribution: oracle
+          distribution: ${{ matrix.java == 25 && 'oracle' || 'temurin' }}
           cache: gradle
       - uses: gradle/actions/setup-gradle@v4
 

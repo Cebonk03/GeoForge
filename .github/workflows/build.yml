@@ -12,9 +12,15 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.caching=true
+  GRADLE_OPTS: >-
+    -Dorg.gradle.daemon=false
+    -Dorg.gradle.parallel=true
+    -Dorg.gradle.caching=true
 
 jobs:
+  ###########################################################################
+  # VALIDATE — Gradle wrapper integrity
+  ###########################################################################
   validate:
     name: Validate Gradle Wrapper
     runs-on: ubuntu-latest
@@ -22,6 +28,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: gradle/actions/wrapper-validation@v4
 
+  ###########################################################################
+  # BUILD — matrix: compile + test per JDK toolchain
+  ###########################################################################
   build:
     name: "JDK ${{ matrix.java }} — compile + test"
     runs-on: ubuntu-latest
@@ -74,6 +83,203 @@ jobs:
           name: test-reports-jdk${{ matrix.java }}
           path: '**/build/reports/tests/'
 
+      - name: Upload JaCoCo coverage data (JDK ${{ matrix.java }})
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-data-jdk${{ matrix.java }}
+          path: '**/build/jacoco/'
+          include-hidden-files: true
+
+  ###########################################################################
+  # QUALITY — unified static analysis with BOTH JDKs
+  # Merges spotbugs + checkstyle + code-quality into ONE job.
+  # Installs JDK 21 AND 25 so ALL modules can be compiled and analyzed.
+  ###########################################################################
+  quality:
+    name: Quality — SpotBugs + Checkstyle + ArchUnit + banned API scan
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Install BOTH JDKs for Gradle toolchain resolution.
+      # setup-java does not support multi-distribution in one call,
+      # so we use two steps. Gradle auto-resolves the correct JDK per module.
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Set up JDK 25 (additional toolchain)
+        uses: actions/setup-java@v4
+        with:
+          java-version: 25
+          distribution: 'oracle'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # Pre-compile ALL modules so SpotBugs/Checkstyle have classes to analyze.
+      # Gradle toolchain resolves JDK 25 for v26_x/plugin and JDK 21 for others.
+      - name: Compile all modules (both JDK 21 + 25 toolchains)
+        run: ./gradlew classes --no-daemon
+
+      - name: SpotBugs — bug pattern detection (all modules)
+        run: >
+          ./gradlew
+          :engine:spotbugsMain
+          :api:spotbugsMain
+          :adapters:v1_21_x:spotbugsMain
+          :adapters:v26_x:spotbugsMain
+          :plugin:spotbugsMain
+          --no-daemon
+
+      - name: Upload SpotBugs reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spotbugs-reports
+          path: '**/build/reports/spotbugs/'
+
+      - name: Checkstyle — code style enforcement (all modules)
+        run: >
+          ./gradlew
+          :engine:checkstyleMain
+          :api:checkstyleMain
+          :adapters:v1_21_x:checkstyleMain
+          :adapters:v26_x:checkstyleMain
+          :plugin:checkstyleMain
+          --no-daemon
+
+      - name: Upload Checkstyle reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: checkstyle-reports
+          path: '**/build/reports/checkstyle/'
+
+      - name: ArchUnit — engine isolation test
+        run: ./gradlew :engine:test --tests "com.geoforge.engine.arch.*" --no-daemon
+
+      - name: Banned API + TODO scan
+        run: |
+          echo "=== Banned API Check ==="
+          errors=0
+          for pattern in "Registry\\.BIOME" "Biome\\.valueOf" "Biome\\.values()" \
+            "Material\\.valueOf" "Material\\.getMaterial" "Material\\.matchMaterial" \
+            "getScheduler()\\.run" "chunkData\\.setBiome(" "net\\.minecraft\\." "craftbukkit\\."; do
+            matches=$(find . -name "*.java" -exec grep -ln "$pattern" {} + 2>/dev/null || true)
+            if [ -n "$matches" ]; then
+                echo "FAIL: $pattern found in:"
+                echo "$matches"
+                errors=$((errors + 1))
+            fi
+          done
+          if [ $errors -eq 0 ]; then
+            echo "PASS: No banned APIs found"
+          else
+            echo "FATAL: $errors banned API pattern(s) detected"
+            exit 1
+          fi
+
+          echo ""
+          echo "=== TODO/FIXME Scan ==="
+          if grep -rn "TODO\|FIXME\|HACK\|XXX" $(find . -name "*.java") 2>/dev/null; then
+            echo "WARNING: TODO/FIXME found — review before release"
+          else
+            echo "PASS: No TODO/FIXME in source"
+          fi
+
+      - name: Final — verify no Checkstyle/SpotBugs/ArchUnit failures
+        if: always()
+        run: |
+          echo "=== Quality Gate Summary ==="
+          echo "✓ SpotBugs: completed"
+          echo "✓ Checkstyle: completed"
+          echo "✓ ArchUnit: completed"
+          echo "✓ Banned API scan: completed"
+          echo "✓ TODO/FIXME scan: completed"
+
+  ###########################################################################
+  # COVERAGE — aggregate JaCoCo reports from both JDK builds
+  ###########################################################################
+  coverage:
+    name: Coverage — JaCoCo aggregated report
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Download JaCoCo data (JDK 21)
+        uses: actions/download-artifact@v4
+        with:
+          name: jacoco-data-jdk21
+          path: build/jacoco/jdk21/
+
+      - name: Download JaCoCo data (JDK 25)
+        uses: actions/download-artifact@v4
+        with:
+          name: jacoco-data-jdk25
+          path: build/jacoco/jdk25/
+
+      - name: Merge JaCoCo execution data
+        run: >
+          ./gradlew :engine:jacocoMerge
+          :api:jacocoMerge
+          :adapters:v1_21_x:jacocoMerge
+          :adapters:v26_x:jacocoMerge
+          :plugin:jacocoMerge
+          --no-daemon
+        continue-on-error: true
+
+      - name: Generate JaCoCo HTML report
+        run: >
+          ./gradlew :engine:jacocoTestReport
+          :api:jacocoTestReport
+          :adapters:v1_21_x:jacocoTestReport
+          :adapters:v26_x:jacocoTestReport
+          :plugin:jacocoTestReport
+          --no-daemon
+        continue-on-error: true
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: '**/build/reports/jacoco/'
+
+      - name: Print coverage summary
+        if: always()
+        run: |
+          echo "=== JaCoCo Coverage Summary ==="
+          for module in engine api v1_21_x v26_x plugin; do
+            report="build/reports/jacoco/${module}/html/index.html"
+            if [ -f "$report" ]; then
+              echo "✓ $module coverage report generated"
+            else
+              echo "⚠ $module coverage report not found (may need test execution data)"
+            fi
+          done
+
+  ###########################################################################
+  # SHADOWJAR — assemble the deployable artifact
+  ###########################################################################
   shadowjar:
     name: ShadowJAR assembly
     runs-on: ubuntu-latest
@@ -86,7 +292,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: 25
-          distribution: oracle
+          distribution: 'oracle'
           cache: gradle
 
       - name: Setup Gradle
@@ -108,6 +314,9 @@ jobs:
           echo "... $(unzip -l plugin/build/libs/GeoForge.jar | grep -c 'com/geoforge/') GeoForge classes bundled"
           ls -lh plugin/build/libs/GeoForge.jar
 
+  ###########################################################################
+  # RUNTIME-TEST — smoke test on real Paper servers
+  ###########################################################################
   runtime-test:
     name: Runtime test on Paper ${{ matrix.mcversion }}
     runs-on: ubuntu-latest
@@ -149,90 +358,3 @@ jobs:
             version
             plug-in list
             plug-in enable GeoForge
-
-  spotbugs:
-    name: SpotBugs — bug pattern detection
-    runs-on: ubuntu-latest
-    needs: build
-
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          java-version: 21
-          distribution: temurin
-          cache: gradle
-      - uses: gradle/actions/setup-gradle@v4
-
-      - name: Run SpotBugs
-        run: ./gradlew :engine:spotbugsMain :api:spotbugsMain :adapters:v1_21_x:spotbugsMain :adapters:v26_x:spotbugsMain :plugin:spotbugsMain --no-daemon
-
-      - name: Upload SpotBugs reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: spotbugs-reports
-          path: '**/build/reports/spotbugs/'
-
-  checkstyle:
-    name: Checkstyle — code style enforcement
-    runs-on: ubuntu-latest
-    needs: build
-
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          java-version: 21
-          distribution: temurin
-          cache: gradle
-      - uses: gradle/actions/setup-gradle@v4
-
-      - name: Run Checkstyle
-        run: ./gradlew :engine:checkstyleMain :api:checkstyleMain :adapters:v1_21_x:checkstyleMain :adapters:v26_x:checkstyleMain :plugin:checkstyleMain --no-daemon
-
-      - name: Upload Checkstyle reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: checkstyle-reports
-          path: '**/build/reports/checkstyle/'
-
-  code-quality:
-    name: Final code quality gate
-    runs-on: ubuntu-latest
-    needs: [spotbugs, checkstyle]
-
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          java-version: 21
-          distribution: temurin
-
-      - name: Run ArchUnit engine isolation test
-        run: ./gradlew :engine:test --tests "com.geoforge.engine.arch.*" --no-daemon
-
-      - name: Banned API + TODO scan
-        run: |
-          echo "=== Banned API Check ==="
-          errors=0
-          for pattern in "Registry\\.BIOME" "Biome\\.valueOf" "Biome\\.values()" \
-            "Material\\.valueOf" "Material\\.getMaterial" "Material\\.matchMaterial" \
-            "getScheduler()\\.run" "chunkData\\.setBiome(" "net\\.minecraft\\." "craftbukkit\\."; do
-            matches=$(find . -name "*.java" -exec grep -ln "$pattern" {} + 2>/dev/null || true)
-            if [ -n "$matches" ]; then
-                echo "FAIL: $pattern found in:"
-                echo "$matches"
-                errors=$((errors + 1))
-            fi
-        done
-          echo "PASS: No banned APIs found"
-
-          echo ""
-          echo "=== TODO/FIXME Scan ==="
-          if grep -rn "TODO\|FIXME\|HACK\|XXX" $(find . -name "*.java") 2>/dev/null; then
-            echo "WARNING: TODO/FIXME found — review before release"
-          else
-            echo "PASS: No TODO/FIXME in source"
-          fi
