@@ -68,4 +68,41 @@ class DensityFunctionTreeTest {
         var mul = new MultiplyDensity(innerAdd, new ConstantDensity(4));
         assertEquals(20.0, mul.sample(0, 0, 0), 1e-12);
     }
+
+    @Test
+    void scaledNoise2D_ignoresY() {
+        var noise = new SimplexNoise(42L);
+        var scaled = new ScaledNoise2D(noise, 0.1, 0.1);
+        double v1 = scaled.sample(10, 50, 10);
+        double v2 = scaled.sample(10, 999, 10);
+        assertEquals(v1, v2, 1e-12, "Y should be ignored");
+    }
+
+    @Test
+    void scaledNoise2D_deterministic() {
+        var noise = new SimplexNoise(42L);
+        var scaled = new ScaledNoise2D(noise, 0.5, 0.5);
+        double first = scaled.sample(10, 20, 30);
+        for (int i = 0; i < 50; i++) {
+            assertEquals(first, scaled.sample(10, 20, 30), 1e-12);
+        }
+    }
+
+    @Test
+    void scaledNoise2D_zeroY_matchesSimplex() {
+        var noise = new SimplexNoise(42L);
+        var scaled = new ScaledNoise2D(noise, 1.0, 1.0);
+        double v1 = scaled.sample(10, 0, 20);
+        double v2 = noise.sample(10, 20);
+        assertEquals(v1, v2, 1e-12);
+    }
+
+    @Test
+    void scaledNoise2D_respectsScales() {
+        var noise = new SimplexNoise(42L);
+        var scaled = new ScaledNoise2D(noise, 0.5, 0.5);
+        double v1 = scaled.sample(10, 0, 20);
+        double v2 = noise.sample(5.0, 10.0);
+        assertEquals(v1, v2, 1e-12);
+    }
 }
