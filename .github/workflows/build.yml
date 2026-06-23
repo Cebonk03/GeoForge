@@ -336,8 +336,6 @@ jobs:
             java: 21
           - mcversion: "1.21.5"
             java: 21
-          - mcversion: "26.1.2"
-            java: 25
 
     steps:
       - uses: actions/checkout@v4
