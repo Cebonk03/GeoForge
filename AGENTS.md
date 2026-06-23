@@ -70,3 +70,9 @@ geoforge/
 ./gradlew :engine:test :api:test :adapters:v1_21_x:test :adapters:v26_x:test :plugin:test
 ./gradlew :plugin:shadowJar
 ```
+
+## Commit Messages
+
+- No autoresponder footers or tool attribution in commit messages
+- `Feat:` / `Fix:` / `Chore:` / `Docs:` prefix with capital
+- Message body: What changed and why, not boilerplate

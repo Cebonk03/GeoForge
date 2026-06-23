@@ -34,3 +34,9 @@ engine/src/main/java/com/geoforge/engine/
 
 - No `java.util.Random` — use `SplittableRandom`
 - No mutable shared state — use `ThreadLocal` for per-thread caches
+
+## Commit Messages
+
+- Write only what was done — no autoresponder footers, no Sisyphus attribution, no Co-authored-by trailers
+- Format: `Feat:`, `Fix:`, `Chore:`, `Docs:` prefix with capital first letter
+- Message body explains the what/why, not boilerplate
