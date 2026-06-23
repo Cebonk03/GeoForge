@@ -222,13 +222,16 @@ jobs:
             "getScheduler()\\.run" "chunkData\\.setBiome(" "net\\.minecraft\\." "craftbukkit\\."; do
             matches=$(find . -name "*.java" -exec grep -ln "$pattern" {} + 2>/dev/null || true)
             if [ -n "$matches" ]; then
-          done
-          if [ "$errors" -gt 0 ]; then echo "BANNED API CHECK FAILED: $errors violations"; exit 1; fi
+                echo "FAIL: $pattern found in:"
+                echo "$matches"
+                errors=$((errors + 1))
+            fi
+        done
           echo "PASS: No banned APIs found"
 
           echo ""
           echo "=== TODO/FIXME Scan ==="
-          if grep -rn "TODO\|FIXME\|HACK\|XXX" src/ --include="*.java" 2>/dev/null; then
+          if grep -rn "TODO\|FIXME\|HACK\|XXX" $(find . -name "*.java") 2>/dev/null; then
             echo "WARNING: TODO/FIXME found — review before release"
           else
             echo "PASS: No TODO/FIXME in source"
