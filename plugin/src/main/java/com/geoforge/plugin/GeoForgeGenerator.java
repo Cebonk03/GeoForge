@@ -13,20 +13,22 @@ import java.util.Random;
 /**
  * The custom chunk generator for GeoForge.
  *
- * <p>Generates terrain using the engine's noise-based height function and applies surface
- * blocks according to biome-specific rules. Biome assignment is delegated to {@link
- * GeoForgeBiomeProvider}.
+ * <p>Generates terrain using the engine's multi-octave height function modulated by tectonic
+ * plate continentalness, optionally applies hydraulic erosion, and places biome-specific
+ * surface blocks. Biome assignment is delegated to {@link GeoForgeBiomeProvider}.
  */
 public final class GeoForgeGenerator extends ChunkGenerator {
 
-    /** Sea level constant — always reference this, never use the literal 63. */
-    public static final int SEA_LEVEL = 63;
-
     private static final int SURFACE_DEPTH = 3;
+    private static final int CHUNK_SIZE = 16;
 
     private final GeoForgeAdapter adapter;
     private final GeoForgeEngine engine;
     private final GeoForgeBiomeProvider biomeProvider;
+
+    /** Per-thread cache for the 16×16 heightmap shared between generateNoise and generateSurface. */
+    private final ThreadLocal<float[]> heightCache =
+            ThreadLocal.withInitial(() -> new float[CHUNK_SIZE * CHUNK_SIZE]);
 
     public GeoForgeGenerator(GeoForgeAdapter adapter, GeoForgeEngine engine) {
         this.adapter = adapter;
@@ -43,25 +45,38 @@ public final class GeoForgeGenerator extends ChunkGenerator {
 
         int minY = chunkData.getMinHeight();
         int maxY = chunkData.getMaxHeight();
+        float[] heightmap = heightCache.get();
 
-        for (int x = 0; x < 16; x++) {
-            for (int z = 0; z < 16; z++) {
-                int blockX = chunkX * 16 + x;
-                int blockZ = chunkZ * 16 + z;
-                double height = engine.getHeightAt(blockX, blockZ);
-                int heightY = (int) Math.round(height);
+        // Step 1: Sample all 256 columns from the engine
+        for (int x = 0; x < CHUNK_SIZE; x++) {
+            for (int z = 0; z < CHUNK_SIZE; z++) {
+                int blockX = chunkX * CHUNK_SIZE + x;
+                int blockZ = chunkZ * CHUNK_SIZE + z;
+                heightmap[z * CHUNK_SIZE + x] = (float) engine.getHeightAt(blockX, blockZ);
+            }
+        }
+
+        // Step 2: Apply hydraulic erosion across the chunk heightmap
+        engine.erode(heightmap, CHUNK_SIZE, random.nextLong());
+
+        // Step 3: Fill blocks from eroded heights
+        int seaLevel = engine.seaLevel();
+        Material stone = adapter.mapBlock("stone");
+        Material water = adapter.mapBlock("water");
+
+        for (int x = 0; x < CHUNK_SIZE; x++) {
+            for (int z = 0; z < CHUNK_SIZE; z++) {
+                int heightY = (int) Math.round(heightmap[z * CHUNK_SIZE + x]);
+                int fillY = Math.min(heightY, maxY - 1);
 
                 // Fill column with stone up to terrain height
-                Material stone = adapter.mapBlock("stone");
-                int fillY = Math.min(heightY, maxY - 1);
                 for (int y = minY; y <= fillY; y++) {
                     chunkData.setBlock(x, y, z, stone);
                 }
 
                 // Fill water from height+1 up to sea level
-                if (heightY < SEA_LEVEL) {
-                    Material water = adapter.mapBlock("water");
-                    for (int y = heightY + 1; y <= SEA_LEVEL && y < maxY; y++) {
+                if (heightY < seaLevel) {
+                    for (int y = heightY + 1; y <= seaLevel && y < maxY; y++) {
                         chunkData.setBlock(x, y, z, water);
                     }
                 }
@@ -78,16 +93,18 @@ public final class GeoForgeGenerator extends ChunkGenerator {
 
         int minY = chunkData.getMinHeight();
         int maxY = chunkData.getMaxHeight();
+        float[] heightmap = heightCache.get();
 
-        for (int x = 0; x < 16; x++) {
-            for (int z = 0; z < 16; z++) {
-                int blockX = chunkX * 16 + x;
-                int blockZ = chunkZ * 16 + z;
-                int heightY = (int) Math.round(engine.getHeightAt(blockX, blockZ));
+        for (int x = 0; x < CHUNK_SIZE; x++) {
+            for (int z = 0; z < CHUNK_SIZE; z++) {
+                int blockX = chunkX * CHUNK_SIZE + x;
+                int blockZ = chunkZ * CHUNK_SIZE + z;
+                int heightY = (int) Math.round(heightmap[z * CHUNK_SIZE + x]);
 
                 if (heightY < minY || heightY >= maxY) continue;
 
-                String biomeId = engine.getBiomeId(blockX, SEA_LEVEL, blockZ);
+                // Query biome at actual terrain height — altitude affects temperature
+                String biomeId = engine.getBiomeId(blockX, heightY, blockZ);
                 Material topBlock = resolveTopBlock(biomeId);
                 Material subBlock = resolveSubBlock(biomeId);
 

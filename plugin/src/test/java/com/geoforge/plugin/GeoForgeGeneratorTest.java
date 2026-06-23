@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.geoforge.api.adapter.GeoForgeAdapter;
 import com.geoforge.engine.GeoForgeEngine;
+import com.geoforge.engine.config.GeoForgeConfig;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,7 +22,7 @@ class GeoForgeGeneratorTest {
         GeoForgeAdapter adapter =
                 new com.geoforge.adapters.v1_21_x.Paper1_21_xAdapter(
                         MockBukkit.createMockPlugin());
-        GeoForgeEngine engine = new GeoForgeEngine(42L);
+        GeoForgeEngine engine = new GeoForgeEngine(42L, GeoForgeConfig.defaults());
         generator = new GeoForgeGenerator(adapter, engine);
     }
 
@@ -46,10 +47,5 @@ class GeoForgeGeneratorTest {
         var provider = generator.getDefaultBiomeProvider(null);
         assertNotNull(provider);
         assertInstanceOf(GeoForgeBiomeProvider.class, provider);
-    }
-
-    @Test
-    void seaLevel_is63() {
-        assertEquals(63, GeoForgeGenerator.SEA_LEVEL);
     }
 }
