@@ -19,27 +19,26 @@ public final class BiomeLookupTable {
     private static final String[][] TABLE = {
         // cold/dry → cold/wet
         {"snowy_plains",       "ice_spikes",        "frozen_peaks",      "grove",
-         "snowy_taiga",        "snowy_taiga",       "frozen_ocean",      "deep_frozen_ocean"},
-        // cool/dry → cool/wet
+         "snowy_taiga",        "jagged_peaks",      "frozen_ocean",      "deep_frozen_ocean"},
         {"snowy_taiga",        "taiga",             "old_growth_pine_taiga", "snowy_beach",
          "stony_shore",        "cold_ocean",        "deep_cold_ocean",   "frozen_ocean"},
         // low/dry → low/wet
         {"windswept_hills",    "windswept_forest",  "taiga",             "old_growth_spruce_taiga",
          "birch_forest",       "ocean",             "deep_ocean",        "cold_ocean"},
         // moderate/dry → moderate/wet
-        {"plains",             "forest",            "birch_forest",      "dark_forest",
-         "meadow",             "ocean",             "deep_ocean",        "lukewarm_ocean"},
+        {"meadow",             "forest",            "birch_forest",      "dark_forest",
+         "plains",             "ocean",             "deep_ocean",        "lukewarm_ocean"},
         // mild/dry → mild/wet
-        {"plains",             "forest",            "old_growth_birch_forest", "dark_forest",
-         "cherry_grove",       "beach",             "lukewarm_ocean",    "deep_lukewarm_ocean"},
+        {"meadow",             "forest",            "old_growth_birch_forest", "dark_forest",
+         "cherry_grove",       "stony_shore",        "plains",            "deep_lukewarm_ocean"},
         // warm/dry → warm/wet
         {"savanna",            "savanna",           "windswept_savanna", "jungle",
-         "bamboo_jungle",      "beach",             "warm_ocean",        "warm_ocean"},
+         "bamboo_jungle",      "beach",             "mangrove_swamp", "deep_lukewarm_ocean"},
         // hot/dry → hot/wet
-        {"desert",             "desert",            "badlands",          "jungle",
-         "sparse_jungle",      "beach",             "warm_ocean",        "warm_ocean"},
+        {"desert",             "windswept_savanna",  "badlands",          "jungle",
+         "sparse_jungle",      "beach",             "mangrove_swamp",    "lukewarm_ocean"},
         // hottest/dry → hottest/wet
-        {"desert",             "desert",            "badlands",          "badlands",
+        {"desert",             "sparse_jungle",      "badlands",          "bamboo_jungle",
          "mushroom_fields",    "mushroom_fields",   "warm_ocean",        "warm_ocean"},
     };
     // @formatter:on

@@ -18,7 +18,8 @@ class BiomeLookupTableTest {
                     "beach", "snowy_beach", "stony_shore", "mushroom_fields",
                     "ocean", "deep_ocean", "cold_ocean", "deep_cold_ocean",
                     "lukewarm_ocean", "deep_lukewarm_ocean", "frozen_ocean", "deep_frozen_ocean",
-                    "warm_ocean");
+                    "warm_ocean",
+                    "mangrove_swamp");
 
     @Test
     void lookup_midTempMidHumidity_returnsNonNull() {
@@ -78,5 +79,27 @@ class BiomeLookupTableTest {
         assertThrows(
                 UnsupportedOperationException.class,
                 () -> BiomeLookupTable.getAllBiomeIds().add("test"));
+    }
+
+    @Test
+    void noBiomeAppearsMoreThanTwice() {
+        var counts = new java.util.HashMap<String, Integer>();
+        for (int ti = 0; ti < 8; ti++) {
+            for (int hi = 0; hi < 8; hi++) {
+                double temp = -1.0 + ti * 0.25 + 0.125;
+                double hum = hi * 0.125 + 0.0625;
+                String biome = BiomeLookupTable.lookup(temp, hum);
+                counts.merge(biome, 1, Integer::sum);
+            }
+        }
+        for (var entry : counts.entrySet()) {
+            assertTrue(entry.getValue() <= 2,
+                "Biome '" + entry.getKey() + "' appears " + entry.getValue() + " times (>2)");
+        }
+    }
+
+    @Test
+    void mangroveSwamp_isPresent() {
+        assertTrue(BiomeLookupTable.getAllBiomeIds().contains("mangrove_swamp"));
     }
 }
