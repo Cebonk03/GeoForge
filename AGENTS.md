@@ -23,7 +23,7 @@ geoforge/
 | v1_21_x | 1 | 1 | 21 | Paper 1.21.x adapter |
 | v26_x | 1 | 1 | 25 | Paper 26.x adapter |
 | plugin | 4 | 3 | 25 | Plugin + ShadowJAR |
-|| **Total** | **26** | **18** | — | **107 tests, 0 failures** |
+|| **Total** | **26** | **18** | — | **106 tests, 0 failures** |
 
 ## Where To Look
 

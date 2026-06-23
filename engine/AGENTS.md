@@ -8,7 +8,7 @@ Zero-Bukkit math engine for terrain generation. All classes pure Java 21 with no
 engine/src/main/java/com/geoforge/engine/
 ├── config/       GeoForgeConfig.java (14-field immutable record)
 ├── noise/        SimplexNoise.java, FractalNoise.java
-├── density/      DensityFunctionTree.java + 7 impls (Constant, Scaled, ScaledNoise2D, Add, Multiply, Clamp, PlateContinentalness)
+├── density/      DensityFunctionTree.java + 7 impls (Constant, ScaledNoise, ScaledNoise2D, Add, Multiply, Clamp, PlateContinentalness)
 ├── geology/      TectonicPlateMapper.java, HydraulicErosion.java
 ├── biome/        BiomeLookupTable.java (8×8 temp×humidity grid)
 ├── plateau/      StructurePlateauModifier.java

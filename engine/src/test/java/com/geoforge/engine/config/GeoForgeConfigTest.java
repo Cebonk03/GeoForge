@@ -125,14 +125,46 @@ class GeoForgeConfigTest {
     }
 
     @Test
+    void validation_continentalLacunarityMustBePositive() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new GeoForgeConfig(
+                        -64, 180, 63, 50.0, 120.0, 0.004, 4, 0.0, 0.5,
+                        0.001, 0.005, 0.001, 10, 64));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new GeoForgeConfig(
+                        -64, 180, 63, 50.0, 120.0, 0.004, 4, -1.0, 0.5,
+                        0.001, 0.005, 0.001, 10, 64));
+    }
+
+    @Test
+    void validation_continentalPersistenceMustBePositive() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new GeoForgeConfig(
+                        -64, 180, 63, 50.0, 120.0, 0.004, 4, 2.0, 0.0,
+                        0.001, 0.005, 0.001, 10, 64));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new GeoForgeConfig(
+                        -64, 180, 63, 50.0, 120.0, 0.004, 4, 2.0, -0.5,
+                        0.001, 0.005, 0.001, 10, 64));
+    }
+
+    @Test
     void validation_temperatureFrequencyMustBePositive() {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> new GeoForgeConfig(
                         -64, 180, 63, 50.0, 120.0, 0.004, 4, 2.0, 0.5,
                         0.0, 0.005, 0.001, 10, 64));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new GeoForgeConfig(
+                        -64, 180, 63, 50.0, 120.0, 0.004, 4, 2.0, 0.5,
+                        -1.0, 0.005, 0.001, 10, 64));
     }
-
     @Test
     void validation_temperatureYFrequencyMustBePositive() {
         assertThrows(
@@ -140,8 +172,12 @@ class GeoForgeConfigTest {
                 () -> new GeoForgeConfig(
                         -64, 180, 63, 50.0, 120.0, 0.004, 4, 2.0, 0.5,
                         0.001, 0.0, 0.001, 10, 64));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new GeoForgeConfig(
+                        -64, 180, 63, 50.0, 120.0, 0.004, 4, 2.0, 0.5,
+                        0.001, -1.0, 0.001, 10, 64));
     }
-
     @Test
     void validation_humidityFrequencyMustBePositive() {
         assertThrows(
@@ -149,6 +185,11 @@ class GeoForgeConfigTest {
                 () -> new GeoForgeConfig(
                         -64, 180, 63, 50.0, 120.0, 0.004, 4, 2.0, 0.5,
                         0.001, 0.005, 0.0, 10, 64));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new GeoForgeConfig(
+                        -64, 180, 63, 50.0, 120.0, 0.004, 4, 2.0, 0.5,
+                        0.001, 0.005, -1.0, 10, 64));
     }
 
     @Test
