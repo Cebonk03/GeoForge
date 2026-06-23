@@ -6,12 +6,11 @@ Zero-Bukkit math engine for terrain generation. All classes pure Java 21 with no
 
 ```
 engine/src/main/java/com/geoforge/engine/
-├── noise/        SimplexNoise.java, NoiseCache.java
+├── noise/        SimplexNoise.java
 ├── density/      DensityFunctionTree.java + 5 impls (Constant, Scaled, Add, Clamp, Multiply)
 ├── geology/      TectonicPlateMapper.java, HydraulicErosion.java
 ├── biome/        BiomeLookupTable.java (8×8 temp×humidity grid)
 ├── plateau/      StructurePlateauModifier.java
-├── resilience/   CircuitBreaker.java
 └── GeoForgeEngine.java
 ```
 
@@ -28,8 +27,7 @@ engine/src/main/java/com/geoforge/engine/
 
 - Zero Bukkit/Paper imports enforced by ArchUnit (`EngineIsolationTest`)
 - All noise seeded from `long` values — deterministic output
-- `SplittableRandom` for seeding, discarded after constructor
-- `CircuitBreaker` wraps fallible generation with atomic counters
+- All noise seeded from `long` values — deterministic output and ThreadLocal-cached
 
 ## Anti-Patterns
 
