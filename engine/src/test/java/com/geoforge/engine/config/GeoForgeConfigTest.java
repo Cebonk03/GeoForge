@@ -111,6 +111,47 @@ class GeoForgeConfigTest {
     }
 
     @Test
+    void validation_continentalFrequencyMustBePositive() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new GeoForgeConfig(
+                        -64, 180, 63, 50.0, 120.0, 0.0, 4, 2.0, 0.5,
+                        0.001, 0.005, 0.001, 10, 64));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new GeoForgeConfig(
+                        -64, 180, 63, 50.0, 120.0, -1.0, 4, 2.0, 0.5,
+                        0.001, 0.005, 0.001, 10, 64));
+    }
+
+    @Test
+    void validation_temperatureFrequencyMustBePositive() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new GeoForgeConfig(
+                        -64, 180, 63, 50.0, 120.0, 0.004, 4, 2.0, 0.5,
+                        0.0, 0.005, 0.001, 10, 64));
+    }
+
+    @Test
+    void validation_temperatureYFrequencyMustBePositive() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new GeoForgeConfig(
+                        -64, 180, 63, 50.0, 120.0, 0.004, 4, 2.0, 0.5,
+                        0.001, 0.0, 0.001, 10, 64));
+    }
+
+    @Test
+    void validation_humidityFrequencyMustBePositive() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new GeoForgeConfig(
+                        -64, 180, 63, 50.0, 120.0, 0.004, 4, 2.0, 0.5,
+                        0.001, 0.005, 0.0, 10, 64));
+    }
+
+    @Test
     void withSeaLevel_overridesOnlySeaLevel() {
         var cfg = GeoForgeConfig.withSeaLevel(50);
         assertEquals(50, cfg.seaLevel());

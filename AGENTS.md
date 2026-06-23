@@ -18,12 +18,12 @@ geoforge/
 
 | Module | Main Srcs | Tests | Java | Role |
 |--------|-----------|-------|------|------|
-| engine | 14 | 9 | 21 | Math engine, zero Bukkit |
+|| engine | 16 | 11 | 21 | Math engine, zero Bukkit |
 | api | 4 | 1 | 21 | Adapter interface + ServerVersion |
 | v1_21_x | 1 | 1 | 21 | Paper 1.21.x adapter |
 | v26_x | 1 | 1 | 25 | Paper 26.x adapter |
 | plugin | 4 | 3 | 25 | Plugin + ShadowJAR |
-| **Total** | **24** | **15** | — | **78 tests, 2 skipped** |
+|| **Total** | **26** | **18** | — | **103 tests, 0 failures** |
 
 ## Where To Look
 
@@ -62,6 +62,8 @@ geoforge/
 - No version catalog (`gradle/libs.versions.toml`) — versions hardcoded in 5 build files
 - Dynamic `26.+` range in plugin's Paper API dep — non-reproducible builds **(FIXED: pinned to `26.1.2.build.+`)**
 - Deprecation warnings from `shouldGenerateBedrock()` (Paper 26.x deprecated this method)
+- `engine/AGENTS.md` structure manually updated — keep in sync with file changes
+
 ## Commands
 
 ```bash
