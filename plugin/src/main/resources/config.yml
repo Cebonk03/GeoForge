@@ -1,5 +1,31 @@
 # GeoForge World Generation Configuration
-# 
+#
 # seed: World generation seed. Change this to get different terrain.
 #       Default: 0L (produces consistent terrain across all worlds)
 seed: 0
+
+# Terrain height bounds (in block units)
+terrain:
+  sea-level: 63            # Water surface in blocks
+  min-height: -64           # Lowest generated block
+  max-height: 180           # Highest generated block
+  continental-base: 50.0    # Minimum height contribution from tectonic plates (ocean basins)
+  continental-height-amplitude: 120.0  # Height range added by plate continentalness
+
+# Fractal noise tuning for continental shape
+noise:
+  continental-frequency: 0.004   # Large-scale (<0.01) or local (>0.02)
+  continental-octaves: 4         # Detail layers (2=blobby, 6=noisy)
+  continental-lacunarity: 2.0    # Frequency multiplier per octave
+  continental-persistence: 0.5   # Amplitude decay per octave
+
+# Climate noise frequencies
+climate:
+  temperature-frequency: 0.001   # Horizontal temperature variation
+  temperature-y-frequency: 0.005 # Vertical temperature variation (altitude effect)
+  humidity-frequency: 0.001      # Horizontal humidity variation
+
+# Hydraulic erosion droplet simulation
+erosion:
+  max-droplet-steps: 10   # Maximum steps per droplet (was hardcoded 30; lower = faster, less detail)
+  iterations: 64          # Droplets per chunk (higher = more erosion, slower)
