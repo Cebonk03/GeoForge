@@ -10,6 +10,13 @@ package com.geoforge.engine.density;
 public record ClampDensity(DensityFunctionTree inner, double min, double max)
         implements DensityFunctionTree {
 
+    public ClampDensity {
+        if (min > max) {
+            throw new IllegalArgumentException(
+                    "min (" + min + ") must be <= max (" + max + ")");
+        }
+    }
+
     @Override
     public double sample(double x, double y, double z) {
         double v = inner.sample(x, y, z);

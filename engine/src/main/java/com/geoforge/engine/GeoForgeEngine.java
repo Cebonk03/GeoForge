@@ -55,13 +55,18 @@ public final class GeoForgeEngine {
         this.humidityNoise = new SimplexNoise(seed ^ 0x3456789ABCDEF12L);
 
         // Build composite height function:
-        // 1. Multi-octave fractal noise for terrain detail
-        DensityFunctionTree continent = (x, y, z) -> continentalNoise.sample2D(
+        // 1. Multi-octave fractal noise for terrain detail (additive, not multiplicative —
+        //    avoids inverting the tectonic signal when noise is negative)
+        DensityFunctionTree detailNoise = (x, y, z) -> continentalNoise.sample2D(
                 x * config.continentalFrequency(), z * config.continentalFrequency());
-        // 2. Tectonic plate influence — land gets higher, ocean lower
-        var plates = new PlateContinentalness(
-                plateMapper, config.continentalBase(), config.continentalHeightAmplitude());
-        var combined = new MultiplyDensity(continent, plates);
+        var scaledDetail = new MultiplyDensity(detailNoise,
+                new ConstantDensity(config.continentalHeightAmplitude() / 6.0));
+        // 2. Tectonic plate influence — at c=0 (deep ocean): -continentalBase blocks,
+        //    at c=1 (continent interior): continentalHeightAmplitude blocks
+        var plates = new PlateContinentalness(plateMapper,
+                -config.continentalBase(),
+                config.continentalBase() + config.continentalHeightAmplitude());
+        var combined = new AddDensity(scaledDetail, plates);
         // 3. Shift so sea level aligns with the configured value
         var shifted = new AddDensity(combined, new ConstantDensity(config.seaLevel()));
         // 4. Clamp to world height bounds

@@ -76,6 +76,11 @@ public record GeoForgeConfig(
             throw new IllegalArgumentException(
                     "continentalOctaves must be > 0, got %d".formatted(continentalOctaves));
         }
+        if (continentalFrequency <= 0) {
+            throw new IllegalArgumentException(
+                    "continentalFrequency must be > 0, got %s"
+.formatted(continentalFrequency));
+        }
         if (continentalLacunarity <= 0) {
             throw new IllegalArgumentException(
                     "continentalLacunarity must be > 0, got %s"
@@ -85,6 +90,21 @@ public record GeoForgeConfig(
             throw new IllegalArgumentException(
                     "continentalPersistence must be > 0, got %s"
                             .formatted(continentalPersistence));
+        }
+        if (temperatureFrequency <= 0) {
+            throw new IllegalArgumentException(
+                    "temperatureFrequency must be > 0, got %s"
+.formatted(temperatureFrequency));
+        }
+        if (temperatureYFrequency <= 0) {
+            throw new IllegalArgumentException(
+                    "temperatureYFrequency must be > 0, got %s"
+.formatted(temperatureYFrequency));
+        }
+        if (humidityFrequency <= 0) {
+            throw new IllegalArgumentException(
+                    "humidityFrequency must be > 0, got %s"
+.formatted(humidityFrequency));
         }
         if (erosionMaxDropletSteps <= 0) {
             throw new IllegalArgumentException(
