@@ -335,6 +335,7 @@ jobs:
           - mcversion: "1.21.11"
             java: 21
           - mcversion: "1.21.5"
+          - mcversion: "26.1.2"
             java: 25
 
     steps:
