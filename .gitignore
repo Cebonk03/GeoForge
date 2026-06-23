@@ -18,3 +18,9 @@ Thumbs.db
 # Environment
 .env
 *.log
+
+# Agent workspace
+.omo/
+
+# Backup files
+*.bak
