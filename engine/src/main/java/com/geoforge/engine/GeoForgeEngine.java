@@ -17,13 +17,14 @@ import java.util.Set;
 /**
  * The core world generation engine for GeoForge.
  *
- * <p>Generates terrain height and biome assignments using multi-octave fractal noise
- * modulated by tectonic plate continentalness. This class has zero Bukkit dependencies
- * and is safe to use in any context.
+ * <p>Generates terrain density and biome assignments using multi-octave fractal noise
+ * modulated by tectonic plate continentalness and 3D cave noise. This class has zero
+ * Bukkit dependencies and is safe to use in any context.
  *
- * <p>Height generation combines continental-scale fractal noise with tectonic plate
- * mapping to create realistic landmasses, mountain ranges, and ocean basins.
- * Hydraulic erosion may be applied as a post-process step (see {@link #erode}).
+ * <p>The density field is computed as: {@code density(x,y,z) = heightFunc(x,z) - y + caveNoise(x,y,z)}.
+ * Positive density = solid block, negative density = air.
+ *
+ * <p>Hydraulic erosion may be applied as a post-process step (see {@link #erode}).
  */
 public final class GeoForgeEngine {
 
@@ -35,6 +36,7 @@ public final class GeoForgeEngine {
     private final DensityFunctionTree heightFunction;
     private final Set<String> allBiomeIds;
     private final HydraulicErosion erosion;
+    private final SimplexNoise caveNoise;
 
     /**
      * Creates a new engine with the given world seed and configuration.
@@ -74,10 +76,15 @@ public final class GeoForgeEngine {
 
         this.allBiomeIds = BiomeLookupTable.getAllBiomeIds();
         this.erosion = new HydraulicErosion(config.erosionMaxDropletSteps());
+
+        // 3D cave noise for underground carving
+        this.caveNoise = new SimplexNoise(seed ^ 0x456789ABCDEF123L);
     }
 
     /**
      * Returns the terrain height at the given block coordinates.
+     *
+     * <p>This is the 2D height function value. For 3D density use {@link #getDensity}.
      *
      * @param blockX the x-coordinate in block space
      * @param blockZ the z-coordinate in block space
@@ -85,6 +92,52 @@ public final class GeoForgeEngine {
      */
     public double getHeightAt(int blockX, int blockZ) {
         return heightFunction.sample(blockX, 0, blockZ);
+    }
+
+    /**
+     * Returns the 3D density value at the given block coordinates.
+     *
+     * <p>Positive density indicates solid ground, negative density indicates air.
+     * The density function is: {@code density = heightFunc(x,z) - y + caveNoise(x,y,z)}.
+     *
+     * @param blockX the x-coordinate in block space
+     * @param blockY the y-coordinate in block space
+     * @param blockZ the z-coordinate in block space
+     * @return density value (positive = solid, negative = air)
+     */
+    public double getDensity(int blockX, int blockY, int blockZ) {
+        double targetHeight = heightFunction.sample(blockX, 0, blockZ);
+        double cave = caveNoise.sample(
+                blockX * config.caveFrequency(),
+                blockY * config.caveFrequency(),
+                blockZ * config.caveFrequency());
+        return targetHeight - blockY + cave * config.caveAmplitude();
+    }
+
+    /**
+     * Returns the terrain surface height (highest solid block) at the given column.
+     *
+     * <p>Uses binary search on the 3D density field to find the highest Y where
+     * density >= 0. When cave amplitude is 0, this matches the 2D height function.
+     *
+     * @param blockX the x-coordinate in block space
+     * @param blockZ the z-coordinate in block space
+     * @return the Y coordinate of the surface (highest solid block)
+     */
+    public int getSurfaceHeight(int blockX, int blockZ) {
+        double targetHeight = getHeightAt(blockX, blockZ);
+        int low = config.minHeight();
+        int high = Math.min((int) Math.ceil(targetHeight), config.maxHeight() - 1);
+        // Binary search for highest Y with density >= 0
+        while (low < high) {
+            int mid = (low + high + 1) / 2;
+            if (getDensity(blockX, mid, blockZ) >= 0) {
+                low = mid;
+            } else {
+                high = mid - 1;
+            }
+        }
+        return low;
     }
 
     /**

@@ -41,6 +41,11 @@ public final class GeoForgePlugin extends JavaPlugin {
                 cfg.getDouble("climate.temperature-frequency", 0.001),
                 cfg.getDouble("climate.temperature-y-frequency", 0.005),
                 cfg.getDouble("climate.humidity-frequency", 0.001),
+                cfg.getDouble("noise.cave-frequency", 0.03),
+                cfg.getDouble("noise.cave-amplitude", 8.0),
+                cfg.getInt("noise.cave-octaves", 2),
+                cfg.getDouble("noise.cave-lacunarity", 2.0),
+                cfg.getDouble("noise.cave-persistence", 0.5),
                 cfg.getInt("erosion.max-droplet-steps", 10),
                 cfg.getInt("erosion.iterations", 64));
         this.engine = new GeoForgeEngine(seed, engineConfig);
