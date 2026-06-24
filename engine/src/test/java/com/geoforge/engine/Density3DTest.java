@@ -96,6 +96,7 @@ class Density3DTest {
                     Math.abs(surfaceHeight - expectedInt) <= 1,
                     "Surface height at (" + x + "," + z + ") = " + surfaceHeight
                             + " expected ~" + expectedHeight + " (rounded " + expectedInt + ")");
+        }
     }
 
     @Test
@@ -133,6 +134,7 @@ class Density3DTest {
                     }
                 }
                 if (hasAir) caveColumns++;
+            }
         }
 
         // With cave amplitude 8.0, at least some columns should have cave air pockets
