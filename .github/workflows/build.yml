@@ -168,18 +168,16 @@ jobs:
 
       - name: Banned API + TODO scan
         run: |
-          echo "=== Banned API Check ===
+          echo "=== Banned API Check ==="
           errors=0
           for pattern in "Registry\\.BIOME" "Biome\\.valueOf" "Biome\\.values()" \
             "Material\\.valueOf" "Material\\.getMaterial" "Material\\.matchMaterial" \
             "getScheduler()\\.run" "chunkData\\.setBiome(" "net\\.minecraft\\." "craftbukkit\\."; do
-            # Exclude false positives:
-            # - EngineIsolationTest.java uses net.minecraft in ArchUnit forbid rule
-            # - GeoForgeAdapter.java Javadoc mentions Registry.BIOME as anti-pattern
-            matches=$(find . -name "*.java" \
-              -not -name "EngineIsolationTest.java" \
-              -not -path "*/GeoForgeAdapter.java" \
-              -exec grep -ln "$pattern" {} + 2>/dev/null || true)
+            # Filter out Javadoc comments (lines starting with *) and ArchUnit rules
+            matches=$(grep -rn "$pattern" --include='*.java' . \
+              | grep -v ":[[:space:]][*]" \
+              | grep -v "EngineIsolationTest.java" \
+              || true)
             if [ -n "$matches" ]; then
                 echo "FAIL: $pattern found in:"
                 echo "$matches"
@@ -194,8 +192,11 @@ jobs:
           fi
 
           echo ""
-          echo "=== TODO/FIXME Scan ===
-          if grep -rn "TODO\|FIXME\|HACK\|XXX" $(find . -name "*.java") 2>/dev/null; then
+          echo "=== TODO/FIXME Scan ==="
+          if grep -rn "TODO\|FIXME\|HACK\|XXX" --include='*.java' . 2>/dev/null \
+            | grep -v ":[[:space:]][*]" \
+            | head -5 \
+            | grep .; then
             echo "WARNING: TODO/FIXME found — review before release"
           else
             echo "PASS: No TODO/FIXME in source"
@@ -243,25 +244,13 @@ jobs:
           name: jacoco-data-jdk25
           path: build/jacoco/jdk25/
 
-      - name: Merge JaCoCo execution data
-        run: >
-          ./gradlew :engine:jacocoMerge
-          :api:jacocoMerge
-          :adapters:v1_21_x:jacocoMerge
-          :adapters:v26_x:jacocoMerge
-          :plugin:jacocoMerge
-          --no-daemon
-        continue-on-error: true
-
-      - name: Generate JaCoCo HTML report
-        run: >
-          ./gradlew :engine:jacocoTestReport
-          :api:jacocoTestReport
-          :adapters:v1_21_x:jacocoTestReport
-          :adapters:v26_x:jacocoTestReport
-          :plugin:jacocoTestReport
-          --no-daemon
-        continue-on-error: true
+      - name: Verify JaCoCo data
+        run: |
+          echo "=== Coverage Data ===
+          for dir in build/jacoco/jdk21 build/jacoco/jdk25; do
+            echo "$dir:"
+            find "$dir" -name "*.exec" -exec ls -lh {} \; 2>/dev/null || echo "  (empty)"
+          done
 
       - name: Upload coverage report
         if: always()
