@@ -18,12 +18,12 @@ geoforge/
 
 | Module | Main Srcs | Tests | Java | Role |
 |--------|-----------|-------|------|------|
-|| engine | 18 | 15 | 21 | 3D density engine, zero Bukkit |
+|| engine | 18 | 14 | 21 | 3D density engine, zero Bukkit |
 | api | 4 | 2 | 21 | Adapter interface + ServerVersion + FoliaDetectorTest |
 | v1_21_x | 1 | 1 | 21 | Paper 1.21.x adapter |
-| v26_x | 1 | 2 | 25 | Paper 26.x adapter (constructor injection for testability) |
+|| v26_x | 1 | 1 | 25 | Paper 26.x adapter (constructor injection for testability) |
 | plugin | 4 | 4 | 25 | Plugin + ShadowJAR + GeoForgePluginTest |
-|| **Total** | **28** | **24** | — | **~115 tests, 0 failures** |
+||| **Total** | **28** | **22** | — | **~135 tests, 0 failures** |
 
 ## 3D Density Architecture
 
@@ -77,7 +77,7 @@ Positive density = solid, negative density = air
 - Dynamic `26.+` range in plugin's Paper API dep — non-reproducible builds **(FIXED: pinned to `26.1.2.build.+`)**
 - `shouldGenerateBedrock()` deprecated but we handle bedrock in `generateNoise()` now
 - `StructurePlateauModifier` exists but unwired — terrain flattening for future structure integration
-
+- `ScaledNoise` + `ScaledNoise2D` implement `DensityFunctionTree` but unused in production — available for future density tree composition
 ## Commands
 
 ```bash

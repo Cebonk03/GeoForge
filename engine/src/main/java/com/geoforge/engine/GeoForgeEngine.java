@@ -90,13 +90,15 @@ public final class GeoForgeEngine {
     }
 
     /**
-     * Returns the terrain height at the given block coordinates.
+     * Returns the base terrain height at the given block coordinates.
      *
-     * <p>This is the 2D height function value. For 3D density use {@link #getDensity}.
+     * <p>This is the 2D height function value <b>without</b> cave noise or
+     * river carving. For the true surface (including 3D effects) use
+     * {@link #getSurfaceHeight}. For per-block density use {@link #getDensity}.
      *
      * @param blockX the x-coordinate in block space
      * @param blockZ the z-coordinate in block space
-     * @return the terrain height as a double
+     * @return the base terrain height (without cave/river carving)
      */
     public double getHeightAt(int blockX, int blockZ) {
         return heightFunction.sample(blockX, 0, blockZ);
