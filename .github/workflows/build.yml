@@ -246,10 +246,10 @@ jobs:
 
       - name: Verify JaCoCo data
         run: |
-          echo "=== Coverage Data ===
+          echo '=== Coverage Data ==='
           for dir in build/jacoco/jdk21 build/jacoco/jdk25; do
-            echo "$dir:"
-            find "$dir" -name "*.exec" -exec ls -lh {} \; 2>/dev/null || echo "  (empty)"
+            echo "dir: $dir"
+            ls "$dir" 2>/dev/null || echo 'dir: (not found)'
           done
 
       - name: Upload coverage report
