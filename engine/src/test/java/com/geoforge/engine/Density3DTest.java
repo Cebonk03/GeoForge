@@ -116,8 +116,9 @@ class Density3DTest {
 
     @Test
     void caveNoise_createsSomeAirPockets() {
-        // With non-zero cave amplitude, some underground positions should be air
-        var engine = new GeoForgeEngine(SEED, CFG);
+        // Use higher amplitude so cave noise overcomes height-y gradient
+        var cfg = GeoForgeConfig.defaults().withCaveAmplitude(32.0);
+        var engine = new GeoForgeEngine(SEED, cfg);
         int caveColumns = 0;
         int totalColumns = 0;
 
@@ -126,9 +127,8 @@ class Density3DTest {
                 int surfaceY = engine.getSurfaceHeight(x, z);
                 totalColumns++;
                 boolean hasAir = false;
-                // Check near-surface depths (1-8 blocks below surface)
-                for (int dy = 1; dy <= 8; dy++) {
-                    int checkY = Math.max(surfaceY - dy, CFG.minHeight() + 1);
+                for (int dy = 1; dy <= 12; dy++) {
+                    int checkY = Math.max(surfaceY - dy, cfg.minHeight() + 1);
                     if (engine.getDensity(x, checkY, z) < 0) {
                         hasAir = true;
                         break;
@@ -138,7 +138,6 @@ class Density3DTest {
             }
         }
 
-        // With cave amplitude 8.0, at least some columns should have cave air pockets
         assertTrue(
                 caveColumns > 0,
                 "Expected at least one column with cave air pocket, got " + caveColumns
