@@ -134,10 +134,11 @@ public final class GeoForgeEngine {
      * @return the Y coordinate of the surface (highest solid block)
      */
     public int getSurfaceHeight(int blockX, int blockZ) {
-        double targetHeight = getHeightAt(blockX, blockZ);
         int low = config.minHeight();
-        int high = Math.min((int) Math.ceil(targetHeight), config.maxHeight() - 1);
-        // Binary search for highest Y with density >= 0
+        int high = config.maxHeight() - 1;
+        // Binary search for highest Y with density >= 0.
+        // Upper bound is maxHeight - 1 (not clamped to heightFunction) because
+        // cave noise can push the surface up to caveAmplitude blocks higher.
         while (low < high) {
             int mid = (low + high + 1) / 2;
             if (getDensity(blockX, mid, blockZ) >= 0) {

@@ -21,7 +21,6 @@ class FractalNoiseTest {
         var multi = new FractalNoise(new SimplexNoise(42L), 4, 2.0, 0.5);
 
         var anyDifferent = false;
-        // Use non-integer coordinates since SimplexNoise is 0 at integer lattice points
         for (int i = -10; i <= 10 && !anyDifferent; i++) {
             for (int j = -10; j <= 10 && !anyDifferent; j++) {
                 double x = i + 0.3;
@@ -83,5 +82,22 @@ class FractalNoiseTest {
                 () -> new FractalNoise(new SimplexNoise(0L), 1, 2.0, 0.0));
         assertThrows(IllegalArgumentException.class,
                 () -> new FractalNoise(new SimplexNoise(0L), 1, 2.0, -0.5));
+    }
+
+    @Test
+    void sample3D_usesYCoordinate() {
+        var noise = new SimplexNoise(42L);
+        var fractal = new FractalNoise(noise, 1, 2.0, 0.5);
+        double v1 = fractal.sample3D(10.5, 20.3, 30.7);
+        double v2 = fractal.sample3D(10.5, 99.9, 30.7);
+        assertNotEquals(v1, v2, 1e-9, "Different Y should produce different noise");
+    }
+
+    @Test
+    void sample3D_singleOctave_matchesSimplexOutput() {
+        var noise = new SimplexNoise(42L);
+        var fractal = new FractalNoise(noise, 1, 2.0, 0.5);
+        assertEquals(noise.sample(1.5, 2.5, 3.5), fractal.sample3D(1.5, 2.5, 3.5), 1e-9);
+        assertEquals(noise.sample(-3.0, 4.0, -5.0), fractal.sample3D(-3.0, 4.0, -5.0), 1e-9);
     }
 }

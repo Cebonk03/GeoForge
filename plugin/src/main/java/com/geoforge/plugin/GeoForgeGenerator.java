@@ -165,6 +165,9 @@ public final class GeoForgeGenerator extends ChunkGenerator {
                  "frozen_peaks", "grove" -> adapter.mapBlock("snow_block");
             case "beach", "stony_shore" -> adapter.mapBlock("sand");
             case "mushroom_fields" -> adapter.mapBlock("mycelium");
+            case "ocean", "deep_ocean", "cold_ocean", "deep_cold_ocean",
+                 "lukewarm_ocean", "deep_lukewarm_ocean", "frozen_ocean",
+                 "deep_frozen_ocean", "warm_ocean" -> adapter.mapBlock("gravel");
             default -> adapter.mapBlock("grass_block");
         };
     }
