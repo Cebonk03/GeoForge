@@ -13,22 +13,19 @@ import java.util.Random;
 /**
  * The custom chunk generator for GeoForge.
  *
- * <p>Generates terrain using the engine's multi-octave height function modulated by tectonic
- * plate continentalness, optionally applies hydraulic erosion, and places biome-specific
- * surface blocks. Biome assignment is delegated to {@link GeoForgeBiomeProvider}.
+ * <p>Generates terrain using the engine's 3D density field modulated by tectonic
+ * plate continentalness and 3D cave noise, places biome-specific surface blocks,
+ * and delegates biome assignment to {@link GeoForgeBiomeProvider}.
  */
 public final class GeoForgeGenerator extends ChunkGenerator {
 
     private static final int SURFACE_DEPTH = 3;
     private static final int CHUNK_SIZE = 16;
+    private static final int BEDROCK_LAYERS = 5;
 
     private final GeoForgeAdapter adapter;
     private final GeoForgeEngine engine;
     private final GeoForgeBiomeProvider biomeProvider;
-
-    /** Per-thread cache for the 16×16 heightmap shared between generateNoise and generateSurface. */
-    private final ThreadLocal<float[]> heightCache =
-            ThreadLocal.withInitial(() -> new float[CHUNK_SIZE * CHUNK_SIZE]);
 
     public GeoForgeGenerator(GeoForgeAdapter adapter, GeoForgeEngine engine) {
         this.adapter = adapter;
@@ -45,38 +42,37 @@ public final class GeoForgeGenerator extends ChunkGenerator {
 
         int minY = chunkData.getMinHeight();
         int maxY = chunkData.getMaxHeight();
-        float[] heightmap = heightCache.get();
+        int seaLevel = engine.seaLevel();
+        Material stone = adapter.mapBlock("stone");
+        Material water = adapter.mapBlock("water");
+        Material bedrock = adapter.mapBlock("bedrock");
 
-        // Step 1: Sample all 256 columns from the engine
         for (int x = 0; x < CHUNK_SIZE; x++) {
             for (int z = 0; z < CHUNK_SIZE; z++) {
                 int blockX = chunkX * CHUNK_SIZE + x;
                 int blockZ = chunkZ * CHUNK_SIZE + z;
-                heightmap[z * CHUNK_SIZE + x] = (float) engine.getHeightAt(blockX, blockZ);
-            }
-        }
 
-        // Step 2: Apply hydraulic erosion across the chunk heightmap
-        engine.erode(heightmap, CHUNK_SIZE, random.nextLong());
+                boolean ocean = false;
+                for (int y = minY; y < maxY; y++) {
+                    // Place bedrock at bottom layers
+                    if (y < minY + BEDROCK_LAYERS) {
+                        chunkData.setBlock(x, y, z, bedrock);
+                        continue;
+                    }
 
-        // Step 3: Fill blocks from eroded heights
-        int seaLevel = engine.seaLevel();
-        Material stone = adapter.mapBlock("stone");
-        Material water = adapter.mapBlock("water");
-
-        for (int x = 0; x < CHUNK_SIZE; x++) {
-            for (int z = 0; z < CHUNK_SIZE; z++) {
-                int heightY = (int) Math.round(heightmap[z * CHUNK_SIZE + x]);
-                int fillY = Math.min(heightY, maxY - 1);
-
-                // Fill column with stone up to terrain height
-                for (int y = minY; y <= fillY; y++) {
-                    chunkData.setBlock(x, y, z, stone);
+                    double density = engine.getDensity(blockX, y, blockZ);
+                    if (density > 0) {
+                        chunkData.setBlock(x, y, z, stone);
+                    } else if (!ocean && y < seaLevel) {
+                        // Start filling water when we hit air below sea level
+                        ocean = true;
+                    }
                 }
 
-                // Fill water from height+1 up to sea level
-                if (heightY < seaLevel) {
-                    for (int y = heightY + 1; y <= seaLevel && y < maxY; y++) {
+                // Fill water from first air below sea level down to sea level
+                if (ocean) {
+                    int terrainTop = engine.getSurfaceHeight(blockX, blockZ);
+                    for (int y = terrainTop + 1; y <= seaLevel && y < maxY; y++) {
                         chunkData.setBlock(x, y, z, water);
                     }
                 }
@@ -93,13 +89,12 @@ public final class GeoForgeGenerator extends ChunkGenerator {
 
         int minY = chunkData.getMinHeight();
         int maxY = chunkData.getMaxHeight();
-        float[] heightmap = heightCache.get();
 
         for (int x = 0; x < CHUNK_SIZE; x++) {
             for (int z = 0; z < CHUNK_SIZE; z++) {
                 int blockX = chunkX * CHUNK_SIZE + x;
                 int blockZ = chunkZ * CHUNK_SIZE + z;
-                int heightY = (int) Math.round(heightmap[z * CHUNK_SIZE + x]);
+                int heightY = engine.getSurfaceHeight(blockX, blockZ);
 
                 if (heightY < minY || heightY >= maxY) continue;
 
@@ -139,12 +134,12 @@ public final class GeoForgeGenerator extends ChunkGenerator {
 
     @Override
     public boolean shouldGenerateBedrock() {
-        return true;
+        return false;
     }
 
     @Override
     public boolean shouldGenerateCaves() {
-        return true;
+        return false;
     }
 
     @Override

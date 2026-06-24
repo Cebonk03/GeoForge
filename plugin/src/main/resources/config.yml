@@ -7,25 +7,30 @@ seed: 0
 # Terrain height bounds (in block units)
 terrain:
   sea-level: 63            # Water surface in blocks
-  min-height: -64           # Lowest generated block
-  max-height: 180           # Highest generated block
-  continental-base: 50.0    # Minimum height contribution from tectonic plates (ocean basins)
-  continental-height-amplitude: 120.0  # Height range added by plate continentalness
+  min-height: -64          # Lowest generated block
+  max-height: 180          # Highest generated block
+  continental-base: 50.0
+  continental-height-amplitude: 120.0
 
-# Fractal noise tuning for continental shape
+# Fractal noise tuning
 noise:
-  continental-frequency: 0.004   # Large-scale (<0.01) or local (>0.02)
-  continental-octaves: 4         # Detail layers (2=blobby, 6=noisy)
-  continental-lacunarity: 2.0    # Frequency multiplier per octave
-  continental-persistence: 0.5   # Amplitude decay per octave
+  continental-frequency: 0.004
+  continental-octaves: 4
+  continental-lacunarity: 2.0
+  continental-persistence: 0.5
+  cave-frequency: 0.03       # 3D cave noise frequency (period ~33 blocks)
+  cave-amplitude: 8.0        # Cave carving strength (0 = no caves)
+  cave-octaves: 2            # Detail octaves for cave shape
+  cave-lacunarity: 2.0       # Frequency multiplier per cave octave
+  cave-persistence: 0.5      # Amplitude decay per cave octave
 
 # Climate noise frequencies
 climate:
-  temperature-frequency: 0.001   # Horizontal temperature variation
-  temperature-y-frequency: 0.005 # Vertical temperature variation (altitude effect)
-  humidity-frequency: 0.001      # Horizontal humidity variation
+  temperature-frequency: 0.001
+  temperature-y-frequency: 0.005
+  humidity-frequency: 0.001
 
 # Hydraulic erosion droplet simulation
 erosion:
-  max-droplet-steps: 10   # Maximum steps per droplet (was hardcoded 30; lower = faster, less detail)
-  iterations: 64          # Droplets per chunk (higher = more erosion, slower)
+  max-droplet-steps: 10
+  iterations: 64

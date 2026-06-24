@@ -35,8 +35,8 @@ class GeoForgeGeneratorTest {
     void shouldGenerateMethods_correctValues() {
         assertFalse(generator.shouldGenerateNoise());
         assertFalse(generator.shouldGenerateSurface());
-        assertTrue(generator.shouldGenerateBedrock());
-        assertTrue(generator.shouldGenerateCaves());
+        assertFalse(generator.shouldGenerateBedrock());
+        assertFalse(generator.shouldGenerateCaves());
         assertTrue(generator.shouldGenerateDecorations());
         assertTrue(generator.shouldGenerateStructures());
         assertTrue(generator.shouldGenerateMobs());
