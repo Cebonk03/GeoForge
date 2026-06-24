@@ -38,7 +38,7 @@ public final class GeoForgeEngine {
     private final DensityFunctionTree heightFunction;
     private final Set<String> allBiomeIds;
     private final HydraulicErosion erosion;
-    private final SimplexNoise caveNoise;
+    private final FractalNoise caveNoise;
     private final RiverCarver riverCarver;
 
     /**
@@ -80,8 +80,12 @@ public final class GeoForgeEngine {
         this.allBiomeIds = BiomeLookupTable.getAllBiomeIds();
         this.erosion = new HydraulicErosion(config.erosionMaxDropletSteps());
 
-        // 3D cave noise for underground carving
-        this.caveNoise = new SimplexNoise(seed ^ 0x456789ABCDEF123L);
+        // 3D cave noise: multi-octave fractal for underground carving
+        this.caveNoise = new FractalNoise(
+                new SimplexNoise(seed ^ 0x456789ABCDEF123L),
+                config.caveOctaves(),
+                config.caveLacunarity(),
+                config.cavePersistence());
         this.riverCarver = NoopRiverCarver.instance();
     }
 
@@ -111,7 +115,7 @@ public final class GeoForgeEngine {
      */
     public double getDensity(int blockX, int blockY, int blockZ) {
         double targetHeight = heightFunction.sample(blockX, 0, blockZ);
-        double cave = caveNoise.sample(
+        double cave = caveNoise.sample3D(
                 blockX * config.caveFrequency(),
                 blockY * config.caveFrequency(),
                 blockZ * config.caveFrequency());

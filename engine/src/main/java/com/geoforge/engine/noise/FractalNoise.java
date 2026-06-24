@@ -10,6 +10,9 @@ import com.geoforge.engine.density.DensityFunctionTree;
  * frequency multiplier between octaves, and {@code persistence} controls the amplitude
  * decay. The final value is normalized to [-1, 1] by dividing by the sum of amplitudes.
  *
+ * <p>Supports both 2D (horizontal-only) and 3D (volumetric) sampling via
+ * {@link #sample2D(double, double)} and {@link #sample3D(double, double, double)}.
+ *
  * @param noise       the base {@link SimplexNoise} source
  * @param octaves     number of octaves to sum (must be &gt; 0)
  * @param lacunarity  frequency multiplier between octaves (must be &gt; 0)
@@ -39,10 +42,8 @@ public record FractalNoise(SimplexNoise noise, int octaves, double lacunarity, d
     /**
      * Samples the fractal noise at the given 3D coordinates.
      *
-     * <p>The y-coordinate is ignored; noise is sampled in 2D (x, z) space. Each octave
-     * samples {@code noise.sample(x * frequency, z * frequency)} and accumulates the
-     * result weighted by the octave amplitude. The final sum is normalized to [-1, 1]
-     * by dividing by the total amplitude sum.
+     * <p>The y-coordinate is ignored; noise is sampled in 2D (x, z) space.
+     * For 3D volumetric sampling see {@link #sample3D}.
      *
      * @param x the x-coordinate
      * @param y the y-coordinate (ignored)
@@ -51,6 +52,20 @@ public record FractalNoise(SimplexNoise noise, int octaves, double lacunarity, d
      */
     @Override
     public double sample(double x, double y, double z) {
+        return sample2D(x, z);
+    }
+
+    /**
+     * Samples the fractal noise at the given 2D (x, z) coordinates.
+     *
+     * <p>Each octave samples {@code noise.sample(x * freq, z * freq)} weighted by
+     * the octave amplitude. The final sum is normalized to [-1, 1].
+     *
+     * @param x the x-coordinate
+     * @param z the z-coordinate
+     * @return the normalized fractal noise value in [-1, 1]
+     */
+    public double sample2D(double x, double z) {
         double value = 0.0;
         double amplitude = 1.0;
         double frequency = 1.0;
@@ -62,20 +77,34 @@ public record FractalNoise(SimplexNoise noise, int octaves, double lacunarity, d
             frequency *= lacunarity;
             amplitude *= persistence;
         }
-
         return value / maxAmp;
     }
 
     /**
-     * Samples the fractal noise at the given 2D (x, z) coordinates.
+     * Samples the fractal noise at the given 3D (x, y, z) coordinates.
      *
-     * <p>Convenience method equivalent to {@code sample(x, 0, z)}.
+     * <p>Each octave samples {@code noise.sample(x * freq, y * freq, z * freq)} weighted
+     * by the octave amplitude. The final sum is normalized to [-1, 1].
+     *
+     * <p>Use this for volumetric effects such as 3D cave carving where Y-variation matters.
      *
      * @param x the x-coordinate
+     * @param y the y-coordinate
      * @param z the z-coordinate
      * @return the normalized fractal noise value in [-1, 1]
      */
-    public double sample2D(double x, double z) {
-        return sample(x, 0, z);
+    public double sample3D(double x, double y, double z) {
+        double value = 0.0;
+        double amplitude = 1.0;
+        double frequency = 1.0;
+        double maxAmp = 0.0;
+
+        for (int i = 0; i < octaves; i++) {
+            value += noise.sample(x * frequency, y * frequency, z * frequency) * amplitude;
+            maxAmp += amplitude;
+            frequency *= lacunarity;
+            amplitude *= persistence;
+        }
+        return value / maxAmp;
     }
 }
