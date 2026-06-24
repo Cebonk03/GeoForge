@@ -8,6 +8,8 @@ import com.geoforge.engine.density.ConstantDensity;
 import com.geoforge.engine.density.DensityFunctionTree;
 import com.geoforge.engine.density.MultiplyDensity;
 import com.geoforge.engine.density.PlateContinentalness;
+import com.geoforge.engine.density.RiverCarver;
+import com.geoforge.engine.density.NoopRiverCarver;
 import com.geoforge.engine.geology.HydraulicErosion;
 import com.geoforge.engine.geology.TectonicPlateMapper;
 import com.geoforge.engine.noise.FractalNoise;
@@ -37,6 +39,7 @@ public final class GeoForgeEngine {
     private final Set<String> allBiomeIds;
     private final HydraulicErosion erosion;
     private final SimplexNoise caveNoise;
+    private final RiverCarver riverCarver;
 
     /**
      * Creates a new engine with the given world seed and configuration.
@@ -79,7 +82,7 @@ public final class GeoForgeEngine {
 
         // 3D cave noise for underground carving
         this.caveNoise = new SimplexNoise(seed ^ 0x456789ABCDEF123L);
-    }
+        this.riverCarver = NoopRiverCarver.instance();
 
     /**
      * Returns the terrain height at the given block coordinates.
@@ -111,7 +114,8 @@ public final class GeoForgeEngine {
                 blockX * config.caveFrequency(),
                 blockY * config.caveFrequency(),
                 blockZ * config.caveFrequency());
-        return targetHeight - blockY + cave * config.caveAmplitude();
+        double density = targetHeight - blockY + cave * config.caveAmplitude();
+        return riverCarver.carve(density, blockX, blockY, blockZ);
     }
 
     /**
