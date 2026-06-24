@@ -83,6 +83,7 @@ public final class GeoForgeEngine {
         // 3D cave noise for underground carving
         this.caveNoise = new SimplexNoise(seed ^ 0x456789ABCDEF123L);
         this.riverCarver = NoopRiverCarver.instance();
+    }
 
     /**
      * Returns the terrain height at the given block coordinates.
