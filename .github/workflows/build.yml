@@ -173,10 +173,7 @@ jobs:
             "Material\\.valueOf" "Material\\.getMaterial" "Material\\.matchMaterial" \
             "getScheduler()\\.run" "chunkData\\.setBiome(" "net\\.minecraft\\." "craftbukkit\\."; do
             # Ignore matches in Javadoc/comment lines and ArchUnit test rules
-            matches=$(grep -rn "$pattern" --include='*.java' . \
-              | grep -v ":[[:space:]]*\\*" \
-              | grep -v "EngineIsolationTest.java" \
-              || true)
+            matches=$(grep -rn "$pattern" --include='*.java' . | grep -v ":[[:space:]][*]" | grep -v "EngineIsolationTest.java" || true)
             if [ -n "$matches" ]; then
                 echo "FAIL: $pattern found in:"
                 echo "$matches" | cut -d: -f1,2
