@@ -121,13 +121,14 @@ class Density3DTest {
         int caveColumns = 0;
         int totalColumns = 0;
 
-        for (int x = -80; x <= 80; x += 8) {
-            for (int z = -80; z <= 80; z += 8) {
+        for (int x = -100; x <= 100; x += 6) {
+            for (int z = -100; z <= 100; z += 6) {
                 int surfaceY = engine.getSurfaceHeight(x, z);
                 totalColumns++;
                 boolean hasAir = false;
-                for (int dy = -5; dy >= -25; dy -= 5) {
-                    int checkY = Math.max(surfaceY + dy, CFG.minHeight() + 1);
+                // Check near-surface depths (1-8 blocks below surface)
+                for (int dy = 1; dy <= 8; dy++) {
+                    int checkY = Math.max(surfaceY - dy, CFG.minHeight() + 1);
                     if (engine.getDensity(x, checkY, z) < 0) {
                         hasAir = true;
                         break;
