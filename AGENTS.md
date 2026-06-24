@@ -6,7 +6,7 @@
 
 ```
 geoforge/
-├── engine/        # Zero-Bukkit math engine (noise, density, geology, biomes)
+├── engine/        # Zero-Bukkit math engine (3D density, noise, geology, biomes)
 ├── api/           # Adapter interface + version utilities + FoliaDetector
 ├── adapters/
 │   ├── v1_21_x/  # Paper 1.21.x adapter (Java 21)
@@ -18,18 +18,32 @@ geoforge/
 
 | Module | Main Srcs | Tests | Java | Role |
 |--------|-----------|-------|------|------|
-|| engine | 16 | 11 | 21 | Math engine, zero Bukkit |
-| api | 4 | 1 | 21 | Adapter interface + ServerVersion |
+|| engine | 18 | 15 | 21 | 3D density engine, zero Bukkit |
+| api | 4 | 2 | 21 | Adapter interface + ServerVersion + FoliaDetectorTest |
 | v1_21_x | 1 | 1 | 21 | Paper 1.21.x adapter |
-| v26_x | 1 | 1 | 25 | Paper 26.x adapter |
-| plugin | 4 | 3 | 25 | Plugin + ShadowJAR |
-|| **Total** | **26** | **18** | — | **106 tests, 0 failures** |
+| v26_x | 1 | 2 | 25 | Paper 26.x adapter (constructor injection for testability) |
+| plugin | 4 | 4 | 25 | Plugin + ShadowJAR + GeoForgePluginTest |
+|| **Total** | **28** | **24** | — | **~115 tests, 0 failures** |
+
+## 3D Density Architecture
+
+```
+density(x,y,z) = heightFunc(x,z) - y + caveNoise(x,y,z) * amplitude
+Positive density = solid, negative density = air
+```
+
+- Engine: `GeoForgeEngine.getDensity()` + `getSurfaceHeight()` (binary search)
+- Generator: `GeoForgeGenerator.generateNoise()` uses per-block density sampling
+- Caves: 3D SimplexNoise with configurable frequency/amplitude/octaves
+- Rivers: `RiverCarver` interface (default: NoopRiverCarver)
+- Erosion: 2D hydraulic erosion on extracted heightmap (for future 3D adaptation)
 
 ## Where To Look
 
 | Task | Location |
 |------|----------|
-| Terrain generation math | `engine/src/main/java/com/geoforge/engine/` |
+| 3D density engine | `engine/src/main/java/com/geoforge/engine/GeoForgeEngine.java` |
+| Cave noise config | `engine/src/main/java/com/geoforge/engine/config/GeoForgeConfig.java` (caveFrequency, caveAmplitude, etc.) |
 | Version adapter interface | `api/src/main/java/com/geoforge/api/adapter/GeoForgeAdapter.java` |
 | Version selection | `plugin/src/main/java/com/geoforge/plugin/AdapterFactory.java` |
 | Paper integration | `plugin/src/main/java/com/geoforge/plugin/GeoForgeGenerator.java` |
@@ -61,8 +75,8 @@ geoforge/
 
 - No version catalog (`gradle/libs.versions.toml`) — versions hardcoded in 5 build files
 - Dynamic `26.+` range in plugin's Paper API dep — non-reproducible builds **(FIXED: pinned to `26.1.2.build.+`)**
-- Deprecation warnings from `shouldGenerateBedrock()` (Paper 26.x deprecated this method)
-- `engine/AGENTS.md` structure manually updated — keep in sync with file changes
+- `shouldGenerateBedrock()` deprecated but we handle bedrock in `generateNoise()` now
+- `StructurePlateauModifier` exists but unwired — terrain flattening for future structure integration
 
 ## Commands
 
@@ -73,6 +87,5 @@ geoforge/
 
 ## Commit Messages
 
-- No autoresponder footers or tool attribution in commit messages
-- `Feat:` / `Fix:` / `Chore:` / `Docs:` prefix with capital
+- `Feat:` / `Fix:` / `Chore:` / `Docs:` / `CI:` prefix with capital
 - Message body: What changed and why, not boilerplate

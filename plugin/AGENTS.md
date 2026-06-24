@@ -8,6 +8,7 @@ Paper integration layer. ShadowJAR output — the deployable artifact.
 |------|------|
 | Plugin lifecycle | `plugin/src/main/java/com/geoforge/plugin/GeoForgePlugin.java` |
 | Chunk generation logic | `plugin/src/main/java/com/geoforge/plugin/GeoForgeGenerator.java` |
+| 3D density pipeline | `plugin/src/main/java/com/geoforge/plugin/GeoForgeGenerator.java#generateNoise()` |
 | Biome provider | `plugin/src/main/java/com/geoforge/plugin/GeoForgeBiomeProvider.java` |
 | Version adapter selection | `plugin/src/main/java/com/geoforge/plugin/AdapterFactory.java` |
 | Plugin metadata | `plugin/src/main/resources/plugin.yml` |
@@ -16,10 +17,10 @@ Paper integration layer. ShadowJAR output — the deployable artifact.
 ## Pass-Through Flags
 
 ```yaml
-shouldGenerateNoise: false        # custom terrain
-shouldGenerateSurface: false      # custom surface
-shouldGenerateBedrock: true       # vanilla
-shouldGenerateCaves: true         # vanilla
+shouldGenerateNoise: false        # custom 3D density terrain
+shouldGenerateSurface: false      # custom surface from density
+shouldGenerateBedrock: false      # custom 5-layer bedrock in noise phase
+shouldGenerateCaves: false        # 3D noise-based caves in density field
 shouldGenerateDecorations: true   # vanilla (trees, ores, flowers)
 shouldGenerateStructures: true    # vanilla (villages, strongholds)
 shouldGenerateMobs: true          # vanilla
