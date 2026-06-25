@@ -47,10 +47,20 @@ public final class GeoForgeGenerator extends ChunkGenerator {
         Material water = adapter.mapBlock("water");
         Material bedrock = adapter.mapBlock("bedrock");
 
+        // Pre-compute eroded surface heights for this chunk
+        float[] erodedHeights = new float[CHUNK_SIZE * CHUNK_SIZE];
+        engine.erodeColumn(erodedHeights, CHUNK_SIZE,
+                chunkX * CHUNK_SIZE, chunkZ * CHUNK_SIZE,
+                worldInfo.getSeed());
+
+        boolean erosionActive = engine.config().erosionIterations() > 0
+                && engine.config().erosionDropletCount() > 0;
+
         for (int x = 0; x < CHUNK_SIZE; x++) {
             for (int z = 0; z < CHUNK_SIZE; z++) {
                 int blockX = chunkX * CHUNK_SIZE + x;
                 int blockZ = chunkZ * CHUNK_SIZE + z;
+                int surfaceY = Math.round(erodedHeights[z * CHUNK_SIZE + x]);
 
                 boolean ocean = false;
                 for (int y = minY; y < maxY; y++) {
@@ -61,7 +71,9 @@ public final class GeoForgeGenerator extends ChunkGenerator {
                     }
 
                     double density = engine.getDensity(blockX, y, blockZ);
-                    if (density > 0) {
+                    // When erosion is active, constrain blocks to at or below the eroded surface;
+                    // when inactive, use original density-only placement (identical to pre-erosion)
+                    if (density > 0 && (y <= surfaceY || !erosionActive)) {
                         chunkData.setBlock(x, y, z, stone);
                     } else if (!ocean && y < seaLevel) {
                         // Start filling water when we hit air below sea level
@@ -69,10 +81,9 @@ public final class GeoForgeGenerator extends ChunkGenerator {
                     }
                 }
 
-                // Fill water from first air below sea level down to sea level
+                // Fill water from eroded surface down to sea level
                 if (ocean) {
-                    int terrainTop = engine.getSurfaceHeight(blockX, blockZ);
-                    for (int y = terrainTop + 1; y <= seaLevel && y < maxY; y++) {
+                    for (int y = surfaceY + 1; y <= seaLevel && y < maxY; y++) {
                         chunkData.setBlock(x, y, z, water);
                     }
                 }

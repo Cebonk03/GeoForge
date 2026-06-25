@@ -104,6 +104,56 @@ class GeoForgeEngineIntegrationTest {
     }
 
     @Test
+    void fullChain_erodeColumn_zeroDroplets_noChange() {
+        var cfg = GeoForgeConfig.builder().erosionDropletCount(0).build();
+        var engine = new GeoForgeEngine(SEED, cfg);
+        int size = 16;
+        float[] hm = new float[size * size];
+        engine.erodeColumn(hm, size, 0, 0, SEED);
+
+        for (int x = 0; x < size; x++) {
+            for (int z = 0; z < size; z++) {
+                float expected = (float) engine.getSurfaceHeight(x, z);
+                assertEquals(expected, hm[z * size + x], 1e-6f,
+                        "No-erosion height should match surface at (" + x + "," + z + ")");
+            }
+        }
+    }
+
+    @Test
+    void fullChain_erodeColumn_modifiesHeights() {
+        var engine = new GeoForgeEngine(SEED, CFG);
+        int size = 16;
+        float[] hm = new float[size * size];
+        engine.erodeColumn(hm, size, 0, 0, SEED);
+
+        boolean anyDiff = false;
+        for (int x = 0; x < size && !anyDiff; x++) {
+            for (int z = 0; z < size && !anyDiff; z++) {
+                float original = (float) engine.getSurfaceHeight(x, z);
+                if (Math.abs(hm[z * size + x] - original) > 1e-4f) {
+                    anyDiff = true;
+                }
+            }
+        }
+        assertTrue(anyDiff, "Erosion should modify heights at some positions in 16x16 area");
+    }
+
+    @Test
+    void fullChain_erodeColumn_deterministic() {
+        var engine = new GeoForgeEngine(SEED, CFG);
+        int size = 16;
+        float[] hm1 = new float[size * size];
+        float[] hm2 = new float[size * size];
+        int blockX = -5;
+        int blockZ = 3;
+        engine.erodeColumn(hm1, size, blockX, blockZ, SEED);
+        engine.erodeColumn(hm2, size, blockX, blockZ, SEED);
+        assertArrayEquals(hm1, hm2, 1e-6f,
+                "Same seed and coordinates should produce identical eroded heights");
+    }
+
+    @Test
     void fullChain_seaLevelAccessor() {
         var engine = new GeoForgeEngine(SEED, CFG);
         assertEquals(CFG.seaLevel(), engine.seaLevel());
