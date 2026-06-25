@@ -50,7 +50,7 @@ jobs:
           java-version: ${{ matrix.java }}
           distribution: ${{ matrix.java == 25 && 'oracle' || 'temurin' }}
           cache: gradle
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - name: Compile engine + api + v1_21_x (JDK 21)
         if: matrix.java == 21
         run: ./gradlew :engine:compileJava :api:compileJava :adapters:v1_21_x:compileJava --no-daemon
@@ -79,7 +79,7 @@ jobs:
           java-version: 25
           distribution: oracle
           cache: gradle
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - name: Build ShadowJAR
         run: ./gradlew :plugin:shadowJar --no-daemon
       - name: Generate checksums
