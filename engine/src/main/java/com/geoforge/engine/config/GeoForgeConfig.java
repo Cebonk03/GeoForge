@@ -1,9 +1,11 @@
 package com.geoforge.engine.config;
 
+import java.util.Objects;
+
 /**
  * Immutable configuration record for all terrain generation tuning parameters.
  *
- * <p>Fields are grouped into six categories:
+ * <p>Fields are grouped into ten categories:
  *
  * <dl>
  *   <dt>Terrain bounds</dt>
@@ -19,12 +21,28 @@ package com.geoforge.engine.config;
  *   <dt>Cave noise</dt>
  *   <dd>{@code caveFrequency}, {@code caveAmplitude}, {@code caveOctaves},
  *       {@code caveLacunarity}, {@code cavePersistence} — control 3D cave carving.
+ *   <dt>Cave Y-envelope</dt>
+ *   <dd>{@code caveCenterY}, {@code caveSpread}, {@code caveSurfaceCutoff},
+ *       {@code caveSpaghettiThreshold}, {@code caveCheeseThreshold}, {@code caveNoodleThreshold},
+ *       {@code caveNoodleFrequency} — control vertical cave distribution and cave shape variants.
  *   <dt>River carving</dt>
  *   <dd>{@code riverFrequency}, {@code riverDepth}, {@code riverWidth} — control river valley
- *       carving via 2D simplex noise moisture convergence.
+ *       carving via 2D simplex noise moisture convergence.</dd>
+ *   <dd>{@code riverCanyonDepth}, {@code riverCanyonWidth}, {@code riverValleyProfile},
+ *       {@code riverFloodplainWidth}, {@code riverTableResponse} — extended river v2 parameters.
+ *   <dt>Multi-noise terrain</dt>
+ *   <dd>{@code ridgeFrequency}, {@code ridgeOctaves}, {@code ridgeAmplitude},
+ *       {@code fbmFrequency}, {@code fbmOctaves}, {@code flatFrequency},
+ *       {@code continentalnessBlendSharpness} — multi-octave blending for varied terrain shapes.
+ *   <dt>Decorations</dt>
+ *   <dd>{@code treeDensity}, {@code vegetationDensity}, {@code featureSeedOffset},
+ *       {@code maxTreeHeight} — control surface decoration placement.
  *   <dt>Erosion</dt>
  *   <dd>{@code erosionMaxDropletSteps}, {@code erosionIterations} — bound the hydraulic erosion
- *       simulation.
+ *       simulation.</dd>
+ *   <dd>{@code erosionDropletCount}, {@code erosionGravity} — extended erosion parameters.
+ *   <dt>Domain warping</dt>
+ *   <dd>{@code domainWarpAmplitude} — amplitude of domain-warping noise for terrain distortion.
  * </dl>
  *
  * <p>Use {@link #defaults()} to obtain a sensible starting configuration, or use the
@@ -56,6 +74,33 @@ package com.geoforge.engine.config;
  * @param riverWidth                 River width parameter (higher = wider rivers). Must be {@code > 0}.
  * @param erosionMaxDropletSteps     Maximum steps per erosion droplet. Must be {@code > 0}.
  * @param erosionIterations          Total erosion iterations per column. Must be {@code > 0}.
+ * @param caveCenterY                Center Y level for cave distribution.
+ * @param caveSpread                 Vertical spread of cave generation. Must be {@code > 0}.
+ * @param caveSurfaceCutoff          Surface cutoff for cave generation off at top. Must be {@code >= 0}.
+ * @param caveSpaghettiThreshold     Threshold for spaghetti cave variant selection.
+ * @param caveCheeseThreshold        Threshold for cheese cave variant selection.
+ * @param caveNoodleThreshold        Threshold for noodle cave variant selection.
+ * @param caveNoodleFrequency        Frequency for noodle cave noise.
+ * @param riverCanyonDepth           Depth of river canyon carving. {@code 0} disables canyon.
+ * @param riverCanyonWidth           Width of river canyon blocks.
+ * @param riverValleyProfile         Valley profile shape identifier string.
+ * @param riverFloodplainWidth       Width of river floodplain in blocks.
+ * @param riverTableResponse         Response factor for river water table adjustment.
+ * @param ridgeFrequency             Base frequency for ridge noise.
+ * @param ridgeOctaves               Number of octaves for ridge noise. Must be {@code > 0}.
+ * @param ridgeAmplitude             Amplitude for ridge noise.
+ * @param fbmFrequency               Base frequency for FBM noise.
+ * @param fbmOctaves                 Number of octaves for FBM noise. Must be {@code > 0}.
+ * @param flatFrequency              Base frequency for flat-region noise.
+ * @param continentalnessBlendSharpness     Sharpness of continentalness blending transition.
+ * @param treeDensity                Density of tree decoration. Must be in {@code [0,1]}.
+ * @param vegetationDensity          Density of vegetation decoration. Must be in {@code [0,1]}.
+ * @param featureSeedOffset          Seed offset for feature placement.
+ * @param maxTreeHeight              Maximum tree height in blocks.
+ * @param erosionDropletCount        Number of erosion droplets per column.
+ * @param erosionGravity             Gravity factor for erosion droplet simulation.
+ * @param domainWarpAmplitude        Amplitude of domain-warping noise distortion.
+ * @param configVersion              Configuration version for migration support.
  */
 public record GeoForgeConfig(
         int minHeight,
@@ -79,7 +124,41 @@ public record GeoForgeConfig(
         int riverDepth,
         int riverWidth,
         int erosionMaxDropletSteps,
-        int erosionIterations) {
+        int erosionIterations,
+        // --- Cave Y-envelope ---
+        double caveCenterY,
+        double caveSpread,
+        double caveSurfaceCutoff,
+        double caveSpaghettiThreshold,
+        double caveCheeseThreshold,
+        double caveNoodleThreshold,
+        double caveNoodleFrequency,
+        // --- River v2 ---
+        int riverCanyonDepth,
+        int riverCanyonWidth,
+        String riverValleyProfile,
+        int riverFloodplainWidth,
+        double riverTableResponse,
+        // --- Multi-noise terrain ---
+        double ridgeFrequency,
+        int ridgeOctaves,
+        double ridgeAmplitude,
+        double fbmFrequency,
+        int fbmOctaves,
+        double flatFrequency,
+        double continentalnessBlendSharpness,
+        // --- Decorations ---
+        double treeDensity,
+        double vegetationDensity,
+        long featureSeedOffset,
+        int maxTreeHeight,
+        // --- Erosion ---
+        int erosionDropletCount,
+        float erosionGravity,
+        // --- Domain warping ---
+        double domainWarpAmplitude,
+        // --- Config version ---
+        int configVersion) {
 
     /**
      * Compact canonical constructor validating all constraints.
@@ -168,6 +247,47 @@ public record GeoForgeConfig(
             throw new IllegalArgumentException(
                     "erosionIterations must be > 0, got %d".formatted(erosionIterations));
         }
+        // Cave Y-envelope validation
+        if (caveSpread <= 0) {
+            throw new IllegalArgumentException(
+                    "caveSpread must be > 0, got %s".formatted(caveSpread));
+        }
+        if (caveSurfaceCutoff < 0) {
+            throw new IllegalArgumentException(
+                    "caveSurfaceCutoff must be >= 0, got %s".formatted(caveSurfaceCutoff));
+        }
+        // River v2 validation
+        Objects.requireNonNull(riverValleyProfile, "riverValleyProfile must not be null");
+        // Multi-noise terrain validation
+        if (ridgeFrequency <= 0) {
+            throw new IllegalArgumentException(
+                    "ridgeFrequency must be > 0, got %s".formatted(ridgeFrequency));
+        }
+        if (ridgeOctaves <= 0) {
+            throw new IllegalArgumentException(
+                    "ridgeOctaves must be > 0, got %d".formatted(ridgeOctaves));
+        }
+        if (fbmFrequency <= 0) {
+            throw new IllegalArgumentException(
+                    "fbmFrequency must be > 0, got %s".formatted(fbmFrequency));
+        }
+        if (fbmOctaves <= 0) {
+            throw new IllegalArgumentException(
+                    "fbmOctaves must be > 0, got %d".formatted(fbmOctaves));
+        }
+        if (flatFrequency <= 0) {
+            throw new IllegalArgumentException(
+                    "flatFrequency must be > 0, got %s".formatted(flatFrequency));
+        }
+        // Decorations validation
+        if (treeDensity < 0.0 || treeDensity > 1.0) {
+            throw new IllegalArgumentException(
+                    "treeDensity must be in [0,1], got %s".formatted(treeDensity));
+        }
+        if (vegetationDensity < 0.0 || vegetationDensity > 1.0) {
+            throw new IllegalArgumentException(
+                    "vegetationDensity must be in [0,1], got %s".formatted(vegetationDensity));
+        }
     }
 
     /**
@@ -198,7 +318,41 @@ public record GeoForgeConfig(
                 8,     // riverDepth
                 3,     // riverWidth
                 10,    // erosionMaxDropletSteps
-                64     // erosionIterations
+                64,    // erosionIterations
+                // Cave Y-envelope
+                -20.0, // caveCenterY
+                48.0,  // caveSpread
+                8.0,   // caveSurfaceCutoff
+                0.3,   // caveSpaghettiThreshold
+                0.5,   // caveCheeseThreshold
+                0.15,  // caveNoodleThreshold
+                0.05,  // caveNoodleFrequency
+                // River v2
+                0,     // riverCanyonDepth
+                2,     // riverCanyonWidth
+                "vshaped", // riverValleyProfile
+                5,     // riverFloodplainWidth
+                0.0,   // riverTableResponse
+                // Multi-noise terrain
+                0.003, // ridgeFrequency
+                3,     // ridgeOctaves
+                1.0,   // ridgeAmplitude
+                0.005, // fbmFrequency
+                4,     // fbmOctaves
+                0.008, // flatFrequency
+                2.0,   // continentalnessBlendSharpness
+                // Decorations
+                0.1,   // treeDensity
+                0.3,   // vegetationDensity
+                0xCAFEBABEL, // featureSeedOffset
+                12,    // maxTreeHeight
+                // Erosion
+                1024,  // erosionDropletCount
+                0.2f,  // erosionGravity
+                // Domain warping
+                0.0,   // domainWarpAmplitude
+                // Config version
+                2      // configVersion
         );
     }
 
@@ -241,6 +395,40 @@ public record GeoForgeConfig(
         private int riverWidth = 3;
         private int erosionMaxDropletSteps = 10;
         private int erosionIterations = 64;
+        // Cave Y-envelope
+        private double caveCenterY = -20.0;
+        private double caveSpread = 48.0;
+        private double caveSurfaceCutoff = 8.0;
+        private double caveSpaghettiThreshold = 0.3;
+        private double caveCheeseThreshold = 0.5;
+        private double caveNoodleThreshold = 0.15;
+        private double caveNoodleFrequency = 0.05;
+        // River v2
+        private int riverCanyonDepth = 0;
+        private int riverCanyonWidth = 2;
+        private String riverValleyProfile = "vshaped";
+        private int riverFloodplainWidth = 5;
+        private double riverTableResponse = 0.0;
+        // Multi-noise terrain
+        private double ridgeFrequency = 0.003;
+        private int ridgeOctaves = 3;
+        private double ridgeAmplitude = 1.0;
+        private double fbmFrequency = 0.005;
+        private int fbmOctaves = 4;
+        private double flatFrequency = 0.008;
+        private double continentalnessBlendSharpness = 2.0;
+        // Decorations
+        private double treeDensity = 0.1;
+        private double vegetationDensity = 0.3;
+        private long featureSeedOffset = 0xCAFEBABEL;
+        private int maxTreeHeight = 12;
+        // Erosion
+        private int erosionDropletCount = 1024;
+        private float erosionGravity = 0.2f;
+        // Domain warping
+        private double domainWarpAmplitude = 0.0;
+        // Config version
+        private int configVersion = 2;
 
         private Builder() {}
 
@@ -266,6 +454,40 @@ public record GeoForgeConfig(
         public Builder riverWidth(int riverWidth) { this.riverWidth = riverWidth; return this; }
         public Builder erosionMaxDropletSteps(int erosionMaxDropletSteps) { this.erosionMaxDropletSteps = erosionMaxDropletSteps; return this; }
         public Builder erosionIterations(int erosionIterations) { this.erosionIterations = erosionIterations; return this; }
+        // Cave Y-envelope
+        public Builder caveCenterY(double caveCenterY) { this.caveCenterY = caveCenterY; return this; }
+        public Builder caveSpread(double caveSpread) { this.caveSpread = caveSpread; return this; }
+        public Builder caveSurfaceCutoff(double caveSurfaceCutoff) { this.caveSurfaceCutoff = caveSurfaceCutoff; return this; }
+        public Builder caveSpaghettiThreshold(double caveSpaghettiThreshold) { this.caveSpaghettiThreshold = caveSpaghettiThreshold; return this; }
+        public Builder caveCheeseThreshold(double caveCheeseThreshold) { this.caveCheeseThreshold = caveCheeseThreshold; return this; }
+        public Builder caveNoodleThreshold(double caveNoodleThreshold) { this.caveNoodleThreshold = caveNoodleThreshold; return this; }
+        public Builder caveNoodleFrequency(double caveNoodleFrequency) { this.caveNoodleFrequency = caveNoodleFrequency; return this; }
+        // River v2
+        public Builder riverCanyonDepth(int riverCanyonDepth) { this.riverCanyonDepth = riverCanyonDepth; return this; }
+        public Builder riverCanyonWidth(int riverCanyonWidth) { this.riverCanyonWidth = riverCanyonWidth; return this; }
+        public Builder riverValleyProfile(String riverValleyProfile) { this.riverValleyProfile = riverValleyProfile; return this; }
+        public Builder riverFloodplainWidth(int riverFloodplainWidth) { this.riverFloodplainWidth = riverFloodplainWidth; return this; }
+        public Builder riverTableResponse(double riverTableResponse) { this.riverTableResponse = riverTableResponse; return this; }
+        // Multi-noise terrain
+        public Builder ridgeFrequency(double ridgeFrequency) { this.ridgeFrequency = ridgeFrequency; return this; }
+        public Builder ridgeOctaves(int ridgeOctaves) { this.ridgeOctaves = ridgeOctaves; return this; }
+        public Builder ridgeAmplitude(double ridgeAmplitude) { this.ridgeAmplitude = ridgeAmplitude; return this; }
+        public Builder fbmFrequency(double fbmFrequency) { this.fbmFrequency = fbmFrequency; return this; }
+        public Builder fbmOctaves(int fbmOctaves) { this.fbmOctaves = fbmOctaves; return this; }
+        public Builder flatFrequency(double flatFrequency) { this.flatFrequency = flatFrequency; return this; }
+        public Builder continentalnessBlendSharpness(double continentalnessBlendSharpness) { this.continentalnessBlendSharpness = continentalnessBlendSharpness; return this; }
+        // Decorations
+        public Builder treeDensity(double treeDensity) { this.treeDensity = treeDensity; return this; }
+        public Builder vegetationDensity(double vegetationDensity) { this.vegetationDensity = vegetationDensity; return this; }
+        public Builder featureSeedOffset(long featureSeedOffset) { this.featureSeedOffset = featureSeedOffset; return this; }
+        public Builder maxTreeHeight(int maxTreeHeight) { this.maxTreeHeight = maxTreeHeight; return this; }
+        // Erosion
+        public Builder erosionDropletCount(int erosionDropletCount) { this.erosionDropletCount = erosionDropletCount; return this; }
+        public Builder erosionGravity(float erosionGravity) { this.erosionGravity = erosionGravity; return this; }
+        // Domain warping
+        public Builder domainWarpAmplitude(double domainWarpAmplitude) { this.domainWarpAmplitude = domainWarpAmplitude; return this; }
+        // Config version
+        public Builder configVersion(int configVersion) { this.configVersion = configVersion; return this; }
 
         /**
          * Builds the immutable {@link GeoForgeConfig} record.
@@ -283,7 +505,27 @@ public record GeoForgeConfig(
                     caveFrequency, caveAmplitude, caveOctaves,
                     caveLacunarity, cavePersistence,
                     riverFrequency, riverDepth, riverWidth,
-                    erosionMaxDropletSteps, erosionIterations);
+                    erosionMaxDropletSteps, erosionIterations,
+                    // Cave Y-envelope
+                    caveCenterY, caveSpread, caveSurfaceCutoff,
+                    caveSpaghettiThreshold, caveCheeseThreshold,
+                    caveNoodleThreshold, caveNoodleFrequency,
+                    // River v2
+                    riverCanyonDepth, riverCanyonWidth, riverValleyProfile,
+                    riverFloodplainWidth, riverTableResponse,
+                    // Multi-noise terrain
+                    ridgeFrequency, ridgeOctaves, ridgeAmplitude,
+                    fbmFrequency, fbmOctaves, flatFrequency,
+                    continentalnessBlendSharpness,
+                    // Decorations
+                    treeDensity, vegetationDensity, featureSeedOffset,
+                    maxTreeHeight,
+                    // Erosion
+                    erosionDropletCount, erosionGravity,
+                    // Domain warping
+                    domainWarpAmplitude,
+                    // Config version
+                    configVersion);
         }
     }
 }

@@ -57,15 +57,20 @@ class GeoForgeConfigTest {
     }
 
     private GeoForgeConfig makeCfg(Object... args) {
-        return new GeoForgeConfig(
-                (int) args[0], (int) args[1], (int) args[2],
-                (double) args[3], (double) args[4], (double) args[5],
-                (int) args[6], (double) args[7], (double) args[8],
-                (double) args[9], (double) args[10], (double) args[11],
-                (double) args[12], (double) args[13], (int) args[14],
-                (double) args[15], (double) args[16],
-                (double) args[17], (int) args[18], (int) args[19],
-                (int) args[20], (int) args[21]);
+        return GeoForgeConfig.builder()
+                .minHeight((int) args[0]).maxHeight((int) args[1]).seaLevel((int) args[2])
+                .continentalBase((double) args[3]).continentalHeightAmplitude((double) args[4])
+                .continentalFrequency((double) args[5]).continentalOctaves((int) args[6])
+                .continentalLacunarity((double) args[7]).continentalPersistence((double) args[8])
+                .temperatureFrequency((double) args[9]).temperatureYFrequency((double) args[10])
+                .humidityFrequency((double) args[11])
+                .caveFrequency((double) args[12]).caveAmplitude((double) args[13])
+                .caveOctaves((int) args[14]).caveLacunarity((double) args[15])
+                .cavePersistence((double) args[16])
+                .riverFrequency((double) args[17]).riverDepth((int) args[18])
+                .riverWidth((int) args[19])
+                .erosionMaxDropletSteps((int) args[20]).erosionIterations((int) args[21])
+                .build();
     }
 
     // Default river params for validation tests that are not testing rivers
@@ -265,5 +270,226 @@ class GeoForgeConfigTest {
     void builder_validationStillApplies() {
         assertThrows(IllegalArgumentException.class,
                 () -> GeoForgeConfig.builder().maxHeight(10).minHeight(20).build());
+    }
+
+    // ========== New field default value tests ==========
+
+    @Test
+    void defaults_knownValues_newFields() {
+        var cfg = GeoForgeConfig.defaults();
+        // Cave Y-envelope
+        assertEquals(-20.0, cfg.caveCenterY());
+        assertEquals(48.0, cfg.caveSpread());
+        assertEquals(8.0, cfg.caveSurfaceCutoff());
+        assertEquals(0.3, cfg.caveSpaghettiThreshold());
+        assertEquals(0.5, cfg.caveCheeseThreshold());
+        assertEquals(0.15, cfg.caveNoodleThreshold());
+        assertEquals(0.05, cfg.caveNoodleFrequency());
+        // River v2
+        assertEquals(0, cfg.riverCanyonDepth());
+        assertEquals(2, cfg.riverCanyonWidth());
+        assertEquals("vshaped", cfg.riverValleyProfile());
+        assertEquals(5, cfg.riverFloodplainWidth());
+        assertEquals(0.0, cfg.riverTableResponse());
+        // Multi-noise terrain
+        assertEquals(0.003, cfg.ridgeFrequency());
+        assertEquals(3, cfg.ridgeOctaves());
+        assertEquals(1.0, cfg.ridgeAmplitude());
+        assertEquals(0.005, cfg.fbmFrequency());
+        assertEquals(4, cfg.fbmOctaves());
+        assertEquals(0.008, cfg.flatFrequency());
+        assertEquals(2.0, cfg.continentalnessBlendSharpness());
+        // Decorations
+        assertEquals(0.1, cfg.treeDensity());
+        assertEquals(0.3, cfg.vegetationDensity());
+        assertEquals(0xCAFEBABEL, cfg.featureSeedOffset());
+        assertEquals(12, cfg.maxTreeHeight());
+        // Erosion
+        assertEquals(1024, cfg.erosionDropletCount());
+        assertEquals(0.2f, cfg.erosionGravity());
+        // Domain warping
+        assertEquals(0.0, cfg.domainWarpAmplitude());
+        // Config version
+        assertEquals(2, cfg.configVersion());
+    }
+
+    // ========== Validation tests for new fields ==========
+
+    @Test
+    void validation_caveSpreadMustBePositive() {
+        assertThrows(IllegalArgumentException.class, () -> GeoForgeConfig.builder().caveSpread(0).build());
+        assertThrows(IllegalArgumentException.class, () -> GeoForgeConfig.builder().caveSpread(-1).build());
+    }
+
+    @Test
+    void validation_caveSurfaceCutoffMustBeNonNegative() {
+        assertDoesNotThrow(() -> GeoForgeConfig.builder().caveSurfaceCutoff(0).build());
+        assertThrows(IllegalArgumentException.class, () -> GeoForgeConfig.builder().caveSurfaceCutoff(-1).build());
+    }
+
+    @Test
+    void validation_ridgeFrequencyMustBePositive() {
+        assertThrows(IllegalArgumentException.class, () -> GeoForgeConfig.builder().ridgeFrequency(0).build());
+        assertThrows(IllegalArgumentException.class, () -> GeoForgeConfig.builder().ridgeFrequency(-0.1).build());
+    }
+
+    @Test
+    void validation_ridgeOctavesMustBePositive() {
+        assertThrows(IllegalArgumentException.class, () -> GeoForgeConfig.builder().ridgeOctaves(0).build());
+        assertThrows(IllegalArgumentException.class, () -> GeoForgeConfig.builder().ridgeOctaves(-1).build());
+    }
+
+    @Test
+    void validation_fbmFrequencyMustBePositive() {
+        assertThrows(IllegalArgumentException.class, () -> GeoForgeConfig.builder().fbmFrequency(0).build());
+        assertThrows(IllegalArgumentException.class, () -> GeoForgeConfig.builder().fbmFrequency(-0.1).build());
+    }
+
+    @Test
+    void validation_fbmOctavesMustBePositive() {
+        assertThrows(IllegalArgumentException.class, () -> GeoForgeConfig.builder().fbmOctaves(0).build());
+        assertThrows(IllegalArgumentException.class, () -> GeoForgeConfig.builder().fbmOctaves(-1).build());
+    }
+
+    @Test
+    void validation_flatFrequencyMustBePositive() {
+        assertThrows(IllegalArgumentException.class, () -> GeoForgeConfig.builder().flatFrequency(0).build());
+        assertThrows(IllegalArgumentException.class, () -> GeoForgeConfig.builder().flatFrequency(-0.1).build());
+    }
+
+    @Test
+    void validation_treeDensityMustBeInRange() {
+        assertThrows(IllegalArgumentException.class, () -> GeoForgeConfig.builder().treeDensity(-0.01).build());
+        assertThrows(IllegalArgumentException.class, () -> GeoForgeConfig.builder().treeDensity(1.01).build());
+        assertDoesNotThrow(() -> GeoForgeConfig.builder().treeDensity(0).build());
+        assertDoesNotThrow(() -> GeoForgeConfig.builder().treeDensity(1.0).build());
+    }
+
+    @Test
+    void validation_vegetationDensityMustBeInRange() {
+        assertThrows(IllegalArgumentException.class, () -> GeoForgeConfig.builder().vegetationDensity(-0.01).build());
+        assertThrows(IllegalArgumentException.class, () -> GeoForgeConfig.builder().vegetationDensity(1.01).build());
+        assertDoesNotThrow(() -> GeoForgeConfig.builder().vegetationDensity(0).build());
+        assertDoesNotThrow(() -> GeoForgeConfig.builder().vegetationDensity(1.0).build());
+    }
+
+    // ========== Builder override tests for new fields ==========
+
+    @Test
+    void builder_overridesCaveYEnvelope() {
+        var cfg = GeoForgeConfig.builder()
+                .caveCenterY(-10)
+                .caveSpread(64)
+                .caveSurfaceCutoff(4)
+                .caveSpaghettiThreshold(0.4)
+                .caveCheeseThreshold(0.6)
+                .caveNoodleThreshold(0.25)
+                .caveNoodleFrequency(0.08)
+                .build();
+        assertEquals(-10.0, cfg.caveCenterY());
+        assertEquals(64.0, cfg.caveSpread());
+        assertEquals(4.0, cfg.caveSurfaceCutoff());
+        assertEquals(0.4, cfg.caveSpaghettiThreshold());
+        assertEquals(0.6, cfg.caveCheeseThreshold());
+        assertEquals(0.25, cfg.caveNoodleThreshold());
+        assertEquals(0.08, cfg.caveNoodleFrequency());
+    }
+
+    @Test
+    void builder_overridesRiverV2() {
+        var cfg = GeoForgeConfig.builder()
+                .riverCanyonDepth(10)
+                .riverCanyonWidth(4)
+                .riverValleyProfile("flat")
+                .riverFloodplainWidth(8)
+                .riverTableResponse(1.5)
+                .build();
+        assertEquals(10, cfg.riverCanyonDepth());
+        assertEquals(4, cfg.riverCanyonWidth());
+        assertEquals("flat", cfg.riverValleyProfile());
+        assertEquals(8, cfg.riverFloodplainWidth());
+        assertEquals(1.5, cfg.riverTableResponse());
+    }
+
+    @Test
+    void builder_overridesMultiNoise() {
+        var cfg = GeoForgeConfig.builder()
+                .ridgeFrequency(0.005)
+                .ridgeOctaves(5)
+                .ridgeAmplitude(2.0)
+                .fbmFrequency(0.008)
+                .fbmOctaves(6)
+                .flatFrequency(0.01)
+                .continentalnessBlendSharpness(3.5)
+                .build();
+        assertEquals(0.005, cfg.ridgeFrequency());
+        assertEquals(5, cfg.ridgeOctaves());
+        assertEquals(2.0, cfg.ridgeAmplitude());
+        assertEquals(0.008, cfg.fbmFrequency());
+        assertEquals(6, cfg.fbmOctaves());
+        assertEquals(0.01, cfg.flatFrequency());
+        assertEquals(3.5, cfg.continentalnessBlendSharpness());
+    }
+
+    @Test
+    void builder_overridesDecorations() {
+        var cfg = GeoForgeConfig.builder()
+                .treeDensity(0.5)
+                .vegetationDensity(0.8)
+                .featureSeedOffset(12345L)
+                .maxTreeHeight(20)
+                .build();
+        assertEquals(0.5, cfg.treeDensity());
+        assertEquals(0.8, cfg.vegetationDensity());
+        assertEquals(12345L, cfg.featureSeedOffset());
+        assertEquals(20, cfg.maxTreeHeight());
+    }
+
+    @Test
+    void builder_overridesErosion() {
+        var cfg = GeoForgeConfig.builder()
+                .erosionDropletCount(512)
+                .erosionGravity(0.5f)
+                .build();
+        assertEquals(512, cfg.erosionDropletCount());
+        assertEquals(0.5f, cfg.erosionGravity());
+    }
+
+    @Test
+    void builder_overridesDomainWarp() {
+        var cfg = GeoForgeConfig.builder()
+                .domainWarpAmplitude(3.0)
+                .build();
+        assertEquals(3.0, cfg.domainWarpAmplitude());
+    }
+
+    @Test
+    void builder_overridesConfigVersion() {
+        var cfg = GeoForgeConfig.builder()
+                .configVersion(3)
+                .build();
+        assertEquals(3, cfg.configVersion());
+    }
+
+    @Test
+    void builder_chainingReturnsThis_newFields() {
+        var builder = GeoForgeConfig.builder();
+        assertSame(builder, builder.caveCenterY(-10));
+        assertSame(builder, builder.ridgeFrequency(0.005));
+        assertSame(builder, builder.treeDensity(0.5));
+    }
+
+    @Test
+    void builder_fullChain() {
+        // Verify the builder chain works: GeoForgeConfig.builder().caveCenterY(-10).ridgeFrequency(0.005).build()
+        var cfg = GeoForgeConfig.builder().caveCenterY(-10).ridgeFrequency(0.005).build();
+        assertEquals(-10.0, cfg.caveCenterY());
+        assertEquals(0.005, cfg.ridgeFrequency());
+    }
+
+    @Test
+    void validation_riverValleyProfileMustNotBeNull() {
+        assertThrows(NullPointerException.class,
+                () -> GeoForgeConfig.builder().riverValleyProfile(null).build());
     }
 }
