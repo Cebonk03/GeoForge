@@ -1,5 +1,6 @@
 package com.geoforge.engine.density;
 
+import com.geoforge.engine.noise.NoiseSource;
 import com.geoforge.engine.noise.SimplexNoise;
 
 /**
@@ -14,7 +15,7 @@ import com.geoforge.engine.noise.SimplexNoise;
  * that diminishes below the surface.
  */
 public final class SimplexRiverCarver implements RiverCarver {
-    private final SimplexNoise noise;
+    private final NoiseSource noise;
     private final double frequency;
     private final int depth;
     private final int width;
@@ -44,7 +45,7 @@ public final class SimplexRiverCarver implements RiverCarver {
         if (density <= 0) return density;
 
         // Sample 2D noise at (x, z) to get river value in [-1, 1]
-        double riverValue = noise.sample(blockX * frequency, blockZ * frequency);
+        double riverValue = noise.sample2D(blockX * frequency, blockZ * frequency);
 
         // Logistic-style bounded threshold: always in (0, 1] regardless of width.
         // This is anti-fragile — extreme width values degrade gracefully
