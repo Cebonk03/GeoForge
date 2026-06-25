@@ -2,6 +2,7 @@ package com.geoforge.engine;
 
 import com.geoforge.engine.noise.NoiseSource;
 
+import com.geoforge.engine.util.DensityGuard;
 import com.geoforge.engine.biome.BiomeLookupTable;
 import com.geoforge.engine.config.GeoForgeConfig;
 import com.geoforge.engine.density.AddDensity;
@@ -13,6 +14,7 @@ import com.geoforge.engine.density.PlateContinentalness;
 import com.geoforge.engine.density.RiverCarver;
 import com.geoforge.engine.density.SimplexRiverCarver;
 import com.geoforge.engine.density.NoopRiverCarver;
+import com.geoforge.engine.density.DomainWarpDensity;
 import com.geoforge.engine.geology.HydraulicErosion;
 import com.geoforge.engine.geology.TectonicPlateMapper;
 import com.geoforge.engine.noise.FractalNoise;
@@ -43,6 +45,7 @@ public final class GeoForgeEngine {
     private final HydraulicErosion erosion;
     private final FractalNoise caveNoise;
     private final RiverCarver riverCarver;
+    private final DensityFunctionTree domainWarpedHeight;
 
     /**
      * Creates a new engine with the given world seed and configuration.
@@ -79,6 +82,13 @@ public final class GeoForgeEngine {
         var shifted = new AddDensity(combined, new ConstantDensity(config.seaLevel()));
         // 4. Clamp to world height bounds
         this.heightFunction = new ClampDensity(shifted, config.minHeight(), config.maxHeight());
+
+        // Domain warping: wrap the height function for terrain distortion
+        this.domainWarpedHeight = new DomainWarpDensity(
+                new SimplexNoise(seed ^ 0xABCDEFABCDEFL),
+                new SimplexNoise(seed ^ 0xBCDEFA12345L),
+                this.heightFunction,
+                config.domainWarpAmplitude());
 
         this.allBiomeIds = BiomeLookupTable.getAllBiomeIds();
         this.erosion = new HydraulicErosion(config.erosionMaxDropletSteps());
@@ -127,13 +137,14 @@ public final class GeoForgeEngine {
      * @return density value (positive = solid, negative = air)
      */
     public double getDensity(int blockX, int blockY, int blockZ) {
-        double targetHeight = heightFunction.sample(blockX, 0, blockZ);
+        double targetHeight = domainWarpedHeight.sample(blockX, 0, blockZ);
         double cave = caveNoise.sample3D(
                 blockX * config.caveFrequency(),
                 blockY * config.caveFrequency(),
                 blockZ * config.caveFrequency());
         double density = targetHeight - blockY + cave * config.caveAmplitude();
-        return riverCarver.carve(density, blockX, blockY, blockZ);
+        return DensityGuard.clamp(riverCarver.carve(density, blockX, blockY, blockZ),
+                config.minHeight(), config.maxHeight());
     }
 
     /**
@@ -200,6 +211,39 @@ public final class GeoForgeEngine {
      */
     public void erode(float[] heightmap, int size, long seed) {
         erosion.erode(heightmap, size, config.erosionIterations(), seed);
+    }
+
+    /**
+     * Populates a heightmap with surface heights and applies hydraulic erosion
+     * in place for the given column area.
+     *
+     * <p>The heightmap is filled with the surface heights from {@link #getSurfaceHeight}
+     * for each column in the {@code size × size} region starting at
+     * {@code (blockX, blockZ)}. When erosion is configured (both
+     * {@link GeoForgeConfig#erosionIterations erosionIterations} and
+     * {@link GeoForgeConfig#erosionDropletCount erosionDropletCount} are positive),
+     * hydraulic erosion is applied to the heightmap in place, modifying the surface
+     * heights to simulate natural erosion processes.
+     *
+     * @param heightmap a flat float array of size {@code size × size} (modified in place)
+     * @param size      the width and height of the square column area
+     * @param blockX    the world x-coordinate of the column area origin
+     * @param blockZ    the world z-coordinate of the column area origin
+     * @param seed      the world seed for deterministic erosion
+     */
+    public void erodeColumn(float[] heightmap, int size, int blockX, int blockZ, long seed) {
+        // Populate heightmap with surface heights from the 3D density field
+        for (int x = 0; x < size; x++) {
+            for (int z = 0; z < size; z++) {
+                heightmap[z * size + x] = (float) getSurfaceHeight(blockX + x, blockZ + z);
+            }
+        }
+
+        // Apply hydraulic erosion when both config guards are satisfied
+        if (config.erosionIterations() > 0 && config.erosionDropletCount() > 0) {
+            long erosionSeed = seed ^ (blockX * 1664525L + blockZ * 1013904223L) ^ 0xE70DE1L;
+            erosion.erode(heightmap, size, config.erosionIterations(), erosionSeed);
+        }
     }
 
     /**

@@ -291,6 +291,52 @@ public record GeoForgeConfig(
     }
 
     /**
+     * Checks configuration sanity and returns a list of warnings for extreme or unusual
+     * parameter combinations that may produce unexpected terrain.
+     *
+     * <p>Unlike the canonical constructor (which throws on invalid values), this method
+     * logs warnings and returns gracefully — it never throws. Use it at engine construction
+     * time to alert users of potentially problematic settings.
+     *
+     * @return a list of human-readable warning messages (empty if all checks pass)
+     */
+    public java.util.List<String> sanityCheck() {
+        var warnings = new java.util.ArrayList<String>();
+        if (caveAmplitude > maxHeight - minHeight) {
+            warnings.add("caveAmplitude (" + caveAmplitude
+                    + ") exceeds world height (" + (maxHeight - minHeight)
+                    + ") — caves will dominate terrain");
+        }
+        if (continentalHeightAmplitude < 10) {
+            warnings.add("continentalHeightAmplitude very low (" + continentalHeightAmplitude
+                    + ") — terrain will be nearly flat");
+        }
+        if (seaLevel < 50 || seaLevel > 70) {
+            warnings.add("seaLevel (" + seaLevel + ") outside typical range [50, 70]");
+        }
+        if (caveSpread < 8) {
+            warnings.add("caveSpread (" + caveSpread
+                    + ") very narrow — caves will be highly concentrated");
+        }
+        if (caveSurfaceCutoff > 32) {
+            warnings.add("caveSurfaceCutoff (" + caveSurfaceCutoff
+                    + ") very large — caves may appear unusually close to surface");
+        }
+        if (riverDepth > caveAmplitude * 4) {
+            warnings.add("riverDepth (" + riverDepth + ") very large relative to caveAmplitude ("
+                    + caveAmplitude + ") — rivers may cut through caves");
+        }
+        if (treeDensity > 0.8) {
+            warnings.add("treeDensity (" + treeDensity + ") very high — chunks may be dense forests");
+        }
+        if (domainWarpAmplitude > maxHeight - minHeight) {
+            warnings.add("domainWarpAmplitude (" + domainWarpAmplitude
+                    + ") exceeds world height — terrain will be severely distorted");
+        }
+        return warnings;
+    }
+
+    /**
      * Returns a default configuration suitable for a standard overworld-like terrain.
      *
      * @return a new {@code GeoForgeConfig} with sensible defaults
