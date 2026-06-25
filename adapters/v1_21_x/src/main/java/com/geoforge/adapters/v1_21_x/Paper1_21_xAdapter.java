@@ -37,8 +37,8 @@ public final class Paper1_21_xAdapter implements GeoForgeAdapter {
 
     Paper1_21_xAdapter(
             @NotNull JavaPlugin plugin,
-            @NotNull Function<String, @NotNull Material> blockLookup,
-            @NotNull Function<String, @NotNull Biome> biomeLookup) {
+            @NotNull Function<@NotNull String, @NotNull Material> blockLookup,
+            @NotNull Function<@NotNull String, @NotNull Biome> biomeLookup) {
         this.plugin = plugin;
         this.blockLookup = blockLookup;
         this.biomeLookup = biomeLookup;

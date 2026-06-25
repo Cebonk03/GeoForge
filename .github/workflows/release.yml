@@ -51,6 +51,12 @@ jobs:
           distribution: ${{ matrix.java == 25 && 'oracle' || 'temurin' }}
           cache: gradle
       - uses: gradle/actions/setup-gradle@v4
+      - name: Compile engine + api + v1_21_x (JDK 21)
+        if: matrix.java == 21
+        run: ./gradlew :engine:compileJava :api:compileJava :adapters:v1_21_x:compileJava --no-daemon
+      - name: Compile v26_x + plugin (JDK 25)
+        if: matrix.java == 25
+        run: ./gradlew :adapters:v26_x:compileJava :plugin:compileJava --no-daemon
       - name: Run tests (JDK 21)
         if: matrix.java == 21
         run: ./gradlew :engine:test :api:test :adapters:v1_21_x:test --no-daemon

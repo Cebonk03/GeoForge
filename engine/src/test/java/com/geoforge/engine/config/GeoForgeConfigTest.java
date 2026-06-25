@@ -148,8 +148,9 @@ class GeoForgeConfigTest {
     }
 
     @Test
-    void validation_riverDepthMustBePositive() {
-        assertThrows(IllegalArgumentException.class, () -> makeCfg(args(-64, 180, 63, 50.0, 120.0, 0.004, 4, 2.0, 0.5, 0.001, 0.005, 0.001, 0.03, 8.0, 2, 2.0, 0.5, RIV_FREQ, 0, RIV_WIDTH, 10, 64)));
+    void validation_riverDepthMustBeNonNegative() {
+        // riverDepth=0 is valid (disables river carving)
+        assertDoesNotThrow(() -> makeCfg(args(-64, 180, 63, 50.0, 120.0, 0.004, 4, 2.0, 0.5, 0.001, 0.005, 0.001, 0.03, 8.0, 2, 2.0, 0.5, RIV_FREQ, 0, RIV_WIDTH, 10, 64)));
         assertThrows(IllegalArgumentException.class, () -> makeCfg(args(-64, 180, 63, 50.0, 120.0, 0.004, 4, 2.0, 0.5, 0.001, 0.005, 0.001, 0.03, 8.0, 2, 2.0, 0.5, RIV_FREQ, -5, RIV_WIDTH, 10, 64)));
     }
 

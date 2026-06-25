@@ -10,6 +10,7 @@ import com.geoforge.engine.density.MultiplyDensity;
 import com.geoforge.engine.density.PlateContinentalness;
 import com.geoforge.engine.density.RiverCarver;
 import com.geoforge.engine.density.SimplexRiverCarver;
+import com.geoforge.engine.density.NoopRiverCarver;
 import com.geoforge.engine.geology.HydraulicErosion;
 import com.geoforge.engine.geology.TectonicPlateMapper;
 import com.geoforge.engine.noise.FractalNoise;
@@ -86,11 +87,15 @@ public final class GeoForgeEngine {
                 config.caveOctaves(),
                 config.caveLacunarity(),
                 config.cavePersistence());
-        this.riverCarver = new SimplexRiverCarver(
-                seed ^ 0xFEEDBEEFL,
-                config.riverFrequency(),
-                config.riverDepth(),
-                config.riverWidth());
+        if (config.riverDepth() == 0) {
+            this.riverCarver = NoopRiverCarver.instance();
+        } else {
+            this.riverCarver = new SimplexRiverCarver(
+                    seed ^ 0xFEEDBEEFL,
+                    config.riverFrequency(),
+                    config.riverDepth(),
+                    config.riverWidth());
+        }
     }
 
     /**

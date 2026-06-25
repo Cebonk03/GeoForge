@@ -52,7 +52,7 @@ package com.geoforge.engine.config;
  * @param cavePersistence            Amplitude multiplier between cave octaves. Must be
  *                                   {@code > 0}.
  * @param riverFrequency             Frequency for 2D river carving noise. Must be {@code > 0}.
- * @param riverDepth                 Maximum depth of river carving in blocks. Must be {@code > 0}.
+ * @param riverDepth                 Maximum depth of river carving in blocks. {@code 0} disables river carving.
  * @param riverWidth                 River width parameter (higher = wider rivers). Must be {@code > 0}.
  * @param erosionMaxDropletSteps     Maximum steps per erosion droplet. Must be {@code > 0}.
  * @param erosionIterations          Total erosion iterations per column. Must be {@code > 0}.
@@ -151,9 +151,9 @@ public record GeoForgeConfig(
                     "riverFrequency must be > 0, got %s"
                             .formatted(riverFrequency));
         }
-        if (riverDepth <= 0) {
+        if (riverDepth < 0) {
             throw new IllegalArgumentException(
-                    "riverDepth must be > 0, got %d".formatted(riverDepth));
+                    "riverDepth must be >= 0, got %d".formatted(riverDepth));
         }
         if (riverWidth <= 0) {
             throw new IllegalArgumentException(

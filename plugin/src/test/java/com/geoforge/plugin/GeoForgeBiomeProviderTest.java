@@ -10,6 +10,7 @@ import org.bukkit.block.Biome;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Nested;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 
@@ -20,30 +21,33 @@ class GeoForgeBiomeProviderTest {
     private ServerMock server;
     private GeoForgeBiomeProvider biomeProvider;
 
-    // Mockito-based unit tests (fast, no MockBukkit startup)
-    @Test
-    void getBiomes_returnsAllFromEngine() {
-        var engine = mock(GeoForgeEngine.class);
-        var adapter = mock(GeoForgeAdapter.class);
-        when(engine.getAllBiomeIds()).thenReturn(Set.of("plains", "desert"));
-        when(adapter.mapBiome("plains")).thenReturn(mock(Biome.class));
-        when(adapter.mapBiome("desert")).thenReturn(mock(Biome.class));
-        var provider = new GeoForgeBiomeProvider(adapter, engine);
-        assertEquals(2, provider.getBiomes(null).size());
+    @Nested
+    class MockitoTests {
+        @Test
+        void getBiomes_returnsAllFromEngine() {
+            var engine = mock(GeoForgeEngine.class);
+            var adapter = mock(GeoForgeAdapter.class);
+            when(engine.getAllBiomeIds()).thenReturn(Set.of("plains", "desert"));
+            when(adapter.mapBiome("plains")).thenReturn(mock(Biome.class));
+            when(adapter.mapBiome("desert")).thenReturn(mock(Biome.class));
+            var provider = new GeoForgeBiomeProvider(adapter, engine);
+            assertEquals(2, provider.getBiomes(null).size());
+        }
+
+        @Test
+        void getBiome_usesEngineAndAdapter() {
+            var engine = mock(GeoForgeEngine.class);
+            var adapter = mock(GeoForgeAdapter.class);
+            var expectedBiome = mock(Biome.class);
+            when(engine.getBiomeId(100, 64, 200)).thenReturn("desert");
+            when(adapter.mapBiome("desert")).thenReturn(expectedBiome);
+            var provider = new GeoForgeBiomeProvider(adapter, engine);
+            assertSame(expectedBiome, provider.getBiome(null, 100, 64, 200));
+            verify(engine).getBiomeId(100, 64, 200);
+            verify(adapter).mapBiome("desert");
+        }
     }
 
-    @Test
-    void getBiome_usesEngineAndAdapter() {
-        var engine = mock(GeoForgeEngine.class);
-        var adapter = mock(GeoForgeAdapter.class);
-        var expectedBiome = mock(Biome.class);
-        when(engine.getBiomeId(100, 64, 200)).thenReturn("desert");
-        when(adapter.mapBiome("desert")).thenReturn(expectedBiome);
-        var provider = new GeoForgeBiomeProvider(adapter, engine);
-        assertSame(expectedBiome, provider.getBiome(null, 100, 64, 200));
-        verify(engine).getBiomeId(100, 64, 200);
-        verify(adapter).mapBiome("desert");
-    }
     @BeforeEach
     void setUp() {
         server = MockBukkit.mock();

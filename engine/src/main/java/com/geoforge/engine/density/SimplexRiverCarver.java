@@ -7,8 +7,11 @@ import com.geoforge.engine.noise.SimplexNoise;
  * along moisture convergence zones in the terrain.
  *
  * <p>The carving applies only where the noise value falls below a threshold
- * determined by the configured river width. Below threshold, the density is
- * reduced vertically with a depth factor that diminishes below the surface.
+ * determined by the configured river width. The threshold formula
+ * {@code 1 / (1 + width * 0.15)} is self-bounding to the range (0, 1], ensuring
+ * that extreme width values never produce degenerate carving behavior.
+ * Below threshold, the density is reduced vertically with a depth factor
+ * that diminishes below the surface.
  */
 public final class SimplexRiverCarver implements RiverCarver {
     private final SimplexNoise noise;
@@ -21,7 +24,11 @@ public final class SimplexRiverCarver implements RiverCarver {
      *
      * @param seed      the world generation seed (will be decorrelated for noise)
      * @param frequency frequency of the 2D river noise
-     * @param depth     maximum river carving depth in blocks
+     * @param depth     carving depth scaling factor — higher values produce deeper river
+     *                  valleys. Used as a divisor in the depth factor calculation:
+     *                  {@code depthFactor = max(0, 1 - density / depth)}. The effective
+     *                  carving depth in blocks is approximately
+     *                  {@code (threshold - riverValue) * depth * depthFactor}.
      * @param width     river width parameter (higher = wider rivers)
      */
     public SimplexRiverCarver(long seed, double frequency, int depth, int width) {
@@ -39,9 +46,10 @@ public final class SimplexRiverCarver implements RiverCarver {
         // Sample 2D noise at (x, z) to get river value in [-1, 1]
         double riverValue = noise.sample(blockX * frequency, blockZ * frequency);
 
-        // Only carve where noise indicates river (below threshold)
-        // The threshold controls river width
-        double threshold = 1.0 - width * 0.1; // wider rivers = lower threshold
+        // Logistic-style bounded threshold: always in (0, 1] regardless of width.
+        // This is anti-fragile — extreme width values degrade gracefully
+        // instead of producing degenerate (<=0) thresholds.
+        double threshold = 1.0 / (1.0 + (double) width * 0.15);
         if (riverValue < -threshold) {
             // Carve vertically - deeper near surface, shallower below
             // Use density as a proxy for distance below terrain surface:
