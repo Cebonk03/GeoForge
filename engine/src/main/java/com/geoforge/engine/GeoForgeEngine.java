@@ -1,5 +1,7 @@
 package com.geoforge.engine;
 
+import com.geoforge.engine.noise.NoiseSource;
+
 import com.geoforge.engine.biome.BiomeLookupTable;
 import com.geoforge.engine.config.GeoForgeConfig;
 import com.geoforge.engine.density.AddDensity;
@@ -33,8 +35,8 @@ public final class GeoForgeEngine {
 
     private final GeoForgeConfig config;
     private final FractalNoise continentalNoise;
-    private final SimplexNoise temperatureNoise;
-    private final SimplexNoise humidityNoise;
+    private final NoiseSource temperatureNoise;
+    private final NoiseSource humidityNoise;
     private final TectonicPlateMapper plateMapper;
     private final DensityFunctionTree heightFunction;
     private final Set<String> allBiomeIds;
@@ -175,11 +177,11 @@ public final class GeoForgeEngine {
      * @return a valid Minecraft biome ID string
      */
     public String getBiomeId(int blockX, int blockY, int blockZ) {
-        double temp = temperatureNoise.sample(
+        double temp = temperatureNoise.sample3D(
                 blockX * config.temperatureFrequency(),
                 blockY * config.temperatureYFrequency(),
                 blockZ * config.temperatureFrequency());
-        double humidity = (humidityNoise.sample(
+        double humidity = (humidityNoise.sample2D(
                 blockX * config.humidityFrequency(),
                 blockZ * config.humidityFrequency()) + 1.0) * 0.5;
         return BiomeLookupTable.lookup(temp, humidity);
