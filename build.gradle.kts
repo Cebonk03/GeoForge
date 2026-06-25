@@ -2,8 +2,8 @@ plugins {
     java
     jacoco
     checkstyle
-    id("com.gradleup.shadow") version "9.4.2" apply false
-    id("com.github.spotbugs") version "6.5.8" apply false
+    alias(libs.plugins.shadow) apply false
+    alias(libs.plugins.spotbugs) apply false
 }
 
 subprojects {
@@ -11,10 +11,6 @@ subprojects {
     apply(plugin = "jacoco")
     apply(plugin = "checkstyle")
     apply(plugin = "com.github.spotbugs")
-    repositories {
-        mavenCentral()
-        maven("https://repo.papermc.io/repository/maven-public/")
-    }
 
     tasks.withType<JavaCompile> {
         options.encoding = "UTF-8"
@@ -31,17 +27,13 @@ subprojects {
         jvmArgs("-XX:+UseParallelGC", "-XX:ParallelGCThreads=2")
     }
 
-    dependencies {
-        testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-        testImplementation("org.assertj:assertj-core:3.27.7")
-    }
-
+    // JaCoCo and static analysis tool versions — read from version catalog at configuration time
     jacoco {
-        toolVersion = "0.8.15"
+        toolVersion = rootProject.libs.versions.jacoco.get()
     }
 
     checkstyle {
-        toolVersion = "13.6.0"
+        toolVersion = rootProject.libs.versions.checkstyleTool.get()
         isIgnoreFailures = false
         maxWarnings = 0
         maxErrors = 0
@@ -54,9 +46,9 @@ subprojects {
             html.required.set(true)
         }
     }
-    // SpotBugs — extension-level config
+
     configure<com.github.spotbugs.snom.SpotBugsExtension> {
-        toolVersion = "4.10.2"
+        toolVersion = rootProject.libs.versions.spotbugsTool.get()
         ignoreFailures.set(false)
         showStackTraces.set(true)
         showProgress.set(true)

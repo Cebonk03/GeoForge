@@ -11,7 +11,7 @@ Paper integration layer. ShadowJAR output — the deployable artifact.
 | 3D density pipeline | `plugin/src/main/java/com/geoforge/plugin/GeoForgeGenerator.java#generateNoise()` |
 | Biome provider | `plugin/src/main/java/com/geoforge/plugin/GeoForgeBiomeProvider.java` |
 | Version adapter selection | `plugin/src/main/java/com/geoforge/plugin/AdapterFactory.java` |
-| Plugin metadata | `plugin/src/main/resources/plugin.yml` |
+|| Plugin metadata | `plugin/src/main/resources/paper-plugin.yml` |
 | Seed configuration | `plugin/src/main/resources/config.yml` |
 
 ## Pass-Through Flags
@@ -28,7 +28,7 @@ shouldGenerateMobs: true          # vanilla
 
 ## Conventions
 
-- `folia-supported: true` in `plugin.yml` — mandatory for Folia
+- `folia-supported: true` in `paper-plugin.yml` — mandatory for Folia
 - `api-version: '1.21.4'` — minimum supported (compiled against 1.21.11+)
 - `load: STARTUP` — generator must be ready before worlds load
 - AdapterFactory uses pure integer switch, no reflection

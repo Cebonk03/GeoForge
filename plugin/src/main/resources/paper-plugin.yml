@@ -1,0 +1,11 @@
+name: GeoForge
+version: '1.0.0'
+main: com.geoforge.plugin.GeoForgePlugin
+meta:
+  api-version: '1.21.4'
+  folia-supported: true
+load: STARTUP
+
+generators:
+  GeoForge:
+    class: com.geoforge.plugin.GeoForgePlugin

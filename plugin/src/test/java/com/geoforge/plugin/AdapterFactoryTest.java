@@ -33,4 +33,22 @@ class AdapterFactoryTest {
         var v = ServerVersion.parse("3.5");
         assertEquals(VanillaFallbackAdapter.class, AdapterFactory.selectClass(v));
     }
+
+    @Test
+    void selectClass_1_22_returnsVanillaFallback() {
+        var v = ServerVersion.parse("1.22.0");
+        assertEquals(VanillaFallbackAdapter.class, AdapterFactory.selectClass(v));
+    }
+
+    @Test
+    void selectClass_27_0_returnsPaper26x() {
+        var v = ServerVersion.parse("27.0.0");
+        assertEquals(Paper26xAdapter.class, AdapterFactory.selectClass(v));
+    }
+
+    @Test
+    void selectClass_2_0_returnsVanillaFallback() {
+        var v = ServerVersion.parse("2.0.0");
+        assertEquals(VanillaFallbackAdapter.class, AdapterFactory.selectClass(v));
+    }
 }

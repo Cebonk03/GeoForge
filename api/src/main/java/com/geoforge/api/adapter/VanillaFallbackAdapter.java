@@ -14,6 +14,11 @@ import org.jetbrains.annotations.NotNull;
 /**
  * A degraded adapter used when the server version is not in the supported range. Provides
  * minimal functionality — always returns {@link Material#STONE} and the plains biome.
+ *
+ * <p>This class lives in the {@code api} module (not alongside version-specific adapters in
+ * the {@code adapters/} directory) because it has no version-specific dependencies — it must
+ * compile and function on any server version. Keeping it here avoids a circular dependency
+ * between {@code plugin} (which selects adapters) and the adapter implementations.
  */
 public final class VanillaFallbackAdapter implements GeoForgeAdapter {
 

@@ -3,6 +3,6 @@ java {
 }
 
 dependencies {
-    testImplementation("org.junit.jupiter:junit-jupiter:6.1.0")
-    testImplementation("com.tngtech.archunit:archunit-junit5:1.4.2")
+    testImplementation(libs.bundles.junitTesting)
+    testImplementation(libs.archunitJunit5)
 }

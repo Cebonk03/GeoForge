@@ -3,7 +3,7 @@ package com.geoforge.engine.config;
 /**
  * Immutable configuration record for all terrain generation tuning parameters.
  *
- * <p>Fields are grouped into five categories:
+ * <p>Fields are grouped into six categories:
  *
  * <dl>
  *   <dt>Terrain bounds</dt>
@@ -19,13 +19,16 @@ package com.geoforge.engine.config;
  *   <dt>Cave noise</dt>
  *   <dd>{@code caveFrequency}, {@code caveAmplitude}, {@code caveOctaves},
  *       {@code caveLacunarity}, {@code cavePersistence} — control 3D cave carving.
+ *   <dt>River carving</dt>
+ *   <dd>{@code riverFrequency}, {@code riverDepth}, {@code riverWidth} — control river valley
+ *       carving via 2D simplex noise moisture convergence.
  *   <dt>Erosion</dt>
  *   <dd>{@code erosionMaxDropletSteps}, {@code erosionIterations} — bound the hydraulic erosion
  *       simulation.
  * </dl>
  *
- * <p>Use {@link #defaults()} to obtain a sensible starting configuration, or call the
- * convenience factories for testing.
+ * <p>Use {@link #defaults()} to obtain a sensible starting configuration, or use the
+ * {@link Builder} for fine-grained control.
  *
  * @param minHeight                  Minimum build height (Y level).
  * @param maxHeight                  Maximum build height (Y level). Must be {@code > minHeight}.
@@ -48,6 +51,9 @@ package com.geoforge.engine.config;
  *                                   {@code > 0}.
  * @param cavePersistence            Amplitude multiplier between cave octaves. Must be
  *                                   {@code > 0}.
+ * @param riverFrequency             Frequency for 2D river carving noise. Must be {@code > 0}.
+ * @param riverDepth                 Maximum depth of river carving in blocks. {@code 0} disables river carving.
+ * @param riverWidth                 River width parameter (higher = wider rivers). Must be {@code > 0}.
  * @param erosionMaxDropletSteps     Maximum steps per erosion droplet. Must be {@code > 0}.
  * @param erosionIterations          Total erosion iterations per column. Must be {@code > 0}.
  */
@@ -69,6 +75,9 @@ public record GeoForgeConfig(
         int caveOctaves,
         double caveLacunarity,
         double cavePersistence,
+        double riverFrequency,
+        int riverDepth,
+        int riverWidth,
         int erosionMaxDropletSteps,
         int erosionIterations) {
 
@@ -137,6 +146,19 @@ public record GeoForgeConfig(
             throw new IllegalArgumentException(
                     "cavePersistence must be > 0, got %s".formatted(cavePersistence));
         }
+        if (riverFrequency <= 0) {
+            throw new IllegalArgumentException(
+                    "riverFrequency must be > 0, got %s"
+                            .formatted(riverFrequency));
+        }
+        if (riverDepth < 0) {
+            throw new IllegalArgumentException(
+                    "riverDepth must be >= 0, got %d".formatted(riverDepth));
+        }
+        if (riverWidth <= 0) {
+            throw new IllegalArgumentException(
+                    "riverWidth must be > 0, got %d".formatted(riverWidth));
+        }
         if (erosionMaxDropletSteps <= 0) {
             throw new IllegalArgumentException(
                     "erosionMaxDropletSteps must be > 0, got %d"
@@ -172,75 +194,96 @@ public record GeoForgeConfig(
                 2,     // caveOctaves
                 2.0,   // caveLacunarity
                 0.5,   // cavePersistence
+                0.01,  // riverFrequency
+                8,     // riverDepth
+                3,     // riverWidth
                 10,    // erosionMaxDropletSteps
                 64     // erosionIterations
         );
     }
 
     /**
-     * Returns a configuration identical to {@link #defaults()} but with the given sea level.
+     * Returns a new {@link Builder} initialized with the default values.
      *
-     * <p>Convenience factory for tests that need a specific sea level without duplicating all
-     * defaults.
-     *
-     * @param seaLevel the desired sea level
-     * @return a new {@code GeoForgeConfig} with all default values except {@code seaLevel}
+     * @return a builder pre-populated with default parameter values
      */
-    public static GeoForgeConfig withSeaLevel(int seaLevel) {
-        return new GeoForgeConfig(
-                -64,   // minHeight
-                180,   // maxHeight
-                seaLevel,
-                50.0,  // continentalBase
-                120.0, // continentalHeightAmplitude
-                0.004, // continentalFrequency
-                4,     // continentalOctaves
-                2.0,   // continentalLacunarity
-                0.5,   // continentalPersistence
-                0.001, // temperatureFrequency
-                0.005, // temperatureYFrequency
-                0.001, // humidityFrequency
-                0.03,  // caveFrequency
-                8.0,   // caveAmplitude
-                2,     // caveOctaves
-                2.0,   // caveLacunarity
-                0.5,   // cavePersistence
-                10,    // erosionMaxDropletSteps
-                64     // erosionIterations
-        );
+    public static Builder builder() {
+        return new Builder();
     }
 
     /**
-     * Returns a configuration identical to {@link #defaults()} but with the given cave
-     * amplitude.
+     * Mutable builder for creating {@link GeoForgeConfig} instances.
      *
-     * <p>Setting cave amplitude to 0 disables cave carving, which is useful for testing
-     * surface height extraction against the 2D height function.
-     *
-     * @param caveAmplitude the desired cave amplitude (0 = no caves)
-     * @return a new {@code GeoForgeConfig} with all default values except {@code caveAmplitude}
+     * <p>All fields are pre-populated with the same defaults as
+     * {@link GeoForgeConfig#defaults()}. Call the wither methods to override
+     * specific parameters, then {@link #build()} to produce the immutable record.
      */
-    public static GeoForgeConfig withCaveAmplitude(double caveAmplitude) {
-        return new GeoForgeConfig(
-                -64,   // minHeight
-                180,   // maxHeight
-                63,    // seaLevel
-                50.0,  // continentalBase
-                120.0, // continentalHeightAmplitude
-                0.004, // continentalFrequency
-                4,     // continentalOctaves
-                2.0,   // continentalLacunarity
-                0.5,   // continentalPersistence
-                0.001, // temperatureFrequency
-                0.005, // temperatureYFrequency
-                0.001, // humidityFrequency
-                0.03,  // caveFrequency
-                caveAmplitude,
-                2,     // caveOctaves
-                2.0,   // caveLacunarity
-                0.5,   // cavePersistence
-                10,    // erosionMaxDropletSteps
-                64     // erosionIterations
-        );
+    public static final class Builder {
+        private int minHeight = -64;
+        private int maxHeight = 180;
+        private int seaLevel = 63;
+        private double continentalBase = 50.0;
+        private double continentalHeightAmplitude = 120.0;
+        private double continentalFrequency = 0.004;
+        private int continentalOctaves = 4;
+        private double continentalLacunarity = 2.0;
+        private double continentalPersistence = 0.5;
+        private double temperatureFrequency = 0.001;
+        private double temperatureYFrequency = 0.005;
+        private double humidityFrequency = 0.001;
+        private double caveFrequency = 0.03;
+        private double caveAmplitude = 8.0;
+        private int caveOctaves = 2;
+        private double caveLacunarity = 2.0;
+        private double cavePersistence = 0.5;
+        private double riverFrequency = 0.01;
+        private int riverDepth = 8;
+        private int riverWidth = 3;
+        private int erosionMaxDropletSteps = 10;
+        private int erosionIterations = 64;
+
+        private Builder() {}
+
+        public Builder minHeight(int minHeight) { this.minHeight = minHeight; return this; }
+        public Builder maxHeight(int maxHeight) { this.maxHeight = maxHeight; return this; }
+        public Builder seaLevel(int seaLevel) { this.seaLevel = seaLevel; return this; }
+        public Builder continentalBase(double continentalBase) { this.continentalBase = continentalBase; return this; }
+        public Builder continentalHeightAmplitude(double continentalHeightAmplitude) { this.continentalHeightAmplitude = continentalHeightAmplitude; return this; }
+        public Builder continentalFrequency(double continentalFrequency) { this.continentalFrequency = continentalFrequency; return this; }
+        public Builder continentalOctaves(int continentalOctaves) { this.continentalOctaves = continentalOctaves; return this; }
+        public Builder continentalLacunarity(double continentalLacunarity) { this.continentalLacunarity = continentalLacunarity; return this; }
+        public Builder continentalPersistence(double continentalPersistence) { this.continentalPersistence = continentalPersistence; return this; }
+        public Builder temperatureFrequency(double temperatureFrequency) { this.temperatureFrequency = temperatureFrequency; return this; }
+        public Builder temperatureYFrequency(double temperatureYFrequency) { this.temperatureYFrequency = temperatureYFrequency; return this; }
+        public Builder humidityFrequency(double humidityFrequency) { this.humidityFrequency = humidityFrequency; return this; }
+        public Builder caveFrequency(double caveFrequency) { this.caveFrequency = caveFrequency; return this; }
+        public Builder caveAmplitude(double caveAmplitude) { this.caveAmplitude = caveAmplitude; return this; }
+        public Builder caveOctaves(int caveOctaves) { this.caveOctaves = caveOctaves; return this; }
+        public Builder caveLacunarity(double caveLacunarity) { this.caveLacunarity = caveLacunarity; return this; }
+        public Builder cavePersistence(double cavePersistence) { this.cavePersistence = cavePersistence; return this; }
+        public Builder riverFrequency(double riverFrequency) { this.riverFrequency = riverFrequency; return this; }
+        public Builder riverDepth(int riverDepth) { this.riverDepth = riverDepth; return this; }
+        public Builder riverWidth(int riverWidth) { this.riverWidth = riverWidth; return this; }
+        public Builder erosionMaxDropletSteps(int erosionMaxDropletSteps) { this.erosionMaxDropletSteps = erosionMaxDropletSteps; return this; }
+        public Builder erosionIterations(int erosionIterations) { this.erosionIterations = erosionIterations; return this; }
+
+        /**
+         * Builds the immutable {@link GeoForgeConfig} record.
+         *
+         * @return a new GeoForgeConfig with the configured values
+         */
+        public GeoForgeConfig build() {
+            return new GeoForgeConfig(
+                    minHeight, maxHeight, seaLevel,
+                    continentalBase, continentalHeightAmplitude,
+                    continentalFrequency, continentalOctaves,
+                    continentalLacunarity, continentalPersistence,
+                    temperatureFrequency, temperatureYFrequency,
+                    humidityFrequency,
+                    caveFrequency, caveAmplitude, caveOctaves,
+                    caveLacunarity, cavePersistence,
+                    riverFrequency, riverDepth, riverWidth,
+                    erosionMaxDropletSteps, erosionIterations);
+        }
     }
 }

@@ -4,6 +4,9 @@
 #       Default: 0L (produces consistent terrain across all worlds)
 seed: 0
 
+# Config version for migration support. Increment when structure changes.
+config-version: 1
+
 # Terrain height bounds (in block units)
 terrain:
   sea-level: 63            # Water surface in blocks
@@ -29,6 +32,12 @@ climate:
   temperature-frequency: 0.001
   temperature-y-frequency: 0.005
   humidity-frequency: 0.001
+
+# River carving parameters
+river:
+  frequency: 0.01
+  depth: 8
+  width: 3
 
 # Hydraulic erosion droplet simulation
 erosion:
