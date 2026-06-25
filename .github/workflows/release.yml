@@ -88,7 +88,7 @@ jobs:
           sha256sum GeoForge.jar > GeoForge.jar.sha256
           cat GeoForge.jar.sha256
       - name: Upload built JAR
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-artifacts
           path: |

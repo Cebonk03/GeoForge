@@ -77,14 +77,14 @@ jobs:
 
       - name: Upload test results (JUnit XML)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-jdk${{ matrix.java }}
           path: '**/build/test-results/test/TEST-*.xml'
 
       - name: Upload JaCoCo coverage data (JDK ${{ matrix.java }})
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: jacoco-data-jdk${{ matrix.java }}
           path: '**/build/jacoco/'
@@ -138,7 +138,7 @@ jobs:
 
       - name: Upload SpotBugs reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: spotbugs-reports
           path: '**/build/reports/spotbugs/'
@@ -155,7 +155,7 @@ jobs:
 
       - name: Upload Checkstyle reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: checkstyle-reports
           path: '**/build/reports/checkstyle/'
@@ -258,7 +258,7 @@ jobs:
 
       - name: Upload coverage report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-reports
           path: '**/build/reports/jacoco/'
@@ -305,7 +305,7 @@ jobs:
         run: ./gradlew :plugin:shadowJar --no-daemon
 
       - name: Upload ShadowJAR
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: GeoForge
           path: plugin/build/libs/GeoForge.jar
