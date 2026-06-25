@@ -82,7 +82,7 @@ class Density3DTest {
     @Test
     void getSurfaceHeight_matchesGetHeightAt_whenNoCaves() {
         // When cave amplitude is 0, surfaceHeight should equal the old height function
-        var cfg = GeoForgeConfig.defaults().withCaveAmplitude(0.0);
+        var cfg = GeoForgeConfig.builder().caveAmplitude(0.0).build();
         var engine = new GeoForgeEngine(SEED, cfg);
 
         for (int i = 0; i < 50; i++) {
@@ -117,8 +117,8 @@ class Density3DTest {
     @Test
     void caveNoise_changesDensity() {
         // Verify cave noise modifies density values
-        var noCave = GeoForgeConfig.defaults().withCaveAmplitude(0.0);
-        var withCave = GeoForgeConfig.defaults().withCaveAmplitude(64.0);
+        var noCave = GeoForgeConfig.builder().caveAmplitude(0.0).build();
+        var withCave = GeoForgeConfig.builder().caveAmplitude(64.0).build();
         var engineNoCave = new GeoForgeEngine(SEED, noCave);
         var engineWithCave = new GeoForgeEngine(SEED, withCave);
 

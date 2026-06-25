@@ -16,7 +16,13 @@ updates:
           - "org.mockito*"
           - "org.mockbukkit*"
           - "com.tngtech.archunit*"
-
+          - "org.assertj*"
+          - "org.junit.platform*"
+      gradle-plugins:
+        patterns:
+          - "com.gradleup.shadow*"
+          - "com.github.spotbugs*"
+          - "checkstyle*"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

@@ -14,6 +14,14 @@ import org.bukkit.plugin.java.JavaPlugin;
  *
  * <p>Uses a pure integer switch — no reflection, no string prefix matching. If the version
  * is unrecognised, a degraded {@link VanillaFallbackAdapter} is returned with a warning log.
+ *
+ * <p>Version strategy:
+ * <ul>
+ *   <li>{@code major >= 26} — latest Paper 26.x adapter
+ *   <li>{@code major == 1 && minor == 21} — Paper 1.21.x adapter
+ *   <li>{@code major == 1 && minor >= 22} — explicitly falls to fallback (no adapter yet)
+ *   <li>anything else — degraded {@link VanillaFallbackAdapter}
+ * </ul>
  */
 public final class AdapterFactory {
 
@@ -34,6 +42,7 @@ public final class AdapterFactory {
         if (v.major() == 1 && v.minor() == 21) {
             return new Paper1_21_xAdapter(plugin);
         }
+        // Paper 1.22+ — no adapter yet, falls to VanillaFallbackAdapter below
         plugin.getLogger()
                 .warning(
                         "GeoForge: unrecognised server version "
@@ -54,6 +63,7 @@ public final class AdapterFactory {
         if (v.major() == 1 && v.minor() == 21) {
             return Paper1_21_xAdapter.class;
         }
+        // Paper 1.22+ — no adapter yet, falls to VanillaFallbackAdapter below
         return VanillaFallbackAdapter.class;
     }
 }

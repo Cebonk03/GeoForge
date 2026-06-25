@@ -1,6 +1,7 @@
 package com.geoforge.adapters.v1_21_x;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
 
 import org.bukkit.Material;
 import org.bukkit.block.Biome;
@@ -13,6 +14,54 @@ import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.plugin.PluginMock;
 
 class Paper1_21_xAdapterTest {
+
+    // ---- Mockito-based tests (no MockBukkit needed) ----
+
+    private final JavaPlugin mockPlugin = mock(JavaPlugin.class);
+
+    @Test
+    void mapBlock_stone_returnsMaterialStone_mockito() {
+        var adapter = new Paper1_21_xAdapter(mockPlugin,
+                id -> "stone".equals(id) ? Material.STONE : null,
+                id -> null);
+        assertEquals(Material.STONE, adapter.mapBlock("stone"));
+    }
+
+    @Test
+    void mapBlock_unknown_returnsStoneFallback_mockito() {
+        var adapter = new Paper1_21_xAdapter(mockPlugin,
+                id -> null,
+                id -> null);
+        assertEquals(Material.STONE, adapter.mapBlock("__unknown__"));
+    }
+
+    @Test
+    void mapBiome_unknown_returnsPlainsFallback_mockito() {
+        var plains = mock(Biome.class);
+        var adapter = new Paper1_21_xAdapter(mockPlugin,
+                id -> null,
+                id -> "plains".equals(id) ? plains : null);
+        assertSame(plains, adapter.mapBiome("__unknown__"));
+    }
+
+    @Test
+    void mapBiome_plainsMissing_throws_mockito() {
+        var adapter = new Paper1_21_xAdapter(mockPlugin,
+                id -> null,
+                id -> null);
+        assertThrows(IllegalStateException.class,
+                () -> adapter.mapBiome("__unknown__"));
+    }
+
+    @Test
+    void isFolia_returnsFalse_mockito() {
+        var adapter = new Paper1_21_xAdapter(mockPlugin,
+                id -> Material.STONE,
+                id -> null);
+        assertFalse(adapter.isFolia());
+    }
+
+    // ---- MockBukkit-based tests ----
 
     private ServerMock server;
     private JavaPlugin plugin;

@@ -1,0 +1,54 @@
+# Gradle Version Catalog for GeoForge
+# Centralized dependency management for all modules
+
+[versions]
+# Test frameworks
+junitJupiter = "6.1.0"
+archunit = "1.4.2"
+assertj = "3.27.7"
+mockito = "5.23.0"
+mockbukkit = "4.110.0"
+junitPlatformLauncher = "2.1.0"
+
+# Paper API versions
+paperApi121 = "1.21.11-R0.1-SNAPSHOT"
+paperApi26 = "26.1.2.build.+"
+
+# Gradle plugins
+shadow = "9.4.2"
+spotbugs = "6.5.8"
+checkstyle = "13.6.0"
+
+# Tool versions
+jacoco = "0.8.15"
+spotbugsTool = "4.10.2"
+checkstyleTool = "13.6.0"
+
+[libraries]
+# Test libraries
+junitJupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junitJupiter" }
+assertjCore = { module = "org.assertj:assertj-core", version.ref = "assertj" }
+archunitJunit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
+junitPlatformLauncher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junitPlatformLauncher" }
+
+mockitoCore = { module = "org.mockito:mockito-core", version.ref = "mockito" }
+mockitoJunitJupiter = { module = "org.mockito:mockito-junit-jupiter", version.ref = "mockito" }
+mockbukkitV121 = { module = "org.mockbukkit.mockbukkit:mockbukkit-v1.21", version.ref = "mockbukkit" }
+
+# Paper API (two versions for dual toolchain support)
+paperApi121 = { module = "io.papermc.paper:paper-api", version.ref = "paperApi121" }
+paperApi26 = { module = "io.papermc.paper:paper-api", version.ref = "paperApi26" }
+
+[bundles]
+# Common test dependencies for all modules
+junitTesting = ["junitJupiter", "assertjCore", "junitPlatformLauncher"]
+
+# MockBukkit-based testing (JDK 21 modules)
+mockbukkitTesting = ["mockbukkitV121", "paperApi121"]
+
+# Mockito-based testing (JDK 25 modules)
+mockitoTesting = ["mockitoCore", "mockitoJunitJupiter"]
+
+[plugins]
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
+spotbugs = { id = "com.github.spotbugs", version.ref = "spotbugs" }

@@ -6,7 +6,7 @@ Zero-Bukkit math engine for terrain generation. All classes pure Java 21 with no
 
 ```
 engine/src/main/java/com/geoforge/engine/
-├── config/       GeoForgeConfig.java (19-field immutable record with cave noise)
+├── config/       GeoForgeConfig.java (22-field immutable record with river params)
 ├── noise/        SimplexNoise.java, FractalNoise.java
 ├── density/      DensityFunctionTree.java + 9 impls (Constant, ScaledNoise, etc.)
 ├── geology/      TectonicPlateMapper.java, HydraulicErosion.java
@@ -32,6 +32,9 @@ engine/src/main/java/com/geoforge/engine/
 - All noise seeded from `long` values — deterministic output
 - Density: positive = solid, negative = air
 - `RiverCarver` uses `@FunctionalInterface` for pluggable carving
+- `DensityFunctionTree` implementations compose via Add/Multiply/Clamp/Constant — immutable, no mutation
+- Surface height via binary search — `getSurfaceHeight()` is O(log n), not linear scan
+- Seed decorrelation: `seed ^ 0xCONSTANT` per noise layer (SimplexNoise/FractalNoise)
 
 ## Anti-Patterns
 
@@ -42,3 +45,16 @@ engine/src/main/java/com/geoforge/engine/
 
 - Format: `Feat:`, `Fix:`, `Chore:`, `Docs:` prefix with capital first letter
 - Message body explains the what/why, not boilerplate
+
+## Module Stats
+
+| Package | Source | Tests | Role |
+|---------|--------|-------|------|
+| `arch` | 0 | 1 | ArchUnit — zero Bukkit dependency enforcement |
+| `config` | 1 | 1 | Immutable terrain configuration (22 params) |
+| `noise` | 2 | 2 | SimplexNoise + FractalNoise (multi-octave) |
+| `density` | 11 | 4 | DensityFunctionTree interface + 9 implementations + RiverCarver |
+| `geology` | 2 | 2 | Tectonic plate mapper, hydraulic erosion simulation |
+| `biome` | 1 | 1 | 8×8 temperature-humidity biome lookup (38 vanilla IDs) |
+| `plateau` | 1 | 1 | Terrain flattening utility (unwired in production) |
+| root | 1 | 3 | GeoForgeEngine — orchestrates all subsystems |
