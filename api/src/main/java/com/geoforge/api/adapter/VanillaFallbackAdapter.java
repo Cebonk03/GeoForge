@@ -10,6 +10,7 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.block.Biome;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
+import java.util.function.Function;
 
 /**
  * A degraded adapter used when the server version is not in the supported range. Provides
@@ -23,23 +24,55 @@ import org.jetbrains.annotations.NotNull;
 public final class VanillaFallbackAdapter implements GeoForgeAdapter {
 
     private final JavaPlugin plugin;
+    private final Function<String, Material> blockLookup;
+    private final Function<String, Biome> biomeLookup;
 
+    /**
+     * Creates a fallback adapter with the given plugin.
+     * Uses hardcoded fallback mappings: always STONE and plains biome.
+     *
+     * @param plugin the owning plugin
+     */
     public VanillaFallbackAdapter(@NotNull JavaPlugin plugin) {
+        this(plugin, id -> Material.STONE, id -> {
+            var reg = RegistryAccess.registryAccess().getRegistry(RegistryKey.BIOME);
+            Biome biome = reg.get(NamespacedKey.minecraft("plains"));
+            if (biome == null) {
+                throw new IllegalStateException(
+                        "plains biome missing — corrupt server installation on "
+                                + Bukkit.getMinecraftVersion());
+            }
+            return biome;
+        });
+    }
+
+    /**
+     * Package-private constructor for testing.
+     *
+     * @param plugin      the owning plugin
+     * @param blockLookup function mapping engine block IDs to Materials
+     * @param biomeLookup function mapping engine biome IDs to Biomes
+     */
+    VanillaFallbackAdapter(@NotNull JavaPlugin plugin,
+                           @NotNull Function<String, Material> blockLookup,
+                           @NotNull Function<String, Biome> biomeLookup) {
         this.plugin = plugin;
+        this.blockLookup = blockLookup;
+        this.biomeLookup = biomeLookup;
     }
 
     @Override
     public @NotNull Material mapBlock(@NotNull String engineId) {
-        return Material.STONE;
+        Material block = blockLookup.apply(engineId);
+        return block != null ? block : Material.STONE;
     }
 
     @Override
     public @NotNull Biome mapBiome(@NotNull String engineId) {
-        var reg = RegistryAccess.registryAccess().getRegistry(RegistryKey.BIOME);
-        Biome biome = reg.get(NamespacedKey.minecraft("plains"));
+        Biome biome = biomeLookup.apply(engineId);
         if (biome == null) {
             throw new IllegalStateException(
-                    "plains biome missing — corrupt server installation on "
+                    "biome lookup failed for " + engineId + " — corrupt server installation on "
                             + Bukkit.getMinecraftVersion());
         }
         return biome;
