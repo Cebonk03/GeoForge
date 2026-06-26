@@ -2,6 +2,9 @@ package com.geoforge.plugin;
 
 import com.geoforge.api.adapter.GeoForgeAdapter;
 import com.geoforge.engine.GeoForgeEngine;
+import com.geoforge.engine.feature.BlockSetter;
+import com.geoforge.engine.feature.TreePlacer;
+import com.geoforge.engine.feature.VegetationPlacer;
 import org.bukkit.Material;
 import org.bukkit.generator.BiomeProvider;
 import org.bukkit.generator.ChunkGenerator;
@@ -26,11 +29,18 @@ public final class GeoForgeGenerator extends ChunkGenerator {
     private final GeoForgeAdapter adapter;
     private final GeoForgeEngine engine;
     private final GeoForgeBiomeProvider biomeProvider;
+    private final TreePlacer treePlacer;
+    private final VegetationPlacer vegetationPlacer;
 
     public GeoForgeGenerator(GeoForgeAdapter adapter, GeoForgeEngine engine) {
         this.adapter = adapter;
         this.engine = engine;
         this.biomeProvider = new GeoForgeBiomeProvider(adapter, engine);
+        this.treePlacer = new TreePlacer(
+                engine.config().treeDensity(),
+                engine.config().maxTreeHeight());
+        this.vegetationPlacer = new VegetationPlacer(
+                engine.config().vegetationDensity());
     }
 
     @Override
@@ -101,6 +111,15 @@ public final class GeoForgeGenerator extends ChunkGenerator {
         int minY = chunkData.getMinHeight();
         int maxY = chunkData.getMaxHeight();
 
+        // BlockSetter adapter: converts world coordinates to chunk-local coordinates
+        // and material names to server Material instances via the adapter
+        BlockSetter blockSetter = (wx, wy, wz, mat) -> {
+            int lx = wx - chunkX * CHUNK_SIZE;
+            int lz = wz - chunkZ * CHUNK_SIZE;
+            if (lx >= 0 && lx < CHUNK_SIZE && lz >= 0 && lz < CHUNK_SIZE) {
+                chunkData.setBlock(lx, wy, lz, adapter.mapBlock(mat));
+            }
+        };
         for (int x = 0; x < CHUNK_SIZE; x++) {
             for (int z = 0; z < CHUNK_SIZE; z++) {
                 int blockX = chunkX * CHUNK_SIZE + x;
@@ -124,6 +143,10 @@ public final class GeoForgeGenerator extends ChunkGenerator {
                         chunkData.setBlock(x, y, z, subBlock);
                     }
                 }
+
+                // Surface features (trees and vegetation)
+                treePlacer.place(blockSetter, blockX, blockZ, heightY, biomeId, random);
+                vegetationPlacer.place(blockSetter, blockX, blockZ, heightY, biomeId, random);
             }
         }
     }
