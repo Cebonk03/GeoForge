@@ -39,14 +39,12 @@ class SnapshotGenerationTest {
 
         byte[] hash = digest.digest();
         String checksum = HexFormat.of().formatHex(hash);
-        assertNotNull(checksum);
-        assertFalse(checksum.isEmpty());
-        // CAPTURE: Run with @Disabled to capture checksum, then pin as EXPECTED
-        // Until pinned, verifies determinism: same seed always produces same checksum
-        assertFalse(checksum.isEmpty(), "Heightmap checksum must not be empty");
-        assertEquals(checksum,
-                computeHeightChecksum(new GeoForgeEngine(SEED, CFG)),
-                "Heightmap checksum not deterministic");
+        // GOLDEN CHECKSUM — captured from seed=42 with GeoForgeConfig.defaults()
+        // Update this value when terrain generation changes intentionally
+        assertEquals(
+                "d243354f019260da0c6c64e88c54e4be9481018d9c90400ae92e6ec901456e2c",
+                checksum,
+                "Heightmap checksum mismatch — terrain output changed.");
     }
 
     @Test
