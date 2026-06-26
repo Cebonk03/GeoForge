@@ -4,8 +4,13 @@ import com.geoforge.engine.noise.NoiseSource;
 import com.geoforge.engine.noise.SimplexNoise;
 
 /**
- * River carver that uses 2D simplex noise to carve river valleys
+ * River carver that uses 2D simplex noise to carve v-shaped river valleys
  * along moisture convergence zones in the terrain.
+ *
+ * <p>This is the "vshaped" profile implementation. The carving tapers linearly
+ * from maximum at the valley center to zero at the valley edges, and also
+ * diminishes with depth below the terrain surface. The result is a classic
+ * V-shaped valley cross-section.
  *
  * <p>The carving applies only where the noise value falls below a threshold
  * determined by the configured river width. The threshold formula
