@@ -75,4 +75,3 @@ engine/src/main/java/com/geoforge/engine/
 | `feature` | 4 | 2 | GeoForgeFeature, BlockSetter, TreePlacer, VegetationPlacer |
 | `util` | 2 | 2 | DensityGuard, ThreadLocalBuffers |
 | root | 1 | 5 | GeoForgeEngine + Density3D, Integration, Snapshot, ThreadSafety |
-| root | 1 | 3 | GeoForgeEngine — orchestrates all subsystems |
