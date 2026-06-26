@@ -237,13 +237,13 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Download JaCoCo data (JDK 21)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: jacoco-data-jdk21
           path: build/jacoco/jdk21/
 
       - name: Download JaCoCo data (JDK 25)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: jacoco-data-jdk25
           path: build/jacoco/jdk25/
@@ -349,7 +349,7 @@ jobs:
           distribution: ${{ matrix.java == 25 && 'oracle' || 'temurin' }}
 
       - name: Download ShadowJAR
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: GeoForge
           path: .
