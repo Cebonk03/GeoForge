@@ -9,7 +9,7 @@ import java.util.SplittableRandom;
  * smoothly interpolated with a fade curve. This implementation produces values in [-1, 1]
  * and is continuous (C1 across lattice boundaries).
  */
-public final class SimplexNoise {
+public final class SimplexNoise implements NoiseSource {
 
     private static final int PERM_MASK = 255;
     private static final int PERM_SIZE = 256;
@@ -33,6 +33,16 @@ public final class SimplexNoise {
         for (int i = 0; i < PERM_SIZE * 2; i++) {
             perm[i] = table[i & PERM_MASK];
         }
+    }
+
+    @Override
+    public double sample2D(double x, double z) {
+        return sample(x, z);
+    }
+
+    @Override
+    public double sample3D(double x, double y, double z) {
+        return sample(x, y, z);
     }
 
     /** 2D noise sample at (x, z). */

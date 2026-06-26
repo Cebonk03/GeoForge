@@ -3,7 +3,7 @@ package com.geoforge.engine.noise;
 import com.geoforge.engine.density.DensityFunctionTree;
 
 /**
- * Multi-octave fractal noise that combines several octaves of {@link SimplexNoise} at
+ * Multi-octave fractal noise that combines several octaves of {@link NoiseSource} at
  * increasing frequencies for more natural-looking terrain.
  *
  * <p>Each octave adds detail at a smaller scale. The {@code lacunarity} controls the
@@ -13,17 +13,15 @@ import com.geoforge.engine.density.DensityFunctionTree;
  * <p>Supports both 2D (horizontal-only) and 3D (volumetric) sampling via
  * {@link #sample2D(double, double)} and {@link #sample3D(double, double, double)}.
  *
- * @param noise       the base {@link SimplexNoise} source
+ * @param noise       the base {@link NoiseSource} source
  * @param octaves     number of octaves to sum (must be &gt; 0)
  * @param lacunarity  frequency multiplier between octaves (must be &gt; 0)
  * @param persistence amplitude multiplier between octaves (must be &gt; 0)
  */
-public record FractalNoise(SimplexNoise noise, int octaves, double lacunarity, double persistence)
-        implements DensityFunctionTree {
-
+public record FractalNoise(NoiseSource noise, int octaves, double lacunarity, double persistence)
+        implements DensityFunctionTree, NoiseSource {
     /**
      * Validates that all parameters are positive.
-     *
      * @throws IllegalArgumentException if {@code octaves <= 0}, {@code lacunarity <= 0},
      *                                  or {@code persistence <= 0}
      */
@@ -72,7 +70,7 @@ public record FractalNoise(SimplexNoise noise, int octaves, double lacunarity, d
         double maxAmp = 0.0;
 
         for (int i = 0; i < octaves; i++) {
-            value += noise.sample(x * frequency, z * frequency) * amplitude;
+            value += noise.sample2D(x * frequency, z * frequency) * amplitude;
             maxAmp += amplitude;
             frequency *= lacunarity;
             amplitude *= persistence;
@@ -100,7 +98,7 @@ public record FractalNoise(SimplexNoise noise, int octaves, double lacunarity, d
         double maxAmp = 0.0;
 
         for (int i = 0; i < octaves; i++) {
-            value += noise.sample(x * frequency, y * frequency, z * frequency) * amplitude;
+            value += noise.sample3D(x * frequency, y * frequency, z * frequency) * amplitude;
             maxAmp += amplitude;
             frequency *= lacunarity;
             amplitude *= persistence;

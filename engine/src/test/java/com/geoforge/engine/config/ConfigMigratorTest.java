@@ -1,0 +1,166 @@
+package com.geoforge.engine.config;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+/**
+ * Tests for {@link ConfigMigrator}.
+ */
+class ConfigMigratorTest {
+
+    /**
+     * Builds a synthetic v1 config (configVersion = 1) with non-default values for
+     * the original 22 fields and intentionally different values for the 27 new fields
+     * so we can verify migration overwrites them with defaults.
+     */
+    private static GeoForgeConfig v1Config() {
+        return new GeoForgeConfig(
+                // V1 fields — set to values distinct from defaults
+                -60,    // minHeight (default: -64)
+                200,    // maxHeight (default: 180)
+                70,     // seaLevel (default: 63)
+                40.0,   // continentalBase (default: 50.0)
+                100.0,  // continentalHeightAmplitude (default: 120.0)
+                0.005,  // continentalFrequency (default: 0.004)
+                5,      // continentalOctaves (default: 4)
+                2.5,    // continentalLacunarity (default: 2.0)
+                0.6,    // continentalPersistence (default: 0.5)
+                0.002,  // temperatureFrequency (default: 0.001)
+                0.01,   // temperatureYFrequency (default: 0.005)
+                0.002,  // humidityFrequency (default: 0.001)
+                0.04,   // caveFrequency (default: 0.03)
+                10.0,   // caveAmplitude (default: 8.0)
+                3,      // caveOctaves (default: 2)
+                3.0,    // caveLacunarity (default: 2.0)
+                0.6,    // cavePersistence (default: 0.5)
+                0.02,   // riverFrequency (default: 0.01)
+                6,      // riverDepth (default: 8)
+                4,      // riverWidth (default: 3)
+                15,     // erosionMaxDropletSteps (default: 10)
+                128,    // erosionIterations (default: 64)
+                // V2 fields — set to non-default values to detect overwrite
+                -10.0,  // caveCenterY (default: -20.0)
+                40.0,   // caveSpread (default: 48.0)
+                5.0,    // caveSurfaceCutoff (default: 8.0)
+                0.4,    // caveSpaghettiThreshold (default: 0.3)
+                0.6,    // caveCheeseThreshold (default: 0.5)
+                0.2,    // caveNoodleThreshold (default: 0.15)
+                0.06,   // caveNoodleFrequency (default: 0.05)
+                1,      // riverCanyonDepth (default: 0)
+                3,      // riverCanyonWidth (default: 2)
+                "floodplain", // riverValleyProfile
+                10,     // riverFloodplainWidth (default: 5)
+                0.5,    // riverTableResponse (default: 0.0)
+                0.004,  // ridgeFrequency (default: 0.003)
+                4,      // ridgeOctaves (default: 3)
+                2.0,    // ridgeAmplitude (default: 1.0)
+                0.006,  // fbmFrequency (default: 0.005)
+                5,      // fbmOctaves (default: 4)
+                0.01,   // flatFrequency (default: 0.008)
+                3.0,    // continentalnessBlendSharpness (default: 2.0)
+                0.2,    // treeDensity (default: 0.1)
+                0.5,    // vegetationDensity (default: 0.3)
+                0xBEEFL, // featureSeedOffset (default: 0xCAFEBABEL)
+                15,     // maxTreeHeight (default: 12)
+                2048,   // erosionDropletCount (default: 1024)
+                0.3f,   // erosionGravity (default: 0.2f)
+                1.0,    // domainWarpAmplitude (default: 0.0)
+                1       // configVersion = 1 (v1)
+        );
+    }
+
+    @Test
+    void migrateV1PreservesAllOldFields() {
+        GeoForgeConfig v1 = v1Config();
+        GeoForgeConfig result = ConfigMigrator.migrate(v1);
+
+        // All 22 v1 fields must be preserved exactly
+        assertEquals(-60, result.minHeight());
+        assertEquals(200, result.maxHeight());
+        assertEquals(70, result.seaLevel());
+        assertEquals(40.0, result.continentalBase());
+        assertEquals(100.0, result.continentalHeightAmplitude());
+        assertEquals(0.005, result.continentalFrequency());
+        assertEquals(5, result.continentalOctaves());
+        assertEquals(2.5, result.continentalLacunarity());
+        assertEquals(0.6, result.continentalPersistence());
+        assertEquals(0.002, result.temperatureFrequency());
+        assertEquals(0.01, result.temperatureYFrequency());
+        assertEquals(0.002, result.humidityFrequency());
+        assertEquals(0.04, result.caveFrequency());
+        assertEquals(10.0, result.caveAmplitude());
+        assertEquals(3, result.caveOctaves());
+        assertEquals(3.0, result.caveLacunarity());
+        assertEquals(0.6, result.cavePersistence());
+        assertEquals(0.02, result.riverFrequency());
+        assertEquals(6, result.riverDepth());
+        assertEquals(4, result.riverWidth());
+        assertEquals(15, result.erosionMaxDropletSteps());
+        assertEquals(128, result.erosionIterations());
+
+        // configVersion must be upgraded to 2
+        assertEquals(2, result.configVersion());
+    }
+
+    @Test
+    void migrateV1FillsNewFieldsWithDefaults() {
+        GeoForgeConfig v1 = v1Config();
+        GeoForgeConfig result = ConfigMigrator.migrate(v1);
+        GeoForgeConfig defaults = GeoForgeConfig.defaults();
+
+        // Cave Y-envelope defaults
+        assertEquals(defaults.caveCenterY(), result.caveCenterY());
+        assertEquals(defaults.caveSpread(), result.caveSpread());
+        assertEquals(defaults.caveSurfaceCutoff(), result.caveSurfaceCutoff());
+        assertEquals(defaults.caveSpaghettiThreshold(), result.caveSpaghettiThreshold());
+        assertEquals(defaults.caveCheeseThreshold(), result.caveCheeseThreshold());
+        assertEquals(defaults.caveNoodleThreshold(), result.caveNoodleThreshold());
+        assertEquals(defaults.caveNoodleFrequency(), result.caveNoodleFrequency());
+
+        // River v2 defaults
+        assertEquals(defaults.riverCanyonDepth(), result.riverCanyonDepth());
+        assertEquals(defaults.riverCanyonWidth(), result.riverCanyonWidth());
+        assertEquals(defaults.riverValleyProfile(), result.riverValleyProfile());
+        assertEquals(defaults.riverFloodplainWidth(), result.riverFloodplainWidth());
+        assertEquals(defaults.riverTableResponse(), result.riverTableResponse());
+
+        // Multi-noise terrain defaults
+        assertEquals(defaults.ridgeFrequency(), result.ridgeFrequency());
+        assertEquals(defaults.ridgeOctaves(), result.ridgeOctaves());
+        assertEquals(defaults.ridgeAmplitude(), result.ridgeAmplitude());
+        assertEquals(defaults.fbmFrequency(), result.fbmFrequency());
+        assertEquals(defaults.fbmOctaves(), result.fbmOctaves());
+        assertEquals(defaults.flatFrequency(), result.flatFrequency());
+        assertEquals(defaults.continentalnessBlendSharpness(), result.continentalnessBlendSharpness());
+
+        // Decorations defaults
+        assertEquals(defaults.treeDensity(), result.treeDensity());
+        assertEquals(defaults.vegetationDensity(), result.vegetationDensity());
+        assertEquals(defaults.featureSeedOffset(), result.featureSeedOffset());
+        assertEquals(defaults.maxTreeHeight(), result.maxTreeHeight());
+
+        // Erosion defaults
+        assertEquals(defaults.erosionDropletCount(), result.erosionDropletCount());
+        assertEquals(defaults.erosionGravity(), result.erosionGravity());
+
+        // Domain warping defaults
+        assertEquals(defaults.domainWarpAmplitude(), result.domainWarpAmplitude());
+    }
+
+    @Test
+    void migrateIsIdempotent() {
+        GeoForgeConfig v1 = v1Config();
+        GeoForgeConfig once = ConfigMigrator.migrate(v1);
+        GeoForgeConfig twice = ConfigMigrator.migrate(once);
+
+        // Second migration must produce identical result (record equals compares all fields)
+        assertEquals(once, twice);
+    }
+
+    @Test
+    void migrateV2ReturnsSameInstance() {
+        GeoForgeConfig v2 = GeoForgeConfig.defaults();
+        assertSame(v2, ConfigMigrator.migrate(v2));
+    }
+}

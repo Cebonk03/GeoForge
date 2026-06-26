@@ -6,7 +6,22 @@ Zero-Bukkit math engine for terrain generation. All classes pure Java 21 with no
 
 ```
 engine/src/main/java/com/geoforge/engine/
-├── config/       GeoForgeConfig.java (22-field immutable record with river params)
+engine/src/main/java/com/geoforge/engine/
+├── config/       GeoForgeConfig.java (49-field immutable record), ConfigMigrator.java
+├── noise/        NoiseSource.java, SimplexNoise.java, FractalNoise.java,
+│                FastNoiseLite.java, FastNoiseLiteSource.java
+├── density/      DensityFunctionTree.java + 17 impls (Add, Clamp, CanyonRiverCarver,
+│                CaveYEnvelope, Constant, DomainWarpDensity, EnhancedCaveSystem,
+│                FloodplainRiverCarver, MultiNoiseHeightFunction, Multiply,
+│                NoopRiverCarver, PlateContinentalness, RiverCarver, ScaledNoise,
+│                ScaledNoise2D, SimplexRiverCarver)
+├── geology/      TectonicPlateMapper.java, HydraulicErosion.java
+├── biome/        BiomeLookupTable.java, BiomeTerrainConfig.java
+├── plateau/      StructurePlateauModifier.java (terrain flattening, unwired)
+├── feature/      BlockSetter.java, GeoForgeFeature.java, TreePlacer.java,
+│                VegetationPlacer.java
+├── util/         DensityGuard.java, ThreadLocalBuffers.java
+└── GeoForgeEngine.java (3D density: heightFunc - y + caveNoise)
 ├── noise/        SimplexNoise.java, FractalNoise.java
 ├── density/      DensityFunctionTree.java + 9 impls (Constant, ScaledNoise, etc.)
 ├── geology/      TectonicPlateMapper.java, HydraulicErosion.java
@@ -51,10 +66,12 @@ engine/src/main/java/com/geoforge/engine/
 | Package | Source | Tests | Role |
 |---------|--------|-------|------|
 | `arch` | 0 | 1 | ArchUnit — zero Bukkit dependency enforcement |
-| `config` | 1 | 1 | Immutable terrain configuration (22 params) |
-| `noise` | 2 | 2 | SimplexNoise + FractalNoise (multi-octave) |
-| `density` | 11 | 4 | DensityFunctionTree interface + 9 implementations + RiverCarver |
+| `config` | 2 | 2 | GeoForgeConfig (49 params), ConfigMigrator |
+| `noise` | 5 | 3 | NoiseSource, SimplexNoise, FractalNoise, FastNoiseLite, FastNoiseLiteSource |
+| `density` | 17 | 10 | DensityFunctionTree + 17 implementations incl. RiverCarvers, CaveSystem |
 | `geology` | 2 | 2 | Tectonic plate mapper, hydraulic erosion simulation |
-| `biome` | 1 | 1 | 8×8 temperature-humidity biome lookup (38 vanilla IDs) |
+| `biome` | 2 | 1 | BiomeLookupTable, BiomeTerrainConfig |
 | `plateau` | 1 | 1 | Terrain flattening utility (unwired in production) |
-| root | 1 | 3 | GeoForgeEngine — orchestrates all subsystems |
+| `feature` | 4 | 2 | GeoForgeFeature, BlockSetter, TreePlacer, VegetationPlacer |
+| `util` | 2 | 2 | DensityGuard, ThreadLocalBuffers |
+| root | 1 | 5 | GeoForgeEngine + Density3D, Integration, Snapshot, ThreadSafety |

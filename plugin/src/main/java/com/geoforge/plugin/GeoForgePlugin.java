@@ -30,7 +30,7 @@ public final class GeoForgePlugin extends JavaPlugin {
 
         // Config version check for future migration support
         int configVersion = cfg.getInt("config-version", 0);
-        int expectedVersion = 1;
+        int expectedVersion = 2;
         if (configVersion != expectedVersion) {
             getLogger().warning(
                     "Expected config-version=" + expectedVersion
@@ -61,13 +61,40 @@ public final class GeoForgePlugin extends JavaPlugin {
 .riverWidth(cfg.getInt("river.width", 3))
 .erosionMaxDropletSteps(cfg.getInt("erosion.max-droplet-steps", 10))
 .erosionIterations(cfg.getInt("erosion.iterations", 64))
+.caveCenterY(cfg.getDouble("cave.center-y", -20.0))
+.caveSpread(cfg.getDouble("cave.spread", 48.0))
+.caveSurfaceCutoff(cfg.getDouble("cave.surface-cutoff", 8.0))
+.caveSpaghettiThreshold(cfg.getDouble("cave.spaghetti-threshold", 0.3))
+.caveCheeseThreshold(cfg.getDouble("cave.cheese-threshold", 0.5))
+.caveNoodleThreshold(cfg.getDouble("cave.noodle-threshold", 0.15))
+.caveNoodleFrequency(cfg.getDouble("cave.noodle-frequency", 0.05))
+.riverCanyonDepth(cfg.getInt("river.canyon-depth", 0))
+.riverCanyonWidth(cfg.getInt("river.canyon-width", 2))
+.riverValleyProfile(cfg.getString("river.valley-profile", "vshaped"))
+.riverFloodplainWidth(cfg.getInt("river.floodplain-width", 5))
+.riverTableResponse(cfg.getDouble("river.table-response", 0.0))
+.ridgeFrequency(cfg.getDouble("noise.ridge-frequency", 0.003))
+.ridgeOctaves(cfg.getInt("noise.ridge-octaves", 3))
+.ridgeAmplitude(cfg.getDouble("noise.ridge-amplitude", 1.0))
+.fbmFrequency(cfg.getDouble("noise.fbm-frequency", 0.005))
+.fbmOctaves(cfg.getInt("noise.fbm-octaves", 4))
+.flatFrequency(cfg.getDouble("noise.flat-frequency", 0.008))
+.continentalnessBlendSharpness(cfg.getDouble("noise.continentalness-blend-sharpness", 2.0))
+.treeDensity(cfg.getDouble("decorations.tree-density", 0.1))
+.vegetationDensity(cfg.getDouble("decorations.vegetation-density", 0.3))
+.featureSeedOffset(cfg.getLong("decorations.feature-seed-offset", 0xCAFEBABEL))
+.maxTreeHeight(cfg.getInt("decorations.max-tree-height", 12))
+.erosionDropletCount(cfg.getInt("erosion.droplet-count", 1024))
+.erosionGravity((float) cfg.getDouble("erosion.gravity", 0.2))
+.domainWarpAmplitude(cfg.getDouble("domain-warp.amplitude", 0.0))
+.configVersion(cfg.getInt("config-version", 2))
 .build();
         this.engine = new GeoForgeEngine(seed, engineConfig);
 
         getLogger().info(
                 "GeoForge enabled | adapter=" + adapter.getClass().getSimpleName()
                         + " | folia=" + adapter.isFolia()
-                        + " | seed=" + seed
+                        + " | seed=<redacted>"
                         + " | version=" + Bukkit.getMinecraftVersion()
                         + " | config-version=" + configVersion);
     }

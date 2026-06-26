@@ -1,5 +1,6 @@
 package com.geoforge.engine.geology;
 
+import com.geoforge.engine.noise.NoiseSource;
 import com.geoforge.engine.noise.SimplexNoise;
 import java.util.SplittableRandom;
 
@@ -17,8 +18,8 @@ public final class TectonicPlateMapper {
 
     private final float[] plateX;
     private final float[] plateZ;
-    private final SimplexNoise coastlineNoise;
-    private final SimplexNoise modulateNoise;
+    private final NoiseSource coastlineNoise;
+    private final NoiseSource modulateNoise;
 
     /** Creates a mapper with a default plate count of 12. */
     public TectonicPlateMapper(long seed) {
@@ -73,8 +74,8 @@ public final class TectonicPlateMapper {
                         / ((float) Math.sqrt(secondMinDistSq) + 0.001f);
 
         // Modulate with noise for organic coastlines
-        double noiseMod = coastlineNoise.sample(blockX * 0.002, blockZ * 0.002) * 0.3;
-        double largeMod = modulateNoise.sample(blockX * 0.0005, blockZ * 0.0005) * 0.2;
+        double noiseMod = coastlineNoise.sample2D(blockX * 0.002, blockZ * 0.002) * 0.3;
+        double largeMod = modulateNoise.sample2D(blockX * 0.0005, blockZ * 0.0005) * 0.2;
 
         float raw = edgeFactor + (float) noiseMod + (float) largeMod;
         return clamp(raw, 0.0f, 1.0f);

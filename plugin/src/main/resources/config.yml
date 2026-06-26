@@ -5,7 +5,7 @@
 seed: 0
 
 # Config version for migration support. Increment when structure changes.
-config-version: 1
+config-version: 2
 
 # Terrain height bounds (in block units)
 terrain:
@@ -26,6 +26,13 @@ noise:
   cave-octaves: 2            # Detail octaves for cave shape
   cave-lacunarity: 2.0       # Frequency multiplier per cave octave
   cave-persistence: 0.5      # Amplitude decay per cave octave
+  ridge-frequency: 0.003
+  ridge-octaves: 3
+  ridge-amplitude: 1.0
+  fbm-frequency: 0.005
+  fbm-octaves: 4
+  flat-frequency: 0.008
+  continentalness-blend-sharpness: 2.0
 
 # Climate noise frequencies
 climate:
@@ -33,13 +40,41 @@ climate:
   temperature-y-frequency: 0.005
   humidity-frequency: 0.001
 
+# Cave Y-envelope -- vertical distribution and shape variants
+cave:
+  center-y: -20.0
+  spread: 48.0
+  surface-cutoff: 8.0
+  spaghetti-threshold: 0.3
+  cheese-threshold: 0.5
+  noodle-threshold: 0.15
+  noodle-frequency: 0.05
+
 # River carving parameters
 river:
   frequency: 0.01
   depth: 8
   width: 3
+  canyon-depth: 0
+  canyon-width: 2
+  valley-profile: vshaped
+  floodplain-width: 5
+  table-response: 0.0
 
 # Hydraulic erosion droplet simulation
 erosion:
   max-droplet-steps: 10
   iterations: 64
+  droplet-count: 1024
+  gravity: 0.2
+
+# Surface decoration parameters
+decorations:
+  tree-density: 0.1
+  vegetation-density: 0.3
+  feature-seed-offset: 3405691582
+  max-tree-height: 12
+
+# Domain warping -- terrain distortion amplitude
+domain-warp:
+  amplitude: 0.0

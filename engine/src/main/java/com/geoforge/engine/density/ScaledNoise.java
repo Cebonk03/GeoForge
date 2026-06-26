@@ -1,6 +1,6 @@
 package com.geoforge.engine.density;
 
-import com.geoforge.engine.noise.SimplexNoise;
+import com.geoforge.engine.noise.NoiseSource;
 
 /**
  * A density function that samples a SimplexNoise instance with configurable scale factors.
@@ -10,11 +10,11 @@ import com.geoforge.engine.noise.SimplexNoise;
  * @param yScale  scaling factor for the y-coordinate
  * @param zScale  scaling factor for the z-coordinate
  */
-public record ScaledNoise(SimplexNoise noise, double xScale, double yScale, double zScale)
+public record ScaledNoise(NoiseSource noise, double xScale, double yScale, double zScale)
         implements DensityFunctionTree {
 
     @Override
     public double sample(double x, double y, double z) {
-        return noise.sample(x * xScale, y * yScale, z * zScale);
+        return noise.sample3D(x * xScale, y * yScale, z * zScale);
     }
 }

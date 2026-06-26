@@ -1,6 +1,6 @@
 package com.geoforge.engine.density;
 
-import com.geoforge.engine.noise.SimplexNoise;
+import com.geoforge.engine.noise.NoiseSource;
 
 /**
  * A horizontal-only 2D noise sampler that ignores the Y coordinate.
@@ -18,11 +18,11 @@ import com.geoforge.engine.noise.SimplexNoise;
  * @param xScale scaling factor applied to the x-coordinate before sampling
  * @param zScale scaling factor applied to the z-coordinate before sampling
  */
-public record ScaledNoise2D(SimplexNoise noise, double xScale, double zScale)
+public record ScaledNoise2D(NoiseSource noise, double xScale, double zScale)
         implements DensityFunctionTree {
 
     @Override
     public double sample(double x, double y, double z) {
-        return noise.sample(x * xScale, z * zScale);
+        return noise.sample2D(x * xScale, z * zScale);
     }
 }
