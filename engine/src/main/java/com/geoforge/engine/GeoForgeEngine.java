@@ -12,14 +12,21 @@ import com.geoforge.engine.density.DensityFunctionTree;
 import com.geoforge.engine.density.MultiplyDensity;
 import com.geoforge.engine.density.PlateContinentalness;
 import com.geoforge.engine.density.RiverCarver;
-import com.geoforge.engine.density.SimplexRiverCarver;
 import com.geoforge.engine.density.NoopRiverCarver;
+import com.geoforge.engine.density.SimplexRiverCarver;
+import com.geoforge.engine.density.CanyonRiverCarver;
+import com.geoforge.engine.density.FloodplainRiverCarver;
 import com.geoforge.engine.density.DomainWarpDensity;
 import com.geoforge.engine.geology.HydraulicErosion;
 import com.geoforge.engine.geology.TectonicPlateMapper;
+import com.geoforge.engine.density.MultiNoiseHeightFunction;
 import com.geoforge.engine.noise.FractalNoise;
 import com.geoforge.engine.noise.SimplexNoise;
 import java.util.Set;
+import com.geoforge.engine.biome.BiomeTerrainConfig;
+import com.geoforge.engine.density.EnhancedCaveSystem;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * The core world generation engine for GeoForge.
@@ -36,7 +43,6 @@ import java.util.Set;
 public final class GeoForgeEngine {
 
     private final GeoForgeConfig config;
-    private final FractalNoise continentalNoise;
     private final NoiseSource temperatureNoise;
     private final NoiseSource humidityNoise;
     private final TectonicPlateMapper plateMapper;
@@ -45,6 +51,8 @@ public final class GeoForgeEngine {
     private final HydraulicErosion erosion;
     private final FractalNoise caveNoise;
     private final RiverCarver riverCarver;
+    private final NoiseSource noodleNoise;
+    private final Map<String, BiomeTerrainConfig> biomeConfigs;
     private final DensityFunctionTree domainWarpedHeight;
 
     /**
@@ -57,30 +65,36 @@ public final class GeoForgeEngine {
         this.config = config;
         this.plateMapper = new TectonicPlateMapper(seed ^ 0xDEADBEEFL);
 
-        this.continentalNoise = new FractalNoise(
-                new SimplexNoise(seed ^ 0x123456789ABCDEFL),
-                config.continentalOctaves(),
-                config.continentalLacunarity(),
-                config.continentalPersistence());
+        // Multi-noise terrain: ridge (mountains), FBM (hills), flat (plains/oceans)
+        var ridgeSimplex = new SimplexNoise(seed ^ 0xA123456789ABCDEFL);
+        var fbmSimplex = new SimplexNoise(seed ^ 0xB23456789ABCDEF1L);
+        var flatSimplex = new SimplexNoise(seed ^ 0xC3456789ABCDEF12L);
         this.temperatureNoise = new SimplexNoise(seed ^ 0x23456789ABCDEF1L);
         this.humidityNoise = new SimplexNoise(seed ^ 0x3456789ABCDEF12L);
 
-        // Build composite height function:
-        // 1. Multi-octave fractal noise for terrain detail (additive, not multiplicative —
-        //    avoids inverting the tectonic signal when noise is negative)
-        DensityFunctionTree detailNoise = (x, y, z) -> continentalNoise.sample2D(
-                x * config.continentalFrequency(), z * config.continentalFrequency());
-        var scaledDetail = new MultiplyDensity(detailNoise,
+        // Build composite height function using multi-noise blending:
+        // 1. MultiNoiseHeightFunction blends ridge/FBM/flat based on continentalness
+        var multiNoise = new MultiNoiseHeightFunction(
+                ridgeSimplex, fbmSimplex, flatSimplex,
+                plateMapper,
+                seed ^ 0xE70DE5L,
+                config.ridgeFrequency(),
+                config.fbmFrequency(),
+                config.flatFrequency(),
+                config.ridgeAmplitude(),
+                config.continentalnessBlendSharpness());
+        // 2. Scale the blended detail to block height magnitude
+        var scaledMulti = new MultiplyDensity(multiNoise,
                 new ConstantDensity(config.continentalHeightAmplitude() / 6.0));
-        // 2. Tectonic plate influence — at c=0 (deep ocean): -continentalBase blocks,
+        // 3. Tectonic plate influence — at c=0 (deep ocean): -continentalBase blocks,
         //    at c=1 (continent interior): continentalHeightAmplitude blocks
         var plates = new PlateContinentalness(plateMapper,
                 -config.continentalBase(),
                 config.continentalBase() + config.continentalHeightAmplitude());
-        var combined = new AddDensity(scaledDetail, plates);
-        // 3. Shift so sea level aligns with the configured value
+        var combined = new AddDensity(scaledMulti, plates);
+        // 4. Shift so sea level aligns with the configured value
         var shifted = new AddDensity(combined, new ConstantDensity(config.seaLevel()));
-        // 4. Clamp to world height bounds
+        // 5. Clamp to world height bounds
         this.heightFunction = new ClampDensity(shifted, config.minHeight(), config.maxHeight());
 
         // Domain warping: wrap the height function for terrain distortion
@@ -99,14 +113,32 @@ public final class GeoForgeEngine {
                 config.caveOctaves(),
                 config.caveLacunarity(),
                 config.cavePersistence());
+
+        // Noodle cave noise source (seed-decorrelated from spaghetti cave noise)
+        this.noodleNoise = new SimplexNoise(seed ^ 0x56789ABCDEF0123L);
+
+        this.biomeConfigs = new HashMap<>();
         if (config.riverDepth() == 0) {
             this.riverCarver = NoopRiverCarver.instance();
         } else {
-            this.riverCarver = new SimplexRiverCarver(
-                    seed ^ 0xFEEDBEEFL,
-                    config.riverFrequency(),
-                    config.riverDepth(),
-                    config.riverWidth());
+            this.riverCarver = switch (config.riverValleyProfile()) {
+                case "canyon" -> new CanyonRiverCarver(
+                        seed ^ 0xFEEDBEEFL,
+                        config.riverFrequency(),
+                        config.riverCanyonDepth(),
+                        config.riverCanyonWidth());
+                case "floodplain" -> new FloodplainRiverCarver(
+                        seed ^ 0xFEEDBEEFL,
+                        config.riverFrequency(),
+                        config.riverDepth(),
+                        config.riverFloodplainWidth());
+                default -> new SimplexRiverCarver(
+                        seed ^ 0xFEEDBEEFL,
+                        config.riverFrequency(),
+                        config.riverDepth(),
+                        config.riverWidth());
+            };
+
         }
     }
 
@@ -143,6 +175,26 @@ public final class GeoForgeEngine {
                 blockY * config.caveFrequency(),
                 blockZ * config.caveFrequency());
         double density = targetHeight - blockY + cave * config.caveAmplitude();
+
+        // Enhanced cave system (v2+): additional three-type cave carving
+        // Only applies to blocks well below the surface (outside the envelope cutoff zone)
+        // to preserve a smooth density transition at the terrain surface
+        if (config.configVersion() >= 2 && config.caveAmplitude() > 0
+                && blockY < targetHeight - config.caveSurfaceCutoff()) {
+            double noodleFreq = config.caveNoodleFrequency();
+            double noodleA = noodleNoise.sample3D(
+                    blockX * noodleFreq,
+                    blockY * noodleFreq,
+                    blockZ * noodleFreq);
+            double noodleB = noodleNoise.sample3D(
+                    (blockX + 1000) * noodleFreq,
+                    blockY * noodleFreq,
+                    (blockZ + 1000) * noodleFreq);
+            density = EnhancedCaveSystem.carve(
+                    density, cave, noodleA, noodleB,
+                    blockY, targetHeight, config);
+        }
+
         return DensityGuard.clamp(riverCarver.carve(density, blockX, blockY, blockZ),
                 config.minHeight(), config.maxHeight());
     }
@@ -180,7 +232,9 @@ public final class GeoForgeEngine {
      * <p>The Y coordinate affects the temperature value via the configured vertical
      * temperature gradient ({@link GeoForgeConfig#temperatureYFrequency()}), so
      * altitude-aware biome transitions occur naturally when queried at the actual
-     * terrain height.
+     * terrain height. The continentalness from the {@link TectonicPlateMapper}
+     * selects the environment tier (ocean, coast, inland, or highland) via
+     * {@link BiomeLookupTable#lookup(double, double, double)}.
      *
      * @param blockX the x-coordinate in block space
      * @param blockY the y-coordinate in block space (affects temperature)
@@ -195,7 +249,8 @@ public final class GeoForgeEngine {
         double humidity = (humidityNoise.sample2D(
                 blockX * config.humidityFrequency(),
                 blockZ * config.humidityFrequency()) + 1.0) * 0.5;
-        return BiomeLookupTable.lookup(temp, humidity);
+        float continentalness = plateMapper.getContinentalness(blockX, blockZ);
+        return BiomeLookupTable.lookup(temp, humidity, continentalness);
     }
 
     /**
