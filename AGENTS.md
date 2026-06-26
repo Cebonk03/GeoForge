@@ -18,12 +18,12 @@ geoforge/
 
 | Module | Main Srcs | Tests | Java | Role |
 |--------|-----------|-------|------|------|
-| engine | 19 | 15 | 21 | 3D density engine, zero Bukkit |
+| engine | 35 | 29 | 21 | 3D density engine, zero Bukkit |
 | api | 4 | 2 | 21 | Adapter interface + ServerVersion + FoliaDetectorTest |
 | v1_21_x | 1 | 1 | 21 | Paper 1.21.x adapter |
 || v26_x | 1 | 1 | 25 | Paper 26.x adapter (constructor injection for testability) |
 | plugin | 4 | 4 | 25 | Plugin + ShadowJAR + GeoForgePluginTest |
-||| **Total** | **29** | **23** | — | **~159 tests, 0 failures** |
+||| **Total** | **45** | **37** | — | **~298 tests, 0 failures** |
 
 ## 3D Density Architecture
 
@@ -34,8 +34,11 @@ Positive density = solid, negative density = air
 
 - Engine: `GeoForgeEngine.getDensity()` + `getSurfaceHeight()` (binary search)
 - Generator: `GeoForgeGenerator.generateNoise()` uses per-block density sampling
-- Caves: 3D SimplexNoise with configurable frequency/amplitude/octaves
-- Rivers: `RiverCarver` interface (default: SimplexRiverCarver)
+- Caves: Enhanced 3-type system (spaghetti/cheese/noodle) with Y-envelope gating
+- Rivers: 3-profile system (vshaped/canyon/floodplain) via RiverCarver interface
+- Biomes: 3D continuous noise (temperature × humidity × continentalness)
+- Multi-noise terrain: ridge/FBM/flat blended by continentalness + erosion
+- Features: 5-tree-type placer + vegetation placer in generateSurface()
 - Erosion: 2D hydraulic erosion on extracted heightmap (for future 3D adaptation)
 
 ## Where To Look

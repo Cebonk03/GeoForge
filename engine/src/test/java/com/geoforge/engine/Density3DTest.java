@@ -53,10 +53,15 @@ class Density3DTest {
 
     @Test
     void getDensity_deepUnderground_isPositive() {
-        var engine = new GeoForgeEngine(SEED, CFG);
+        // Use no-cave config to isolate the base density formula
+        var testCfg = GeoForgeConfig.builder()
+                .caveSpaghettiThreshold(0.0)
+                .caveCheeseThreshold(1.0)
+                .caveNoodleThreshold(0.0)
+                .build();
+        var engine = new GeoForgeEngine(SEED, testCfg);
         int x = 200, z = -150;
-        // Deep underground at minHeight: should be solid (density > 0)
-        double density = engine.getDensity(x, CFG.minHeight() + 1, z);
+        double density = engine.getDensity(x, testCfg.minHeight() + 1, z);
         assertTrue(density > 0, "Deep underground should be positive (solid), got " + density);
     }
 

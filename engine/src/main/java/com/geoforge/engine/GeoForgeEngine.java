@@ -108,7 +108,7 @@ public final class GeoForgeEngine {
                 config.domainWarpAmplitude());
 
         this.allBiomeIds = BiomeLookupTable.getAllBiomeIds();
-        this.erosion = new HydraulicErosion(config.erosionMaxDropletSteps());
+        this.erosion = new HydraulicErosion(config.erosionMaxDropletSteps(), config.erosionGravity());
 
         // 3D cave noise: multi-octave fractal for underground carving
         this.caveNoise = new FractalNoise(

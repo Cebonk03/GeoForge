@@ -5,6 +5,7 @@ import com.geoforge.engine.GeoForgeEngine;
 import com.geoforge.engine.feature.BlockSetter;
 import com.geoforge.engine.feature.TreePlacer;
 import com.geoforge.engine.feature.VegetationPlacer;
+import com.geoforge.engine.util.ThreadLocalBuffers;
 import org.bukkit.Material;
 import org.bukkit.generator.BiomeProvider;
 import org.bukkit.generator.ChunkGenerator;
@@ -57,12 +58,14 @@ public final class GeoForgeGenerator extends ChunkGenerator {
         Material water = adapter.mapBlock("water");
         Material bedrock = adapter.mapBlock("bedrock");
 
-        // Pre-compute eroded surface heights for this chunk
-        float[] erodedHeights = new float[CHUNK_SIZE * CHUNK_SIZE];
+        // Pre-compute eroded surface heights for this chunk (recycled buffer)
+        float[] erodedHeights = ThreadLocalBuffers.acquire().floatArray(CHUNK_SIZE * CHUNK_SIZE);
         engine.erodeColumn(erodedHeights, CHUNK_SIZE,
                 chunkX * CHUNK_SIZE, chunkZ * CHUNK_SIZE,
                 worldInfo.getSeed());
-
+        engine.erodeColumn(erodedHeights, CHUNK_SIZE,
+                chunkX * CHUNK_SIZE, chunkZ * CHUNK_SIZE,
+                worldInfo.getSeed());
         boolean erosionActive = engine.config().erosionIterations() > 0
                 && engine.config().erosionDropletCount() > 0;
 

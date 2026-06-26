@@ -5,36 +5,47 @@ import java.util.SplittableRandom;
 /**
  * Hydraulic erosion simulation using a droplet-based approach.
  *
- * <p>Instances are configured with a maximum number of simulation steps per droplet.
+ * <p>Instances are configured with gravity and a maximum number of simulation steps per droplet.
  * The heightmap array is provided by the caller and modified in-place.
  */
 public final class HydraulicErosion {
 
     private static final float MIN_VELOCITY = 0.01f;
-    private static final float GRAVITY = 0.2f;
     private static final float EVAPORATION = 0.01f;
     private static final float SEDIMENT_CAPACITY = 8.0f;
     private static final float DEPOSITION = 0.5f;
     private static final float EROSION = 0.5f;
 
     private final int maxSteps;
+    private final float gravity;
 
-    /**
-     * Creates an erosion simulator with the default maximum of 10 steps per droplet.
-     */
+    /** Creates an erosion simulator with default gravity of 0.2 and 10 max steps. */
     public HydraulicErosion() {
-        this(10);
+        this(10, 0.2f);
     }
 
     /**
      * Creates an erosion simulator with a configurable maximum step count per droplet.
+     * Uses default gravity of 0.2.
      *
      * @param maxSteps the maximum number of simulation steps per droplet; must be &gt; 0
      * @throws IllegalArgumentException if {@code maxSteps <= 0}
      */
     public HydraulicErosion(int maxSteps) {
+        this(maxSteps, 0.2f);
+    }
+
+    /**
+     * Creates an erosion simulator with configurable step count and gravity.
+     *
+     * @param maxSteps the maximum number of simulation steps per droplet; must be &gt; 0
+     * @param gravity  gravitational acceleration per simulation step
+     * @throws IllegalArgumentException if {@code maxSteps <= 0}
+     */
+    public HydraulicErosion(int maxSteps, float gravity) {
         if (maxSteps <= 0) throw new IllegalArgumentException("maxSteps must be > 0");
         this.maxSteps = maxSteps;
+        this.gravity = gravity;
     }
 
     /**
@@ -49,7 +60,6 @@ public final class HydraulicErosion {
         var rng = new SplittableRandom(seed);
 
         for (int i = 0; i < iterations; i++) {
-            // Start droplet at random position
             float posX = rng.nextFloat() * (size - 1);
             float posZ = rng.nextFloat() * (size - 1);
             float velX = 0.0f;
@@ -68,19 +78,15 @@ public final class HydraulicErosion {
                 float gradZ = getHeight(heightmap, size, xi, zi + 1)
                         - getHeight(heightmap, size, xi, zi - 1);
 
-                // Update velocity
-                velX = velX * 0.9f - gradX * GRAVITY;
-                velZ = velZ * 0.9f - gradZ * GRAVITY;
+                // Update velocity with configurable gravity
+                velX = velX * 0.9f - gradX * gravity;
+                velZ = velZ * 0.9f - gradZ * gravity;
 
-                // Move droplet
                 posX += velX;
                 posZ += velZ;
 
-                // Check stop condition
                 float speed = (float) Math.sqrt(velX * velX + velZ * velZ);
                 if (speed < MIN_VELOCITY) break;
-
-                // Check bounds
                 if (posX < 0 || posX >= size || posZ < 0 || posZ >= size) break;
 
                 int newXi = clamp((int) posX, 0, size - 1);
@@ -103,7 +109,6 @@ public final class HydraulicErosion {
                     }
                 }
 
-                // Evaporation
                 water *= (1.0f - EVAPORATION);
                 if (water < 0.01f) break;
             }

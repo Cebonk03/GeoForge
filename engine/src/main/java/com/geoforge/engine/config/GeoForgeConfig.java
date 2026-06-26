@@ -265,7 +265,6 @@ public record GeoForgeConfig(
                     "riverValleyProfile must be 'vshaped', 'canyon', or 'floodplain', got '"
                             + riverValleyProfile + "'");
         }
-        Objects.requireNonNull(riverValleyProfile, "riverValleyProfile must not be null");
         // Multi-noise terrain validation
         if (ridgeFrequency <= 0) {
             throw new IllegalArgumentException(

@@ -56,6 +56,6 @@ public final class CaveYEnvelope {
             surfaceFactor = 0.0;
         }
 
-        return verticalFactor * (1.0 - surfaceFactor);
+        return verticalFactor * surfaceFactor;
     }
 }

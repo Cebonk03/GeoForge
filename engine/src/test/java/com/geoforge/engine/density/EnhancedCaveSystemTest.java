@@ -240,27 +240,27 @@ class EnhancedCaveSystemTest {
                 .caveSurfaceCutoff(8.0)
                 .build();
 
-        // y >= surfaceY (above or at the height function surface):
-        // envelope surfaceFactor = 0 (no surface suppression above surfaceY)
-        // caves can still carve, but envelope is reduced by vertical Gaussian
-        // y=63 >= surfaceY=63 → surfaceFactor=0, envelope=verticalFactor*1.0 ≈ 0.224
+        // At y == surfaceY: surfaceFactor = 0, envelope = verticalFactor * 0 = 0
+        // EnhancedCaveSystem gate: envelope < 1e-6 → return original density unchanged
         double atSurface = EnhancedCaveSystem.carve(
                 5.0, 0.1, 0.5, 0.5,
                 63, 63, cfg);
 
-        assertTrue(atSurface < 5.0,
-                "caves can carve at surface when y >= surfaceY (no surface suppression)");
-        assertTrue(atSurface > -1.0,
-                "carving at surface is weaker than deep underground");
+        assertEquals(5.0, atSurface, 1e-6,
+                "caves must NOT carve at the surface (envelope = 0)");
 
         // y = 55 (8 blocks below surface, surfaceY = 63):
         // surfaceFactor = min(1, (63-55)/8) = 1.0 → envelope = verticalFactor * 0 = 0
+        // y = 55 (8 blocks below surface, surfaceY = 63):
+        // At cutoff boundary: surfaceFactor = min(1, 8/8) = 1.0
+        // With fixed formula: envelope = verticalFactor * 1.0 = verticalFactor
+        // Caves CAN carve here since envelope > 0
         double eightBelow = EnhancedCaveSystem.carve(
                 5.0, 0.1, 0.5, 0.5,
                 55, 63, cfg);
 
-        assertEquals(5.0, eightBelow, EPSILON,
-                "caves suppressed at surfaceCutoff distance below surface (envelope=0)");
+        assertTrue(eightBelow < 5.0,
+                "caves can carve at cutoff boundary (envelope = verticalFactor > 0)");
 
         // y = 62 (1 block below surface), surfaceY = 63
         // surfaceFactor = (63-62)/8 = 0.125 → envelope = verticalFactor * 0.875
