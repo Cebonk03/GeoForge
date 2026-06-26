@@ -1,4 +1,4 @@
-name: CI — Full
+name: CI - Full
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ env:
 
 jobs:
   ###########################################################################
-  # VALIDATE — Gradle wrapper integrity
+  # VALIDATE - Gradle wrapper integrity
   ###########################################################################
   validate:
     name: Validate
@@ -31,10 +31,10 @@ jobs:
         run: java -jar gradle/wrapper/gradle-wrapper.jar --version 2>&1 | head -3
 
   ###########################################################################
-  # BUILD — matrix: compile + test per JDK toolchain
+  # BUILD - matrix: compile + test per JDK toolchain
   ###########################################################################
   build:
-    name: "JDK ${{ matrix.java }} — compile + test"
+    name: "JDK ${{ matrix.java }} - compile + test"
     runs-on: ubuntu-latest
     needs: validate
     permissions:
@@ -67,11 +67,11 @@ jobs:
         if: matrix.java == 25
         run: ./gradlew :adapters:v26_x:compileJava :plugin:compileJava --no-daemon
 
-      - name: Run unit tests (JDK 21 — engine, api, v1_21_x adapter)
+      - name: Run unit tests (JDK 21 - engine, api, v1_21_x adapter)
         if: matrix.java == 21
         run: ./gradlew :engine:test :api:test :adapters:v1_21_x:test --no-daemon
 
-      - name: Run unit tests (JDK 25 — v26_x adapter, plugin)
+      - name: Run unit tests (JDK 25 - v26_x adapter, plugin)
         if: matrix.java == 25
         run: ./gradlew :adapters:v26_x:test :plugin:test --no-daemon
 
@@ -91,10 +91,10 @@ jobs:
           include-hidden-files: true
 
   ###########################################################################
-  # QUALITY — unified static analysis with BOTH JDKs
+  # QUALITY - unified static analysis with BOTH JDKs
   ###########################################################################
   quality:
-    name: Quality — SpotBugs + Checkstyle + ArchUnit + banned API scan
+    name: Quality - SpotBugs + Checkstyle + ArchUnit + banned API scan
     runs-on: ubuntu-latest
     needs: build
     permissions:
@@ -126,7 +126,7 @@ jobs:
       - name: Compile all modules (both JDK 21 + 25 toolchains)
         run: ./gradlew classes --no-daemon
 
-      - name: SpotBugs — bug pattern detection (all modules)
+      - name: SpotBugs - bug pattern detection (all modules)
         run: >
           ./gradlew
           :engine:spotbugsMain
@@ -143,7 +143,7 @@ jobs:
           name: spotbugs-reports
           path: '**/build/reports/spotbugs/'
 
-      - name: Checkstyle — code style enforcement (all modules)
+      - name: Checkstyle - code style enforcement (all modules)
         run: >
           ./gradlew
           :engine:checkstyleMain
@@ -160,7 +160,7 @@ jobs:
           name: checkstyle-reports
           path: '**/build/reports/checkstyle/'
 
-      - name: ArchUnit — engine isolation test
+      - name: ArchUnit - engine isolation test
         run: ./gradlew :engine:test --tests "com.geoforge.engine.arch.*" --no-daemon
 
       - name: Banned API + TODO scan
@@ -196,12 +196,12 @@ jobs:
             | grep -v ":[[:space:]][*]" \
             | head -5 \
             | grep .; then
-            echo "WARNING: TODO/FIXME found — review before release"
+            echo "WARNING: TODO/FIXME found - review before release"
           else
             echo "PASS: No TODO/FIXME in source"
           fi
 
-      - name: Final — quality gate summary
+      - name: Final - quality gate summary
         if: always()
         run: |
           echo "=== Quality Gate Summary ==="
@@ -212,10 +212,10 @@ jobs:
           echo "✓ TODO/FIXME scan: completed"
 
   ###########################################################################
-  # COVERAGE — aggregate JaCoCo reports from both JDK builds
+  # COVERAGE - aggregate JaCoCo reports from both JDK builds
   ###########################################################################
   coverage:
-    name: Coverage — JaCoCo aggregated report
+    name: Coverage - JaCoCo aggregated report
     runs-on: ubuntu-latest
     needs: build
     permissions:
@@ -277,7 +277,7 @@ jobs:
           done
 
   ###########################################################################
-  # SHADOWJAR — assemble the deployable artifact
+  # SHADOWJAR - assemble the deployable artifact
   ###########################################################################
   shadowjar:
     name: ShadowJAR assembly
@@ -318,7 +318,7 @@ jobs:
           ls -lh plugin/build/libs/GeoForge.jar
 
   ###########################################################################
-  # RUNTIME-TEST — smoke test on real Paper servers
+  # RUNTIME-TEST - smoke test on real Paper servers
   ###########################################################################
   runtime-test:
     name: Runtime test on Paper ${{ matrix.mcversion }}
