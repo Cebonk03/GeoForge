@@ -400,13 +400,13 @@ class GeoForgeConfigTest {
         var cfg = GeoForgeConfig.builder()
                 .riverCanyonDepth(10)
                 .riverCanyonWidth(4)
-                .riverValleyProfile("flat")
+                .riverValleyProfile("floodplain")
                 .riverFloodplainWidth(8)
                 .riverTableResponse(1.5)
                 .build();
         assertEquals(10, cfg.riverCanyonDepth());
         assertEquals(4, cfg.riverCanyonWidth());
-        assertEquals("flat", cfg.riverValleyProfile());
+        assertEquals("floodplain", cfg.riverValleyProfile());
         assertEquals(8, cfg.riverFloodplainWidth());
         assertEquals(1.5, cfg.riverTableResponse());
     }

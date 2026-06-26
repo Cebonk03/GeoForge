@@ -19,11 +19,9 @@ import com.geoforge.engine.density.DensityFunctionTree;
  * @param persistence amplitude multiplier between octaves (must be &gt; 0)
  */
 public record FractalNoise(NoiseSource noise, int octaves, double lacunarity, double persistence)
-        implements DensityFunctionTree {
-
+        implements DensityFunctionTree, NoiseSource {
     /**
      * Validates that all parameters are positive.
-     *
      * @throws IllegalArgumentException if {@code octaves <= 0}, {@code lacunarity <= 0},
      *                                  or {@code persistence <= 0}
      */

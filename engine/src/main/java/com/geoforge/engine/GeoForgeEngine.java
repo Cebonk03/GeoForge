@@ -65,17 +65,20 @@ public final class GeoForgeEngine {
         this.config = config;
         this.plateMapper = new TectonicPlateMapper(seed ^ 0xDEADBEEFL);
 
-        // Multi-noise terrain: ridge (mountains), FBM (hills), flat (plains/oceans)
-        var ridgeSimplex = new SimplexNoise(seed ^ 0xA123456789ABCDEFL);
-        var fbmSimplex = new SimplexNoise(seed ^ 0xB23456789ABCDEF1L);
-        var flatSimplex = new SimplexNoise(seed ^ 0xC3456789ABCDEF12L);
+        // Multi-noise terrain: ridge (mountains, multi-octave), FBM (hills, multi-octave), flat (plains/oceans, single-octave)
+        var ridgeNoise = new FractalNoise(
+                new SimplexNoise(seed ^ 0xA123456789ABCDEFL),
+                config.ridgeOctaves(), 2.0, 0.5);
+        var fbmNoise = new FractalNoise(
+                new SimplexNoise(seed ^ 0xB23456789ABCDEF1L),
+                config.fbmOctaves(), 2.0, 0.5);
+        var flatNoise = new SimplexNoise(seed ^ 0xC3456789ABCDEF12L);
         this.temperatureNoise = new SimplexNoise(seed ^ 0x23456789ABCDEF1L);
         this.humidityNoise = new SimplexNoise(seed ^ 0x3456789ABCDEF12L);
-
         // Build composite height function using multi-noise blending:
         // 1. MultiNoiseHeightFunction blends ridge/FBM/flat based on continentalness
         var multiNoise = new MultiNoiseHeightFunction(
-                ridgeSimplex, fbmSimplex, flatSimplex,
+                ridgeNoise, fbmNoise, flatNoise,
                 plateMapper,
                 seed ^ 0xE70DE5L,
                 config.ridgeFrequency(),
@@ -145,13 +148,15 @@ public final class GeoForgeEngine {
     /**
      * Returns the base terrain height at the given block coordinates.
      *
-     * <p>This is the 2D height function value <b>without</b> cave noise or
-     * river carving. For the true surface (including 3D effects) use
-     * {@link #getSurfaceHeight}. For per-block density use {@link #getDensity}.
+     * <p>This samples the raw {@code heightFunction} <b>without</b> domain warping,
+     * cave noise, or river carving. When {@code domainWarpAmplitude > 0}, this
+     * value may differ slightly from the effective surface in {@link #getDensity}
+     * (which uses warped coordinates). For the exact per-block surface including
+     * warping, use binary search via {@link #getSurfaceHeight}.
      *
      * @param blockX the x-coordinate in block space
      * @param blockZ the z-coordinate in block space
-     * @return the base terrain height (without cave/river carving)
+     * @return the base terrain height (without cave/river carving or domain warping)
      */
     public double getHeightAt(int blockX, int blockZ) {
         return heightFunction.sample(blockX, 0, blockZ);

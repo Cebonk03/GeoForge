@@ -49,7 +49,7 @@ class ConfigMigratorTest {
                 0.06,   // caveNoodleFrequency (default: 0.05)
                 1,      // riverCanyonDepth (default: 0)
                 3,      // riverCanyonWidth (default: 2)
-                "flat", // riverValleyProfile (default: "vshaped")
+                "floodplain", // riverValleyProfile
                 10,     // riverFloodplainWidth (default: 5)
                 0.5,    // riverTableResponse (default: 0.0)
                 0.004,  // ridgeFrequency (default: 0.003)

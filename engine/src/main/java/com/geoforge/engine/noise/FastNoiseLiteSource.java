@@ -42,7 +42,8 @@ public final class FastNoiseLiteSource implements NoiseSource {
      */
     public FastNoiseLiteSource(long seed, int octaves, float lacunarity, float gain) {
         this.noise = new FastNoiseLite();
-        this.noise.SetSeed((int) (seed ^ 0xF1A2B3C4D5E6F7L));
+        long xored = seed ^ 0xF1A2B3C4D5E6F7L;
+        this.noise.SetSeed((int) ((xored >>> 32) ^ xored));
         this.noise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
         this.noise.SetFractalType(FastNoiseLite.FractalType.FBm);
         this.noise.SetFractalOctaves(octaves);

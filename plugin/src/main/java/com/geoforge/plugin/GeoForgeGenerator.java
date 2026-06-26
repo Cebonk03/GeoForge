@@ -178,7 +178,7 @@ public final class GeoForgeGenerator extends ChunkGenerator {
 
     @Override
     public boolean shouldGenerateDecorations() {
-        return true;
+        return false; // GeoForge handles features in generateSurface()
     }
 
     @Override

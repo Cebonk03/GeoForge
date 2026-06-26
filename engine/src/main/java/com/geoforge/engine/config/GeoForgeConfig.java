@@ -258,6 +258,14 @@ public record GeoForgeConfig(
         }
         // River v2 validation
         Objects.requireNonNull(riverValleyProfile, "riverValleyProfile must not be null");
+        if (!riverValleyProfile.equals("vshaped")
+                && !riverValleyProfile.equals("canyon")
+                && !riverValleyProfile.equals("floodplain")) {
+            throw new IllegalArgumentException(
+                    "riverValleyProfile must be 'vshaped', 'canyon', or 'floodplain', got '"
+                            + riverValleyProfile + "'");
+        }
+        Objects.requireNonNull(riverValleyProfile, "riverValleyProfile must not be null");
         // Multi-noise terrain validation
         if (ridgeFrequency <= 0) {
             throw new IllegalArgumentException(
