@@ -35,6 +35,8 @@ public final class CanyonRiverCarver implements RiverCarver {
      * @param canyonWidth canyon width parameter (higher = wider canyons)
      */
     public CanyonRiverCarver(long seed, double frequency, int canyonDepth, int canyonWidth) {
+        if (canyonWidth <= 0) throw new IllegalArgumentException(
+                "canyonWidth must be > 0, got " + canyonWidth);
         this.noise = new SimplexNoise(seed ^ 0xFEEDBEEFL);
         this.frequency = frequency;
         this.canyonDepth = canyonDepth;

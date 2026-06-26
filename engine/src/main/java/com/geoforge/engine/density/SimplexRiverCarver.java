@@ -38,6 +38,8 @@ public final class SimplexRiverCarver implements RiverCarver {
      * @param width     river width parameter (higher = wider rivers)
      */
     public SimplexRiverCarver(long seed, double frequency, int depth, int width) {
+        if (width <= 0) throw new IllegalArgumentException(
+                "width must be > 0, got " + width);
         this.noise = new SimplexNoise(seed ^ 0xFEEDBEEFL);
         this.frequency = frequency;
         this.depth = depth;

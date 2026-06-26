@@ -36,6 +36,8 @@ public final class FloodplainRiverCarver implements RiverCarver {
      * @param floodplainWidth floodplain width parameter (higher = wider floodplains)
      */
     public FloodplainRiverCarver(long seed, double frequency, int depth, int floodplainWidth) {
+        if (floodplainWidth <= 0) throw new IllegalArgumentException(
+                "floodplainWidth must be > 0, got " + floodplainWidth);
         this.noise = new SimplexNoise(seed ^ 0xFEEDBEEFL);
         this.frequency = frequency;
         this.depth = depth;

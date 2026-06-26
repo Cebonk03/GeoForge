@@ -120,7 +120,13 @@ public final class GeoForgeEngine {
         // Noodle cave noise source (seed-decorrelated from spaghetti cave noise)
         this.noodleNoise = new SimplexNoise(seed ^ 0x56789ABCDEF0123L);
 
+        // Initialize per-biome terrain configs with defaults for all known biomes
+        // These can be overridden via config for biome-specific terrain modifiers
+        var biomeDefaults = BiomeTerrainConfig.defaults();
         this.biomeConfigs = new HashMap<>();
+        for (String biomeId : this.allBiomeIds) {
+            biomeConfigs.put(biomeId, biomeDefaults);
+        }
         if (config.riverDepth() == 0) {
             this.riverCarver = NoopRiverCarver.instance();
         } else {
@@ -180,6 +186,13 @@ public final class GeoForgeEngine {
                 blockY * config.caveFrequency(),
                 blockZ * config.caveFrequency());
         double density = targetHeight - blockY + cave * config.caveAmplitude();
+
+        // Per-biome cave amplitude modifier
+        String biomeId = getBiomeId(blockX, blockY, blockZ);
+        BiomeTerrainConfig bt = biomeConfigs.getOrDefault(biomeId, BiomeTerrainConfig.defaults());
+        if (bt.caveAmplitudeModifier() != 1.0) {
+            density = targetHeight - blockY + cave * config.caveAmplitude() * bt.caveAmplitudeModifier();
+        }
 
         // Enhanced cave system (v2+): additional three-type cave carving
         // Only applies to blocks well below the surface (outside the envelope cutoff zone)

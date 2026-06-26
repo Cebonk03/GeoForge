@@ -94,7 +94,7 @@ public final class GeoForgePlugin extends JavaPlugin {
         getLogger().info(
                 "GeoForge enabled | adapter=" + adapter.getClass().getSimpleName()
                         + " | folia=" + adapter.isFolia()
-                        + " | seed=" + seed
+                        + " | seed=<redacted>"
                         + " | version=" + Bukkit.getMinecraftVersion()
                         + " | config-version=" + configVersion);
     }
