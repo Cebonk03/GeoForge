@@ -18,12 +18,12 @@ geoforge/
 
 | Module | Main Srcs | Tests | Java | Role |
 |--------|-----------|-------|------|------|
-| engine | 35 | 29 | 21 | 3D density engine, zero Bukkit |
+| engine | 36 | 31 | 21 | 3D density engine, zero Bukkit |
 | api | 4 | 2 | 21 | Adapter interface + ServerVersion + FoliaDetectorTest |
 | v1_21_x | 1 | 1 | 21 | Paper 1.21.x adapter |
 || v26_x | 1 | 1 | 25 | Paper 26.x adapter (constructor injection for testability) |
 | plugin | 4 | 4 | 25 | Plugin + ShadowJAR + GeoForgePluginTest |
-||| **Total** | **45** | **37** | — | **~298 tests, 0 failures** |
+||| **Total** | **46** | **39** | — | **~311 tests, 0 failures** |
 
 ## 3D Density Architecture
 
@@ -64,7 +64,7 @@ Positive density = solid, negative density = air
 | `Paper26xAdapter` | impl | v26_x | 1 | Function-injected lookups for testability, Java 25 |
 | `VanillaFallbackAdapter` | impl | api | 1 | Degraded fallback — always STONE + plains biome |
 | `GeoForgeEngine` | core | engine | 3 | Density = heightFunc - y + caveNoise*ampl, surface via binary search |
-|| `GeoForgeConfig` | record | engine | 2 | 22 immutable terrain params (with river params) |
+|| `GeoForgeConfig` | record | engine | 2 | 49 immutable terrain params |
 | `DensityFunctionTree` | @FunctionalInterface | engine | 9 | sample(x,y,z)→double; composable tree (Add/Clamp/Constant/Multiply/PlateContinentalness) |
 | `SimplexNoise` | noise | engine | 5 | 2D/3D simplex noise, deterministic from long seed |
 | `FractalNoise` | noise | engine | 2 | Multi-octave fractal noise (sum octaves with lacunarity/persistence) |

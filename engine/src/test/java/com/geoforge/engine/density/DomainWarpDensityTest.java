@@ -23,13 +23,13 @@ class DomainWarpDensityTest {
         assertEquals(warp.sample(1, 2, 3), warp.sample(100, 200, 300), 1e-12);
     }
 
+    @Test
     void positiveAmplitude_shiftsCoordinates() {
-        // Use positional function to verify coordinate shifting
-        DensityFunctionTree positional = (x, y, z) -> x + y + z;
-        var warp = new DomainWarpDensity(NOISE, NOISE, positional, 5.0);
-        double direct = positional.sample(10, 20, 30);
-        double warped = warp.sample(10, 20, 30);
-        assertNotEquals(direct, warped, 1e-6);
+        // Verify X-axis warping mathematically: wx = x + noise(x,z) * amplitude
+        DensityFunctionTree extractX = (x, y, z) -> x;
+        var warp = new DomainWarpDensity(NOISE, NOISE, extractX, 5.0);
+        double expectedX = 10.0 + NOISE.sample2D(10, 30) * 5.0;
+        assertEquals(expectedX, warp.sample(10, 20, 30), 1e-12);
     }
 
     @Test

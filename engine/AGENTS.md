@@ -6,7 +6,7 @@ Zero-Bukkit math engine for terrain generation. All classes pure Java 21 with no
 
 ```
 engine/src/main/java/com/geoforge/engine/
-├── config/       GeoForgeConfig.java (22-field immutable record with river params)
+├── config/       GeoForgeConfig.java (49-field immutable record with river params)
 ├── noise/        SimplexNoise.java, FractalNoise.java
 ├── density/      DensityFunctionTree.java + 9 impls (Constant, ScaledNoise, etc.)
 ├── geology/      TectonicPlateMapper.java, HydraulicErosion.java
@@ -51,7 +51,7 @@ engine/src/main/java/com/geoforge/engine/
 | Package | Source | Tests | Role |
 |---------|--------|-------|------|
 | `arch` | 0 | 1 | ArchUnit — zero Bukkit dependency enforcement |
-| `config` | 1 | 1 | Immutable terrain configuration (22 params) |
+| `config` | 1 | 1 | Immutable terrain configuration (49 params) |
 | `noise` | 2 | 2 | SimplexNoise + FractalNoise (multi-octave) |
 | `density` | 11 | 4 | DensityFunctionTree interface + 9 implementations + RiverCarver |
 | `geology` | 2 | 2 | Tectonic plate mapper, hydraulic erosion simulation |
