@@ -176,8 +176,6 @@ public final class MultiNoiseHeightFunction implements DensityFunctionTree {
         }
         // Zone 3: Plains/hills (c ∈ [0.5, 0.7]) — FBM dominant
         else if (c <= 0.7) {
-            double t = (c - 0.5) / 0.2; // 0..1 in this zone
-            double blend = smoothstep(t, shp);
             flatW = 0.0;
             fbmW = 1.0;
             ridgeW = 0.0;
