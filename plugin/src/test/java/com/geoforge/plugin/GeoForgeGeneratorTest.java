@@ -37,7 +37,7 @@ class GeoForgeGeneratorTest {
         assertFalse(generator.shouldGenerateSurface());
         assertFalse(generator.shouldGenerateBedrock());
         assertFalse(generator.shouldGenerateCaves());
-        assertTrue(generator.shouldGenerateDecorations());
+        assertFalse(generator.shouldGenerateDecorations());
         assertTrue(generator.shouldGenerateStructures());
         assertTrue(generator.shouldGenerateMobs());
     }

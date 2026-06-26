@@ -21,7 +21,7 @@ shouldGenerateNoise: false        # custom 3D density terrain
 shouldGenerateSurface: false      # custom surface from density
 shouldGenerateBedrock: false      # custom 5-layer bedrock in noise phase
 shouldGenerateCaves: false        # 3D noise-based caves in density field
-shouldGenerateDecorations: true   # vanilla (trees, ores, flowers)
+shouldGenerateDecorations: false  # GeoForge handles features in generateSurface()
 shouldGenerateStructures: true    # vanilla (villages, strongholds)
 shouldGenerateMobs: true          # vanilla
 ```
