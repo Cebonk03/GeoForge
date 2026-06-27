@@ -58,7 +58,7 @@ public final class ThreadLocalBuffers implements AutoCloseable {
             floatBuf = new float[minSize];
             FLOAT_CACHE.set(floatBuf);
         } else {
-            Arrays.fill(floatBuf, 0, minSize, 0f);
+            Arrays.fill(floatBuf, 0f);
         }
         return floatBuf;
     }
@@ -73,7 +73,7 @@ public final class ThreadLocalBuffers implements AutoCloseable {
             doubleBuf = new double[minSize];
             DOUBLE_CACHE.set(doubleBuf);
         } else {
-            Arrays.fill(doubleBuf, 0, minSize, 0.0);
+            Arrays.fill(doubleBuf, 0.0);
         }
         return doubleBuf;
     }

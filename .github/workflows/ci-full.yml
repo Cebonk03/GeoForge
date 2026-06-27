@@ -361,7 +361,8 @@ jobs:
           path: .
 
       - name: Test plugin on Paper server
-        uses: gmitch215/TestMC@v2
+        # SHA pinned for supply chain security; update by resolving the v2 tag
+        uses: gmitch215/TestMC@6018a826cf7df53ca946fffabb8bc8d00b9c09f0 # v2
         with:
           path: GeoForge.jar
           runtime: paper
