@@ -33,6 +33,16 @@ public final class GeoForgeGenerator extends ChunkGenerator {
     private final TreePlacer treePlacer;
     private final VegetationPlacer vegetationPlacer;
 
+    /** ThreadLocal cache for eroded heights — thread-safe under Folia parallel chunk gen. */
+    private final ThreadLocal<CachedErosion> erosionCache =
+            ThreadLocal.withInitial(CachedErosion::new);
+
+    private static final class CachedErosion {
+        int chunkX = Integer.MIN_VALUE;
+        int chunkZ = Integer.MIN_VALUE;
+        float[] erodedHeights;
+    }
+
     public GeoForgeGenerator(GeoForgeAdapter adapter, GeoForgeEngine engine) {
         this.adapter = adapter;
         this.engine = engine;
@@ -66,6 +76,12 @@ public final class GeoForgeGenerator extends ChunkGenerator {
                     chunkX * CHUNK_SIZE, chunkZ * CHUNK_SIZE,
                     worldInfo.getSeed());
         }
+
+        // Cache eroded heights for reuse in generateSurface() (ThreadLocal = thread-safe under Folia)
+        CachedErosion cache = erosionCache.get();
+        cache.erodedHeights = erodedHeights.clone();
+        cache.chunkX = chunkX;
+        cache.chunkZ = chunkZ;
         boolean erosionActive = engine.config().erosionIterations() > 0
                 && engine.config().erosionDropletCount() > 0;
 
@@ -127,7 +143,14 @@ public final class GeoForgeGenerator extends ChunkGenerator {
             for (int z = 0; z < CHUNK_SIZE; z++) {
                 int blockX = chunkX * CHUNK_SIZE + x;
                 int blockZ = chunkZ * CHUNK_SIZE + z;
-                int heightY = engine.getSurfaceHeight(blockX, blockZ);
+                // Reuse surface heights from ThreadLocal cache (thread-safe under Folia)
+                CachedErosion cache = erosionCache.get();
+                int heightY;
+                if (chunkX == cache.chunkX && chunkZ == cache.chunkZ && cache.erodedHeights != null) {
+                    heightY = Math.round(cache.erodedHeights[z * CHUNK_SIZE + x]);
+                } else {
+                    heightY = engine.getSurfaceHeight(blockX, blockZ);
+                }
 
                 if (heightY < minY || heightY >= maxY) continue;
 

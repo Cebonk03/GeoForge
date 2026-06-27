@@ -28,6 +28,8 @@ import com.geoforge.engine.density.EnhancedCaveSystem;
 import java.util.HashMap;
 import java.util.Map;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 /**
  * The core world generation engine for GeoForge.
  *
@@ -54,6 +56,17 @@ public final class GeoForgeEngine {
     private final NoiseSource noodleNoise;
     private final Map<String, BiomeTerrainConfig> biomeConfigs;
     private final DensityFunctionTree domainWarpedHeight;
+
+    // Per-column biome modifier cache: ThreadLocal avoids redundant getBiomeId() calls
+    // across different Y samples in the same column during chunk generation
+    private final ThreadLocal<BiomeModifierCache> biomeModifierCache =
+            ThreadLocal.withInitial(BiomeModifierCache::new);
+
+    private static final class BiomeModifierCache {
+        int lastX = Integer.MIN_VALUE;
+        int lastZ = Integer.MIN_VALUE;
+        double modifier;
+    }
 
     /**
      * Creates a new engine with the given world seed and configuration.
@@ -123,7 +136,7 @@ public final class GeoForgeEngine {
         // Initialize per-biome terrain configs with defaults for all known biomes
         // These can be overridden via config for biome-specific terrain modifiers
         var biomeDefaults = BiomeTerrainConfig.defaults();
-        this.biomeConfigs = new HashMap<>();
+        this.biomeConfigs = new HashMap<>((int) (allBiomeIds.size() / 0.75f) + 1);
         for (String biomeId : this.allBiomeIds) {
             biomeConfigs.put(biomeId, biomeDefaults);
         }
@@ -187,11 +200,21 @@ public final class GeoForgeEngine {
                 blockZ * config.caveFrequency());
         double density = targetHeight - blockY + cave * config.caveAmplitude();
 
-        // Per-biome cave amplitude modifier
-        String biomeId = getBiomeId(blockX, blockY, blockZ);
-        BiomeTerrainConfig bt = biomeConfigs.getOrDefault(biomeId, BiomeTerrainConfig.defaults());
-        if (bt.caveAmplitudeModifier() != 1.0) {
-            density = targetHeight - blockY + cave * config.caveAmplitude() * bt.caveAmplitudeModifier();
+        // Per-biome cave amplitude modifier with column cache
+        BiomeModifierCache cache = biomeModifierCache.get();
+        double modifier;
+        if (cache.lastX == blockX && cache.lastZ == blockZ) {
+            modifier = cache.modifier;
+        } else {
+            modifier = biomeConfigs.getOrDefault(
+                    getBiomeId(blockX, blockY, blockZ),
+                    BiomeTerrainConfig.defaults()).caveAmplitudeModifier();
+            cache.lastX = blockX;
+            cache.lastZ = blockZ;
+            cache.modifier = modifier;
+        }
+        if (modifier != 1.0) {
+            density = targetHeight - blockY + cave * config.caveAmplitude() * modifier;
         }
 
         // Enhanced cave system (v2+): additional three-type cave carving
@@ -221,7 +244,13 @@ public final class GeoForgeEngine {
      * Returns the terrain surface height (highest solid block) at the given column.
      *
      * <p>Uses binary search on the 3D density field to find the highest Y where
-     * density >= 0. When cave amplitude is 0, this matches the 2D height function.
+     * density >= 0. Each step calls {@link #getDensity} which includes cave noise,
+     * biome modifier, and river carving, making this O(log n × C) where C is the
+     * per-block density cost. For the default world height of 244 blocks, this is
+     * approximately 8 iterations per call.
+     *
+     * <p>When cave amplitude is 0 and no erosion is configured, this matches the
+     * 2D height function within integer precision.
      *
      * @param blockX the x-coordinate in block space
      * @param blockZ the z-coordinate in block space
@@ -342,6 +371,7 @@ public final class GeoForgeEngine {
      *
      * @return an immutable set of biome ID strings
      */
+    @SuppressFBWarnings("EI_EXPOSE_REP")
     public Set<String> getAllBiomeIds() {
         return allBiomeIds;
     }
