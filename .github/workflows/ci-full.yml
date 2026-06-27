@@ -26,6 +26,7 @@ jobs:
       contents: read
     timeout-minutes: 5
     steps:
+      # actions/checkout@v4
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Verify Gradle wrapper
         run: java -jar gradle/wrapper/gradle-wrapper.jar --version 2>&1 | head -3
@@ -47,17 +48,20 @@ jobs:
         java: [21, 25]
 
     steps:
+      # actions/checkout@v4
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
+      # actions/setup-java@v5
       - name: Set up JDK ${{ matrix.java }}
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
         with:
           java-version: ${{ matrix.java }}
-          distribution: ${{ matrix.java == 25 && 'oracle' || 'temurin' }}
+          distribution: 'temurin'
           cache: gradle
 
+      # gradle/actions/setup-gradle@v6
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92
 
       - name: Compile engine + api + v1_21_x (JDK 21)
         if: matrix.java == 21
@@ -75,16 +79,18 @@ jobs:
         if: matrix.java == 25
         run: ./gradlew :adapters:v26_x:test :plugin:test --no-daemon
 
+      # actions/upload-artifact@v7
       - name: Upload test results (JUnit XML)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: test-results-jdk${{ matrix.java }}
           path: '**/build/test-results/test/TEST-*.xml'
 
+      # actions/upload-artifact@v7
       - name: Upload JaCoCo coverage data (JDK ${{ matrix.java }})
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: jacoco-data-jdk${{ matrix.java }}
           path: '**/build/jacoco/'
@@ -103,24 +109,28 @@ jobs:
     timeout-minutes: 15
 
     steps:
+      # actions/checkout@v4
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       # Install BOTH JDKs for Gradle toolchain resolution.
+      # actions/setup-java@v5
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
         with:
           java-version: 21
           distribution: 'temurin'
           cache: gradle
 
+      # actions/setup-java@v5
       - name: Set up JDK 25 (additional toolchain)
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
         with:
           java-version: 25
-          distribution: 'oracle'
+          distribution: 'temurin'
 
+      # gradle/actions/setup-gradle@v6
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92
 
       # Pre-compile ALL modules so SpotBugs/Checkstyle have classes to analyze.
       - name: Compile all modules (both JDK 21 + 25 toolchains)
@@ -136,9 +146,10 @@ jobs:
           :plugin:spotbugsMain
           --no-daemon
 
+      # actions/upload-artifact@v7
       - name: Upload SpotBugs reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: spotbugs-reports
           path: '**/build/reports/spotbugs/'
@@ -153,9 +164,10 @@ jobs:
           :plugin:checkstyleMain
           --no-daemon
 
+      # actions/upload-artifact@v7
       - name: Upload Checkstyle reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: checkstyle-reports
           path: '**/build/reports/checkstyle/'
@@ -163,43 +175,8 @@ jobs:
       - name: ArchUnit - engine isolation test
         run: ./gradlew :engine:test --tests "com.geoforge.engine.arch.*" --no-daemon
 
-      - name: Banned API + TODO scan
-        run: |
-          echo "=== Banned API Check ==="
-          errors=0
-          for pattern in "Registry\\.BIOME" "Biome\\.valueOf" "Biome\\.values()" \
-            "Material\\.valueOf" "Material\\.getMaterial" "Material\\.matchMaterial" \
-            "getScheduler()\\.run" "chunkData\\.setBiome(" "net\\.minecraft\\." "craftbukkit\\." \
-            "ReentrantLock" "synchronized" "Class\\.forName"; do
-            # Filter out Javadoc comments (lines starting with *) and ArchUnit rules
-            matches=$(grep -rn "$pattern" --include='*.java' . \
-              | grep -v ":[[:space:]][*]" \
-              | grep -v "EngineIsolationTest.java" \
-              | grep -v "FoliaDetector.java" \
-              || true)
-            if [ -n "$matches" ]; then
-                echo "FAIL: $pattern found in:"
-                echo "$matches"
-                errors=$((errors + 1))
-            fi
-          done
-          if [ $errors -eq 0 ]; then
-            echo "PASS: No banned APIs found"
-          else
-            echo "FATAL: $errors banned API pattern(s) detected"
-            exit 1
-          fi
-
-          echo ""
-          echo "=== TODO/FIXME Scan ==="
-          if grep -rn "TODO\|FIXME\|HACK\|XXX" --include='*.java' . 2>/dev/null \
-            | grep -v ":[[:space:]][*]" \
-            | head -5 \
-            | grep .; then
-            echo "WARNING: TODO/FIXME found - review before release"
-          else
-            echo "PASS: No TODO/FIXME in source"
-          fi
+      - name: Banned API scan
+        run: ./gradlew bannedApiScan --no-daemon
 
       - name: Final - quality gate summary
         if: always()
@@ -221,44 +198,66 @@ jobs:
     permissions:
       contents: read
       actions: write
-    timeout-minutes: 5
+    timeout-minutes: 15
 
     steps:
+      # actions/checkout@v4
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
+      # Install BOTH JDKs for Gradle toolchain resolution across all modules.
+      # actions/setup-java@v5
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
         with:
           java-version: 21
           distribution: 'temurin'
           cache: gradle
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+      # actions/setup-java@v5
+      - name: Set up JDK 25 (additional toolchain)
+        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          java-version: 25
+          distribution: 'temurin'
 
-      - name: Download JaCoCo data (JDK 21)
-        uses: actions/download-artifact@v4
+      # gradle/actions/setup-gradle@v6
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92
+
+      # Download exec data to repo root so files restore to module-specific paths
+      # (e.g. engine/build/jacoco/test.exec). BOTH downloads merge cleanly since
+      # JDK 21 covers engine/api/v1_21_x and JDK 25 covers v26_x/plugin.
+      # actions/download-artifact@v8
+      - name: Download JaCoCo exec data (JDK 21 - engine, api, v1_21_x)
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:
           name: jacoco-data-jdk21
-          path: build/jacoco/jdk21/
+          path: .
 
-      - name: Download JaCoCo data (JDK 25)
-        uses: actions/download-artifact@v4
+      # actions/download-artifact@v8
+      - name: Download JaCoCo exec data (JDK 25 - v26_x, plugin)
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:
           name: jacoco-data-jdk25
-          path: build/jacoco/jdk25/
+          path: .
 
-      - name: Verify JaCoCo data
-        run: |
-          echo '=== Coverage Data ==='
-          for dir in build/jacoco/jdk21 build/jacoco/jdk25; do
-            echo "dir: $dir"
-            ls "$dir" 2>/dev/null || echo 'dir: (not found)'
-          done
+      # Compile all modules so class files exist for report class-to-exec matching.
+      - name: Compile all modules (both JDK 21 + 25 toolchains)
+        run: ./gradlew classes --no-daemon
 
-      - name: Upload coverage report
+      # Generate aggregated coverage reports using downloaded exec data.
+      # -x test skips re-running tests since exec data is already present.
+      - name: Generate JaCoCo reports
+        run: ./gradlew jacocoTestReport --no-daemon -x test
+
+      # Enforce minimum coverage thresholds (60% line, 50% branch).
+      - name: Verify coverage thresholds
+        run: ./gradlew jacocoTestCoverageVerification --no-daemon -x test
+
+      # actions/upload-artifact@v7
+      - name: Upload coverage reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: coverage-reports
           path: '**/build/reports/jacoco/'
@@ -268,14 +267,13 @@ jobs:
         run: |
           echo "=== JaCoCo Coverage Summary ==="
           for module in engine api v1_21_x v26_x plugin; do
-            report="build/reports/jacoco/${module}/html/index.html"
+            report="build/reports/jacoco/${module}/test/html/index.html"
             if [ -f "$report" ]; then
               echo "✓ $module coverage report generated"
             else
               echo "⚠ $module coverage report not found (may need test execution data)"
             fi
           done
-
   ###########################################################################
   # SHADOWJAR - assemble the deployable artifact
   ###########################################################################
@@ -289,23 +287,27 @@ jobs:
     timeout-minutes: 5
 
     steps:
+      # actions/checkout@v4
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
+      # actions/setup-java@v5
       - name: Set up JDK 25
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
         with:
           java-version: 25
-          distribution: 'oracle'
+          distribution: 'temurin'
           cache: gradle
 
+      # gradle/actions/setup-gradle@v6
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92
 
       - name: Build ShadowJAR
         run: ./gradlew :plugin:shadowJar --no-daemon
 
+      # actions/upload-artifact@v7
       - name: Upload ShadowJAR
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: GeoForge
           path: plugin/build/libs/GeoForge.jar
@@ -340,16 +342,20 @@ jobs:
             java: 25
 
     steps:
+      # actions/checkout@v4
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
+      # actions/setup-java@v5
       - name: Set up JDK ${{ matrix.java }}
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
         with:
           java-version: ${{ matrix.java }}
-          distribution: ${{ matrix.java == 25 && 'oracle' || 'temurin' }}
+          distribution: 'temurin'
+          cache: gradle
 
+      # actions/download-artifact@v8
       - name: Download ShadowJAR
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:
           name: GeoForge
           path: .

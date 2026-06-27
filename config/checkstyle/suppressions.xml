@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN" "">
+<suppressions>
+    <suppress files="FastNoiseLite\.java$" checks=".*"/>
+    <suppress files="GeoForgeConfig\.java$" checks="LineLength"/>
+</suppressions>

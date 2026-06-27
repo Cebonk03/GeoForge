@@ -1,20 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <FindBugsFilter>
-    <!-- EI_EXPOSE_REP: Engine classes hold private final arrays with no getters;
-         Java records expose components by design (shallowly immutable);
-         ThreadLocal caches have per-thread ownership semantics.
-         NoiseCache.heightmap() returns defensive clone().
-         For new production code, prefer @SuppressFBWarnings on specific methods. -->
-    <Match>
-        <Bug pattern="EI_EXPOSE_REP" />
-    </Match>
-    <!-- EI_EXPOSE_REP2: Constructors store object references by design
-         (adapters store JavaPlugin ref, records accept components). -->
-    <Match>
-        <Bug pattern="EI_EXPOSE_REP2" />
-    </Match>
-    <!-- MS_EXPOSE_REP: All static fields are immutable (final String, int, etc.) -->
-    <Match>
-        <Bug pattern="MS_EXPOSE_REP" />
-    </Match>
+    <!-- No blanket exclusions. Each suppression is annotated inline. -->
 </FindBugsFilter>

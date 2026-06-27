@@ -39,6 +39,8 @@ mockbukkitV121 = { module = "org.mockbukkit.mockbukkit:mockbukkit-v1.21", versio
 paperApi121 = { module = "io.papermc.paper:paper-api", version.ref = "paperApi121" }
 paperApi26 = { module = "io.papermc.paper:paper-api", version.ref = "paperApi26" }
 
+# SpotBugs annotations for targeted @SuppressFBWarnings
+spotbugsAnnotations = { module = "com.github.spotbugs:spotbugs-annotations", version.ref = "spotbugsTool" }
 [bundles]
 # Common test dependencies for all modules
 junitTesting = ["junitJupiter", "assertjCore", "junitPlatformLauncher"]

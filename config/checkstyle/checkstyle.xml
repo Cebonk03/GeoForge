@@ -4,7 +4,6 @@
     <property name="charset" value="UTF-8"/>
     <property name="severity" value="error"/>
     <property name="fileExtensions" value="java"/>
-
     <module name="TreeWalker">
         <module name="AvoidStarImport"/>
         <module name="IllegalImport">
@@ -12,5 +11,17 @@
         </module>
         <module name="RedundantImport"/>
         <module name="UnusedImports"/>
+        <module name="ModifierOrder"/>
+        <module name="NeedBraces">
+            <property name="allowSingleLineStatement" value="true"/>
+            <property name="tokens" value="LITERAL_DO,LITERAL_ELSE,LITERAL_FOR,LITERAL_IF,LITERAL_WHILE"/>
+        </module>
+        <module name="EmptyBlock">
+            <property name="option" value="text"/>
+            <property name="tokens" value="LITERAL_TRY,LITERAL_CATCH,LITERAL_FINALLY,LITERAL_IF,LITERAL_ELSE,LITERAL_FOR"/>
+        </module>
+        <module name="EmptyCatchBlock">
+            <property name="exceptionVariableName" value="expected|ignored"/>
+        </module>
     </module>
 </module>

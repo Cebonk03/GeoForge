@@ -3,6 +3,8 @@ java {
 }
 
 dependencies {
+    // @SuppressFBWarnings annotations have source+class retention, needed at compile time
+    compileOnly(libs.spotbugsAnnotations)
     testImplementation(libs.bundles.junitTesting)
     testImplementation(libs.archunitJunit5)
     testImplementation("org.openjdk.jmh:jmh-core:1.37")
