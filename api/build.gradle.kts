@@ -6,4 +6,5 @@ dependencies {
     implementation(project(":engine"))
     compileOnly(libs.paperApi121)
     testImplementation(libs.bundles.junitTesting)
+    testImplementation(libs.bundles.mockbukkitTesting)
 }

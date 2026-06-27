@@ -36,7 +36,7 @@ public class NoiseThroughputBenchmark {
 
     private NoiseSource simplexNoise;
     private NoiseSource fastNoiseLite;
-    private long counter;
+    private int coordIndex;
 
     /**
      * Initialises noise sources with the same seed for fair comparison.
@@ -45,16 +45,13 @@ public class NoiseThroughputBenchmark {
     public void setup() {
         simplexNoise = new SimplexNoise(42L);
         fastNoiseLite = new FastNoiseLiteSource(42L);
-        counter = 0L;
+        coordIndex = 0;
     }
 
-    /**
-     * Returns a varying coordinate value, cycling through a window of ~655 units
-     * centred around zero. Each {@code @State(Scope.Thread)} instance has its own
-     * counter so different worker threads see different sequences.
-     */
     private double coord() {
-        return ((counter++ & 0xFFFF) - 32768) * 0.01;
+        int idx = coordIndex;
+        coordIndex = (idx + 1) & 0xFFFF;
+        return ((idx - 32768) & 0xFFFF) * 0.01;
     }
 
     @Benchmark

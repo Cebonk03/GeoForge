@@ -13,21 +13,25 @@ class DensityGuardTest {
     }
 
     @Test
-    void nan_becomesNegativeInfinity() {
+    void nan_becomesFiniteSentinel() {
         double result = DensityGuard.clamp(Double.NaN, -64, 320);
-        assertTrue(Double.isInfinite(result) && result < 0);
+        assertTrue(Double.isFinite(result));
+        // margin = (320 - (-64)) * 2 = 768, sentinel = -64 - 768 = -832
+        assertEquals(-832.0, result, 1e-12);
     }
 
     @Test
-    void positiveInfinity_becomesNegativeInfinity() {
+    void positiveInfinity_becomesFiniteSentinel() {
         double result = DensityGuard.clamp(Double.POSITIVE_INFINITY, -64, 320);
-        assertTrue(Double.isInfinite(result) && result < 0);
+        assertTrue(Double.isFinite(result));
+        assertEquals(-832.0, result, 1e-12);
     }
 
     @Test
-    void negativeInfinity_passesThrough() {
+    void negativeInfinity_becomesFiniteSentinel() {
         double result = DensityGuard.clamp(Double.NEGATIVE_INFINITY, -64, 320);
-        assertTrue(Double.isInfinite(result) && result < 0);
+        assertTrue(Double.isFinite(result));
+        assertEquals(-832.0, result, 1e-12);
     }
 
     @Test
