@@ -8,6 +8,7 @@ import org.bukkit.generator.WorldInfo;
 import org.jetbrains.annotations.NotNull;
 import java.util.List;
 import java.util.stream.Collectors;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
  * Biome provider for GeoForge that assigns biomes based on the engine's temperature-humidity
@@ -39,7 +40,8 @@ public final class GeoForgeBiomeProvider extends BiomeProvider {
     }
 
     @Override
+    @SuppressFBWarnings("EI_EXPOSE_REP")
     public @NotNull List<Biome> getBiomes(@NotNull WorldInfo worldInfo) {
-        return biomeList;
+        return biomeList; // unmodifiable list — safe exposure
     }
 }
