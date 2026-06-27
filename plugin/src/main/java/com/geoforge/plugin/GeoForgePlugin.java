@@ -91,6 +91,13 @@ public final class GeoForgePlugin extends JavaPlugin {
 .build();
         this.engine = new GeoForgeEngine(seed, engineConfig);
 
+        // Log config sanity warnings
+        var sanityWarnings = engineConfig.sanityCheck();
+        if (!sanityWarnings.isEmpty()) {
+            getLogger().warning("GeoForge config sanity warnings:");
+            sanityWarnings.forEach(w -> getLogger().warning("  - " + w));
+        }
+
         getLogger().info(
                 "GeoForge enabled | adapter=" + adapter.getClass().getSimpleName()
                         + " | folia=" + adapter.isFolia()

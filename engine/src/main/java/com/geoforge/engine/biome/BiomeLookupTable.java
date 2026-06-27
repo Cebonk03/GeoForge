@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 /**
  * An 8×8 temperature-humidity lookup table that maps climate noise values to Minecraft biome
  * identifiers, with a continentalness overlay for ocean, coast, inland, and highland biomes.
@@ -63,6 +64,7 @@ public final class BiomeLookupTable {
      *
      * @return an immutable set of all valid biome IDs
      */
+    @SuppressFBWarnings("MS_EXPOSE_REP")
     public static Set<String> getAllBiomeIds() {
         return ALL_BIOMES;
     }

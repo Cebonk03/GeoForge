@@ -256,6 +256,11 @@ public record GeoForgeConfig(
             throw new IllegalArgumentException(
                     "caveSurfaceCutoff must be >= 0, got %s".formatted(caveSurfaceCutoff));
         }
+        if (caveNoodleFrequency <= 0) {
+            throw new IllegalArgumentException(
+                    "caveNoodleFrequency must be > 0, got %s"
+                            .formatted(caveNoodleFrequency));
+        }
         // River v2 validation
         Objects.requireNonNull(riverValleyProfile, "riverValleyProfile must not be null");
         if (!riverValleyProfile.equals("vshaped")
@@ -264,6 +269,23 @@ public record GeoForgeConfig(
             throw new IllegalArgumentException(
                     "riverValleyProfile must be 'vshaped', 'canyon', or 'floodplain', got '"
                             + riverValleyProfile + "'");
+        }
+        if (riverCanyonDepth < 0) {
+            throw new IllegalArgumentException(
+                    "riverCanyonDepth must be >= 0, got %d".formatted(riverCanyonDepth));
+        }
+        if (riverCanyonWidth < 1) {
+            throw new IllegalArgumentException(
+                    "riverCanyonWidth must be >= 1, got %d".formatted(riverCanyonWidth));
+        }
+        if (riverFloodplainWidth < 1) {
+            throw new IllegalArgumentException(
+                    "riverFloodplainWidth must be >= 1, got %d".formatted(riverFloodplainWidth));
+        }
+        if (riverTableResponse < 0.0) {
+            throw new IllegalArgumentException(
+                    "riverTableResponse must be >= 0.0, got %s"
+                            .formatted(riverTableResponse));
         }
         // Multi-noise terrain validation
         if (ridgeFrequency <= 0) {
@@ -286,6 +308,15 @@ public record GeoForgeConfig(
             throw new IllegalArgumentException(
                     "flatFrequency must be > 0, got %s".formatted(flatFrequency));
         }
+        if (ridgeAmplitude < 0) {
+            throw new IllegalArgumentException(
+                    "ridgeAmplitude must be >= 0, got %s".formatted(ridgeAmplitude));
+        }
+        if (continentalnessBlendSharpness < 0.1) {
+            throw new IllegalArgumentException(
+                    "continentalnessBlendSharpness must be >= 0.1, got %s"
+                            .formatted(continentalnessBlendSharpness));
+        }
         // Decorations validation
         if (treeDensity < 0.0 || treeDensity > 1.0) {
             throw new IllegalArgumentException(
@@ -294,6 +325,31 @@ public record GeoForgeConfig(
         if (vegetationDensity < 0.0 || vegetationDensity > 1.0) {
             throw new IllegalArgumentException(
                     "vegetationDensity must be in [0,1], got %s".formatted(vegetationDensity));
+        }
+        // Decorations validation (continued)
+        if (maxTreeHeight < 4) {
+            throw new IllegalArgumentException(
+                    "maxTreeHeight must be >= 4, got %d".formatted(maxTreeHeight));
+        }
+        // Erosion validation
+        if (erosionDropletCount < 0) {
+            throw new IllegalArgumentException(
+                    "erosionDropletCount must be >= 0, got %d".formatted(erosionDropletCount));
+        }
+        if (erosionGravity <= 0) {
+            throw new IllegalArgumentException(
+                    "erosionGravity must be > 0, got %s".formatted(erosionGravity));
+        }
+        // Domain warping validation
+        if (domainWarpAmplitude < 0) {
+            throw new IllegalArgumentException(
+                    "domainWarpAmplitude must be >= 0, got %s"
+                            .formatted(domainWarpAmplitude));
+        }
+        // Config version validation
+        if (configVersion < 0) {
+            throw new IllegalArgumentException(
+                    "configVersion must be >= 0, got %d".formatted(configVersion));
         }
     }
 
