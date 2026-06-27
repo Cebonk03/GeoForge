@@ -15,7 +15,7 @@ import java.util.Random;
  *
  * <p>Supported tree types: oak, birch, dark_oak, jungle, spruce.
  */
-public class TreePlacer implements GeoForgeFeature {
+public final class TreePlacer implements GeoForgeFeature {
 
     private final double treeDensity;
     private final int maxTreeHeight;
@@ -233,7 +233,7 @@ public class TreePlacer implements GeoForgeFeature {
     // ──────────────────────────────────────────────
 
     private static Map<String, List<TreeType>> buildBiomeTreeMap() {
-        Map<String, List<TreeType>> map = new HashMap<>();
+        Map<String, List<TreeType>> map = new HashMap<>(30);
 
         // Forest biomes — oak and birch
         map.put("forest", List.of(TreeType.OAK, TreeType.BIRCH));

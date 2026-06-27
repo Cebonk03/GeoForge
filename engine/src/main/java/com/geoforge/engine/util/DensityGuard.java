@@ -26,7 +26,8 @@ public final class DensityGuard {
      */
     public static double clamp(double density, int minWorld, int maxWorld) {
         if (!Double.isFinite(density)) {
-            return Double.NEGATIVE_INFINITY; // air
+            double margin = (maxWorld - minWorld) * 2.0;
+            return minWorld - margin; // finite sentinel — consistent with clamp range
         }
         // Clamp to a reasonable range: world height + generous margin
         double margin = (maxWorld - minWorld) * 2.0;

@@ -12,7 +12,7 @@ import java.util.Random;
  * <p>Each surface column has a chance (determined by {@code vegetationDensity}) of
  * receiving one vegetation item, selected from the biome's vegetation palette.
  */
-public class VegetationPlacer implements GeoForgeFeature {
+public final class VegetationPlacer implements GeoForgeFeature {
 
     private final double vegetationDensity;
 
@@ -65,7 +65,7 @@ public class VegetationPlacer implements GeoForgeFeature {
     // ──────────────────────────────────────────────
 
     private static Map<String, List<String>> buildBiomeVegetationMap() {
-        Map<String, List<String>> map = new HashMap<>();
+        Map<String, List<String>> map = new HashMap<>(34);
 
         // Grassy biomes — short grass + flowers
         var grassFlowers = List.of("grass", "poppy", "dandelion", "azure_bluet",
@@ -103,7 +103,7 @@ public class VegetationPlacer implements GeoForgeFeature {
 
         // Windswept — grass
         applyToAll(map, grassOnly,
-                "windswept_hills", "windswept_savanna");
+                "windswept_hills");
 
         // Dark forest — mushrooms and grass
         applyToAll(map, List.of("brown_mushroom", "red_mushroom", "grass"),

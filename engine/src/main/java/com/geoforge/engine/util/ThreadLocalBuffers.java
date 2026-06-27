@@ -1,5 +1,7 @@
 package com.geoforge.engine.util;
 
+import java.util.Arrays;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 /**
  * Utility for per-thread scratch buffers used during chunk generation.
  *
@@ -50,10 +52,13 @@ public final class ThreadLocalBuffers implements AutoCloseable {
      * Returns a {@code float[]} with at least the given size.
      * Grows the thread-local buffer if needed.
      */
+    @SuppressFBWarnings("EI_EXPOSE_REP")
     public float[] floatArray(int minSize) {
         if (floatBuf.length < minSize) {
             floatBuf = new float[minSize];
             FLOAT_CACHE.set(floatBuf);
+        } else {
+            Arrays.fill(floatBuf, 0, minSize, 0f);
         }
         return floatBuf;
     }
@@ -62,10 +67,13 @@ public final class ThreadLocalBuffers implements AutoCloseable {
      * Returns a {@code double[]} with at least the given size.
      * Grows the thread-local buffer if needed.
      */
+    @SuppressFBWarnings("EI_EXPOSE_REP")
     public double[] doubleArray(int minSize) {
         if (doubleBuf.length < minSize) {
             doubleBuf = new double[minSize];
             DOUBLE_CACHE.set(doubleBuf);
+        } else {
+            Arrays.fill(doubleBuf, 0, minSize, 0.0);
         }
         return doubleBuf;
     }
@@ -74,6 +82,7 @@ public final class ThreadLocalBuffers implements AutoCloseable {
      * Returns a {@link StringBuilder} with at least the given capacity.
      * Clears the buffer before returning (sets length to 0).
      */
+    @SuppressFBWarnings("EI_EXPOSE_REP")
     public StringBuilder stringBuilder(int capacity) {
         if (sb.capacity() < capacity) {
             sb = new StringBuilder(capacity);

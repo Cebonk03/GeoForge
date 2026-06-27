@@ -57,10 +57,11 @@ public final class CanyonRiverCarver implements RiverCarver {
         double threshold = 1.0 / (1.0 + (double) canyonWidth * 0.15);
 
         if (riverValue < -threshold) {
-            // Canyon: subtract full depth uniformly across the canyon floor.
-            // This creates vertical walls at the threshold boundary (step function)
-            // and a flat bottom (constant subtraction regardless of riverValue).
-            density -= canyonDepth;
+            // Canyon: subtract depth with surface-relative depth factor.
+            // Near the surface (density ~ 0), full canyonDepth is subtracted;
+            // deeper underground, carving tapers to 0.
+            double depthFactor = Math.max(0, 1.0 - density / (double) canyonDepth);
+            density -= canyonDepth * depthFactor;
         }
 
         return density;

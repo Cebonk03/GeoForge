@@ -137,7 +137,7 @@ public final class SimplexNoise implements NoiseSource {
     }
 
     private static double grad3D(int hash, double x, double y, double z) {
-        double[] g = GRAD_3D[hash % GRAD_3D.length];
+        double[] g = GRAD_3D[Math.floorMod(hash, GRAD_3D.length)];
         return g[0] * x + g[1] * y + g[2] * z;
     }
 }
