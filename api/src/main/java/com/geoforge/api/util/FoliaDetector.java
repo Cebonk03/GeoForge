@@ -19,7 +19,7 @@ public final class FoliaDetector {
         try {
             Class.forName(FOLIA_REGIONIZED_SERVER);
             return true;
-        } catch (ClassNotFoundException ignored) {
+        } catch (ClassNotFoundException | LinkageError | SecurityException ignored) {
             return false;
         }
     }
