@@ -12,7 +12,7 @@ package com.geoforge.engine.noise;
  * <ul>
  *   <li>OpenSimplex2 noise type (high quality, no directional artifacts)</li>
  *   <li>FBM fractal with lacunarity 2.0 and gain 0.5</li>
- *   <li>3 octaves by default for 2D, 2 for 3D</li>
+ *   <li>3 octaves by default</li>
  * </ul>
  *
  * <p>This class is thread-safe after construction (FastNoiseLite instances are stateless

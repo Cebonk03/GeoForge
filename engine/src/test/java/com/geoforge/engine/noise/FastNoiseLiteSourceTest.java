@@ -1,33 +1,39 @@
 package com.geoforge.engine.noise;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag("unit")
+@DisplayName("FastNoiseLite source tests")
 class FastNoiseLiteSourceTest {
 
     private static final long SEED = 12345L;
 
+    @DisplayName("Same seed and coordinates produce same 3D value")
     @Test
     void determinism_3d_sameSeedSameCoordsProducesSameValue() {
         var noise = new FastNoiseLiteSource(SEED);
         double first = noise.sample3D(100.5, 200.3, 300.7);
         for (int i = 0; i < 100; i++) {
-            double next = noise.sample3D(100.5, 200.3, 300.7);
-            assertEquals(first, next, 1e-12, "Determinism violated at iteration " + i);
+            assertEquals(first, noise.sample3D(100.5, 200.3, 300.7), 1e-12);
         }
     }
 
+    @DisplayName("Same seed and coordinates produce same 2D value")
     @Test
     void determinism_2d_sameSeedSameCoordsProducesSameValue() {
         var noise = new FastNoiseLiteSource(SEED);
         double first = noise.sample2D(100.5, 200.3);
         for (int i = 0; i < 100; i++) {
-            double next = noise.sample2D(100.5, 200.3);
-            assertEquals(first, next, 1e-12, "2D determinism violated at iteration " + i);
+            assertEquals(first, noise.sample2D(100.5, 200.3), 1e-12);
         }
     }
 
+    @DisplayName("All 3D samples are in [-1, 1] range")
     @Test
     void bounds_3d_allSamplesInRange() {
         var noise = new FastNoiseLiteSource(SEED);
@@ -36,12 +42,11 @@ class FastNoiseLiteSourceTest {
             double y = (i * 31.7) % 1000;
             double z = (i * 7.1) % 1000;
             double v = noise.sample3D(x, y, z);
-            assertTrue(
-                    v >= -1.0 && v <= 1.0,
-                    "3D sample out of [-1,1] range at i=" + i + ": " + v);
+            assertThat(v).isBetween(-1.0, 1.0);
         }
     }
 
+    @DisplayName("All 2D samples are in [-1, 1] range")
     @Test
     void bounds_2d_allSamplesInRange() {
         var noise = new FastNoiseLiteSource(SEED);
@@ -49,12 +54,11 @@ class FastNoiseLiteSourceTest {
             double x = (i * 17.3) % 1000;
             double z = (i * 31.7) % 1000;
             double v = noise.sample2D(x, z);
-            assertTrue(
-                    v >= -1.0 && v <= 1.0,
-                    "2D sample out of [-1,1] range at i=" + i + ": " + v);
+            assertThat(v).isBetween(-1.0, 1.0);
         }
     }
 
+    @DisplayName("Different seeds produce different values")
     @Test
     void differentSeedsProduceDifferentValues() {
         var noise1 = new FastNoiseLiteSource(SEED);
@@ -68,6 +72,6 @@ class FastNoiseLiteSourceTest {
                 break;
             }
         }
-        assertTrue(anyDifferent, "Different seeds produced identical noise values");
+        assertThat(anyDifferent).isTrue();
     }
 }
