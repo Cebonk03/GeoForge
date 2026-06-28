@@ -1,6 +1,6 @@
 package com.geoforge.engine.feature;
 
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 /**
  * Functional interface for surface feature placement (trees, vegetation, etc.).
@@ -24,5 +24,5 @@ public interface GeoForgeFeature {
      * @param random   shared random for stochastic placement decisions
      */
     void place(BlockSetter setter, int blockX, int blockZ, int surfaceY,
-               String biomeId, Random random);
+               String biomeId, RandomGenerator random);
 }

@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 import com.geoforge.engine.biome.BiomeTerrainConfig;
 
 /**
@@ -58,7 +58,7 @@ public final class VegetationPlacer implements GeoForgeFeature {
 
     @Override
     public void place(BlockSetter setter, int blockX, int blockZ, int surfaceY,
-                      String biomeId, Random random) {
+                      String biomeId, RandomGenerator random) {
         if (random.nextDouble() >= vegetationDensity) {
             return;
         }

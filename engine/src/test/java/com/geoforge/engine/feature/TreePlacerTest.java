@@ -7,6 +7,7 @@ import com.geoforge.engine.feature.TreePlacer.TreeType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.SplittableRandom;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -343,6 +344,17 @@ class TreePlacerTest {
                 .max()
                 .orElse(0);
         assertThat(maxPerLayer).isGreaterThanOrEqualTo(9);
+    }
+
+    @DisplayName("SplittableRandom produces deterministic placement")
+    @Test
+    void place_withSplittableRandom_deterministic() {
+        var placer = new TreePlacer(1.0, 12);
+        var setter1 = new RecordingSetter();
+        var setter2 = new RecordingSetter();
+        placer.place(setter1, 0, 0, 60, "forest", new SplittableRandom(42));
+        placer.place(setter2, 0, 0, 60, "forest", new SplittableRandom(42));
+        assertThat(setter1.blocks).containsExactlyElementsOf(setter2.blocks);
     }
 
     private static String findLogMaterial(List<String[]> blocks) {

@@ -14,6 +14,7 @@ import org.bukkit.generator.WorldInfo;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import java.util.Random;
+import java.util.SplittableRandom;
 
 /**
  * The custom chunk generator for GeoForge.
@@ -175,7 +176,7 @@ public final class GeoForgeGenerator extends ChunkGenerator {
 
                 // Surface features (trees and vegetation)
                 long fs = engine.config().featureSeedOffset();
-                Random fr = fs != 0 ? new Random(random.nextLong() ^ fs) : random;
+                var fr = fs != 0 ? new SplittableRandom(random.nextLong() ^ fs) : random;
                 treePlacer.place(blockSetter, blockX, blockZ, heightY, biomeId, fr);
                 vegetationPlacer.place(blockSetter, blockX, blockZ, heightY, biomeId, fr);
             }

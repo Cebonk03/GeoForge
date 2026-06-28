@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 import com.geoforge.engine.biome.BiomeTerrainConfig;
 import java.util.logging.Logger;
 
@@ -104,7 +104,7 @@ public final class TreePlacer implements GeoForgeFeature {
 
     @Override
     public void place(BlockSetter setter, int blockX, int blockZ, int surfaceY,
-                      String biomeId, Random random) {
+                      String biomeId, RandomGenerator random) {
         if (random.nextDouble() >= treeDensity) {
             return;
         }
@@ -133,7 +133,7 @@ public final class TreePlacer implements GeoForgeFeature {
     }
 
     private void placeTree(BlockSetter setter, int blockX, int blockZ,
-                           int surfaceY, TreeType type, Random random) {
+                           int surfaceY, TreeType type, RandomGenerator random) {
         switch (type) {
             case OAK -> placeOak(setter, blockX, blockZ, surfaceY, random);
             case BIRCH -> placeBirch(setter, blockX, blockZ, surfaceY, random);
@@ -150,7 +150,7 @@ public final class TreePlacer implements GeoForgeFeature {
     // ──────────────────────────────────────────────
 
     private void placeOak(BlockSetter setter, int bx, int bz,
-                          int sy, Random random) {
+                          int sy, RandomGenerator random) {
         int height = 4 + random.nextInt(Math.min(maxTreeHeight - 3, 3));
         String log = TreeType.OAK.logName();
         String leaf = TreeType.OAK.leavesName();
@@ -166,7 +166,7 @@ public final class TreePlacer implements GeoForgeFeature {
     }
 
     private void placeBirch(BlockSetter setter, int bx, int bz,
-                            int sy, Random random) {
+                            int sy, RandomGenerator random) {
         int height = 5 + random.nextInt(Math.min(maxTreeHeight - 4, 2));
         String log = TreeType.BIRCH.logName();
         String leaf = TreeType.BIRCH.leavesName();
@@ -182,7 +182,7 @@ public final class TreePlacer implements GeoForgeFeature {
     }
 
     private void placeSpruce(BlockSetter setter, int bx, int bz,
-                             int sy, Random random) {
+                             int sy, RandomGenerator random) {
         int height = 5 + random.nextInt(Math.min(maxTreeHeight - 4, 3));
         String log = TreeType.SPRUCE.logName();
         String leaf = TreeType.SPRUCE.leavesName();
@@ -208,7 +208,7 @@ public final class TreePlacer implements GeoForgeFeature {
     }
 
     private void placeJungle(BlockSetter setter, int bx, int bz,
-                             int sy, Random random) {
+                             int sy, RandomGenerator random) {
         int height = 5 + random.nextInt(Math.min(maxTreeHeight - 4, 3));
         String log = TreeType.JUNGLE.logName();
         String leaf = TreeType.JUNGLE.leavesName();
@@ -225,7 +225,7 @@ public final class TreePlacer implements GeoForgeFeature {
     }
 
     private void placeDarkOak(BlockSetter setter, int bx, int bz,
-                              int sy, Random random) {
+                              int sy, RandomGenerator random) {
         int height = 6 + random.nextInt(Math.min(maxTreeHeight - 5, 2));
         String log = TreeType.DARK_OAK.logName();
         String leaf = TreeType.DARK_OAK.leavesName();
@@ -247,7 +247,7 @@ public final class TreePlacer implements GeoForgeFeature {
     }
 
     private void placeAcacia(BlockSetter setter, int bx, int bz,
-                            int sy, Random random) {
+                            int sy, RandomGenerator random) {
         int height = 4 + random.nextInt(Math.min(maxTreeHeight - 3, 2));
         String log = TreeType.ACACIA.logName();
         String leaf = TreeType.ACACIA.leavesName();
