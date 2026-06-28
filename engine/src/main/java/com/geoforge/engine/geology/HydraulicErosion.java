@@ -70,7 +70,7 @@ public final class HydraulicErosion {
             for (int step = 0; step < maxSteps; step++) {
                 int xi = clamp((int) posX, 0, size - 1);
                 int zi = clamp((int) posZ, 0, size - 1);
-                float h = heightmap[xi * size + zi];
+                float h = heightmap[zi * size + xi];
 
                 // Calculate gradient
                 float gradX = getHeight(heightmap, size, xi + 1, zi)
@@ -91,19 +91,19 @@ public final class HydraulicErosion {
 
                 int newXi = clamp((int) posX, 0, size - 1);
                 int newZi = clamp((int) posZ, 0, size - 1);
-                float newH = heightmap[newXi * size + newZi];
+                float newH = heightmap[newZi * size + newXi];
                 float dh = newH - h;
 
                 float capacity = Math.max(-dh, 0.0f) * speed * SEDIMENT_CAPACITY * water;
                 if (sediment > capacity) {
                     float deposit = (sediment - capacity) * DEPOSITION;
-                    int idx = xi * size + zi;
+                    int idx = zi * size + xi;
                     heightmap[idx] += deposit;
                     sediment -= deposit;
                 } else {
                     float erode = Math.min((capacity - sediment) * EROSION, -dh * 0.5f);
                     if (erode > 0) {
-                        int idx = xi * size + zi;
+                        int idx = zi * size + xi;
                         heightmap[idx] -= erode;
                         sediment += erode;
                     }
@@ -126,9 +126,9 @@ public final class HydraulicErosion {
 
     private static float getHeight(float[] heightmap, int size, int x, int z) {
         if (x < 0 || x >= size || z < 0 || z >= size) {
-            return heightmap[clamp(x, 0, size - 1) * size + clamp(z, 0, size - 1)];
+            return heightmap[clamp(z, 0, size - 1) * size + clamp(x, 0, size - 1)];
         }
-        return heightmap[x * size + z];
+        return heightmap[z * size + x];
     }
 
     private static int clamp(int value, int min, int max) {
