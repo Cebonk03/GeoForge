@@ -1,25 +1,23 @@
 package com.geoforge.engine;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.geoforge.engine.config.GeoForgeConfig;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-/**
- * Thread-safety tests for GeoForgeEngine under concurrent access.
- *
- * <p>Verifies that the engine produces deterministic results when called from
- * multiple threads simultaneously (simulating Paper's multi-threaded chunk
- * generation).
- */
+@Tag("threading")
+@DisplayName("Thread safety tests")
 class ThreadSafetyTest {
 
     private static final long SEED = 42L;
     private static final GeoForgeConfig CFG = GeoForgeConfig.defaults();
 
+    @DisplayName("Concurrent getDensity calls produce no exceptions")
     @Test
     void concurrentGetDensity_noExceptions() throws Exception {
         int threadCount = 4;
@@ -33,8 +31,7 @@ class ThreadSafetyTest {
                     var engine = new GeoForgeEngine(SEED + threadId, CFG);
                     for (int i = 0; i < 1000; i++) {
                         double d = engine.getDensity(i % 8, (i * 64) % 256, i / 8);
-                        assertTrue(Double.isFinite(d),
-                                "Non-finite density at i=" + i + ": " + d);
+                        assertThat(d).isFinite();
                     }
                 } catch (Throwable e) {
                     errors.add(e);
@@ -48,6 +45,7 @@ class ThreadSafetyTest {
         assertTrue(errors.isEmpty(), "Thread failures: " + errors);
     }
 
+    @DisplayName("Concurrent surface height queries produce deterministic results")
     @Test
     void concurrentSurfaceHeight_deterministic() throws Exception {
         int threadCount = 4;
@@ -80,6 +78,7 @@ class ThreadSafetyTest {
         assertTrue(errors.isEmpty(), "Determinism failures: " + errors);
     }
 
+    @DisplayName("Concurrent density and surface height calls produced no deadlock")
     @Test
     void concurrentGetDensityAndSurfaceHeight_noDeadlock() throws Exception {
         int threadCount = 8;
@@ -111,12 +110,12 @@ class ThreadSafetyTest {
         assertTrue(errors.isEmpty(), "Concurrent failures: " + errors);
     }
 
+    @DisplayName("Same seed on different threads produces same density output")
     @Test
     void sameSeed_differentThreads_sameOutput() throws Exception {
         var engine1 = new GeoForgeEngine(SEED, CFG);
         var engine2 = new GeoForgeEngine(SEED, CFG);
 
-        // Engine 1 on current thread, engine 2 on another
         var latch = new CountDownLatch(1);
         var result = new double[1];
 
@@ -128,7 +127,6 @@ class ThreadSafetyTest {
         double r1 = engine1.getDensity(10, 64, 10);
         latch.await();
 
-        assertEquals(r1, result[0], 1e-12,
-                "Same seed on different threads must produce same density");
+        assertEquals(r1, result[0], 1e-12);
     }
 }

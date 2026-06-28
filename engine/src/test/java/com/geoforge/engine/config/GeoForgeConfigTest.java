@@ -1,9 +1,15 @@
 package com.geoforge.engine.config;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag("unit")
+@Tag("validation")
+@DisplayName("GeoForgeConfig tests")
 class GeoForgeConfigTest {
 
     @Test
@@ -288,7 +294,7 @@ class GeoForgeConfigTest {
         // River v2
         assertEquals(0, cfg.riverCanyonDepth());
         assertEquals(2, cfg.riverCanyonWidth());
-        assertEquals("vshaped", cfg.riverValleyProfile());
+        assertEquals(RiverProfile.VSHAPED, cfg.riverValleyProfile());
         assertEquals(5, cfg.riverFloodplainWidth());
         assertEquals(0.0, cfg.riverTableResponse());
         // Multi-noise terrain
@@ -308,7 +314,7 @@ class GeoForgeConfigTest {
         assertEquals(1024, cfg.erosionDropletCount());
         assertEquals(0.2f, cfg.erosionGravity());
         // Domain warping
-        assertEquals(0.0, cfg.domainWarpAmplitude());
+        assertEquals(1.5, cfg.domainWarpAmplitude());
         // Config version
         assertEquals(2, cfg.configVersion());
     }
@@ -400,13 +406,13 @@ class GeoForgeConfigTest {
         var cfg = GeoForgeConfig.builder()
                 .riverCanyonDepth(10)
                 .riverCanyonWidth(4)
-                .riverValleyProfile("floodplain")
+                .riverValleyProfile(RiverProfile.FLOODPLAIN)
                 .riverFloodplainWidth(8)
                 .riverTableResponse(1.5)
                 .build();
         assertEquals(10, cfg.riverCanyonDepth());
         assertEquals(4, cfg.riverCanyonWidth());
-        assertEquals("floodplain", cfg.riverValleyProfile());
+        assertEquals(RiverProfile.FLOODPLAIN, cfg.riverValleyProfile());
         assertEquals(8, cfg.riverFloodplainWidth());
         assertEquals(1.5, cfg.riverTableResponse());
     }
@@ -489,7 +495,7 @@ class GeoForgeConfigTest {
 
     @Test
     void validation_riverValleyProfileMustNotBeNull() {
-        assertThrows(NullPointerException.class,
+        assertThrows(IllegalArgumentException.class,
                 () -> GeoForgeConfig.builder().riverValleyProfile(null).build());
     }
 }

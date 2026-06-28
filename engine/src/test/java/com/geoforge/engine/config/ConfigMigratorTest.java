@@ -1,12 +1,17 @@
 package com.geoforge.engine.config;
 
-import org.junit.jupiter.api.Test;
-
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests for {@link ConfigMigrator}.
  */
+@Tag("unit")
+@DisplayName("ConfigMigrator tests")
 class ConfigMigratorTest {
 
     /**
@@ -49,7 +54,7 @@ class ConfigMigratorTest {
                 0.06,   // caveNoodleFrequency (default: 0.05)
                 1,      // riverCanyonDepth (default: 0)
                 3,      // riverCanyonWidth (default: 2)
-                "floodplain", // riverValleyProfile
+                RiverProfile.FLOODPLAIN, // riverValleyProfile
                 10,     // riverFloodplainWidth (default: 5)
                 0.5,    // riverTableResponse (default: 0.0)
                 0.004,  // ridgeFrequency (default: 0.003)
@@ -59,13 +64,16 @@ class ConfigMigratorTest {
                 5,      // fbmOctaves (default: 4)
                 0.01,   // flatFrequency (default: 0.008)
                 3.0,    // continentalnessBlendSharpness (default: 2.0)
+                "fastnoise", // noiseBackend (default: "simplex")
                 0.2,    // treeDensity (default: 0.1)
                 0.5,    // vegetationDensity (default: 0.3)
                 0xBEEFL, // featureSeedOffset (default: 0xCAFEBABEL)
                 15,     // maxTreeHeight (default: 12)
                 2048,   // erosionDropletCount (default: 1024)
                 0.3f,   // erosionGravity (default: 0.2f)
-                1.0,    // domainWarpAmplitude (default: 0.0)
+                5,      // plateauSize (default: 0)
+                120,    // plateauTargetHeight (default: 64)
+                1.0,    // domainWarpAmplitude (default: 1.5)
                 1       // configVersion = 1 (v1)
         );
     }
@@ -141,7 +149,7 @@ class ConfigMigratorTest {
         assertEquals(defaults.maxTreeHeight(), result.maxTreeHeight());
 
         // Erosion defaults
-        assertEquals(defaults.erosionDropletCount(), result.erosionDropletCount());
+        assertEquals(1024, result.erosionDropletCount());
         assertEquals(defaults.erosionGravity(), result.erosionGravity());
 
         // Domain warping defaults

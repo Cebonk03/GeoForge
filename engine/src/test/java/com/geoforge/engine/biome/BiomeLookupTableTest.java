@@ -1,10 +1,19 @@
 package com.geoforge.engine.biome;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Set;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
+@Tag("unit")
+@DisplayName("Biome lookup table tests")
 class BiomeLookupTableTest {
 
     private static final Set<String> VALID_BIOMES =
@@ -21,27 +30,31 @@ class BiomeLookupTableTest {
                     "warm_ocean",
                     "mangrove_swamp");
 
+    @DisplayName("Mid temp, mid humidity lookup returns a known biome")
     @Test
     void lookup_midTempMidHumidity_returnsNonNull() {
         String biome = BiomeLookupTable.lookup(0.0, 0.5);
         assertNotNull(biome);
-        assertTrue(VALID_BIOMES.contains(biome), "Unknown biome: " + biome);
+        assertThat(VALID_BIOMES).contains(biome);
     }
 
+    @DisplayName("Cold and dry lookup returns a known biome")
     @Test
     void lookup_coldDry_returnsNonNull() {
         String biome = BiomeLookupTable.lookup(-1.0, 0.0);
         assertNotNull(biome);
-        assertTrue(VALID_BIOMES.contains(biome), "Unknown biome: " + biome);
+        assertThat(VALID_BIOMES).contains(biome);
     }
 
+    @DisplayName("Hot and wet lookup returns a known biome")
     @Test
     void lookup_hotWet_returnsNonNull() {
         String biome = BiomeLookupTable.lookup(1.0, 1.0);
         assertNotNull(biome);
-        assertTrue(VALID_BIOMES.contains(biome), "Unknown biome: " + biome);
+        assertThat(VALID_BIOMES).contains(biome);
     }
 
+    @DisplayName("All four corners return valid biomes")
     @Test
     void lookup_allCornersValid() {
         assertNotNull(BiomeLookupTable.lookup(-1.0, 0.0));
@@ -50,30 +63,32 @@ class BiomeLookupTableTest {
         assertNotNull(BiomeLookupTable.lookup(1.0, 1.0));
     }
 
+    @DisplayName("Out-of-range values are clamped without throwing")
     @Test
     void lookup_clampsOutOfRangeValues() {
-        // These should not throw
         assertNotNull(BiomeLookupTable.lookup(-2.0, 0.5));
         assertNotNull(BiomeLookupTable.lookup(2.0, 0.5));
         assertNotNull(BiomeLookupTable.lookup(0.0, -0.5));
         assertNotNull(BiomeLookupTable.lookup(0.0, 1.5));
     }
 
+    @DisplayName("getAllBiomeIds returns non-empty set with sufficient biomes")
     @Test
     void getAllBiomeIds_returnsNonEmptySet() {
         Set<String> ids = BiomeLookupTable.getAllBiomeIds();
-        assertNotNull(ids);
-        assertFalse(ids.isEmpty(), "getAllBiomeIds() returned empty set");
-        assertTrue(ids.size() > 5, "Expected at least 5 biome IDs");
+        assertThat(ids).isNotEmpty();
+        assertThat(ids.size()).isGreaterThan(5);
     }
 
+    @DisplayName("All biome IDs returned are valid entries")
     @Test
     void getAllBiomeIds_allEntriesAreValid() {
         for (String id : BiomeLookupTable.getAllBiomeIds()) {
-            assertTrue(VALID_BIOMES.contains(id), "Invalid biome ID: " + id);
+            assertThat(VALID_BIOMES).contains(id);
         }
     }
 
+    @DisplayName("getAllBiomeIds returns an unmodifiable set")
     @Test
     void getAllBiomeIds_isUnmodifiable() {
         assertThrows(
@@ -81,6 +96,7 @@ class BiomeLookupTableTest {
                 () -> BiomeLookupTable.getAllBiomeIds().add("test"));
     }
 
+    @DisplayName("No biome appears more than twice in the 8x8 grid")
     @Test
     void noBiomeAppearsMoreThanTwice() {
         var counts = new java.util.HashMap<String, Integer>();
@@ -93,81 +109,65 @@ class BiomeLookupTableTest {
             }
         }
         for (var entry : counts.entrySet()) {
-            assertTrue(entry.getValue() <= 2,
-                "Biome '" + entry.getKey() + "' appears " + entry.getValue() + " times (>2)");
+            assertThat(entry.getValue())
+                    .as("Biome '%s' frequency", entry.getKey())
+                    .isLessThanOrEqualTo(2);
         }
     }
 
+    @DisplayName("Mangrove swamp is present in biome list")
     @Test
     void mangroveSwamp_isPresent() {
-        assertTrue(BiomeLookupTable.getAllBiomeIds().contains("mangrove_swamp"));
+        assertThat(BiomeLookupTable.getAllBiomeIds()).contains("mangrove_swamp");
     }
 
-    @Test
-    void lookup_threeParam_backwardCompatible() {
-        for (int ti = 0; ti < 8; ti++) {
-            for (int hi = 0; hi < 8; hi++) {
-                double temp = -1.0 + ti * 0.25 + 0.125;
-                double hum = hi * 0.125 + 0.0625;
-                String twoParam = BiomeLookupTable.lookup(temp, hum);
-                String threeParam = BiomeLookupTable.lookup(temp, hum, 0.6);
-                assertEquals(twoParam, threeParam,
-                        "3-param with c=0.6 must match 2-param at temp=" + temp + ", hum=" + hum);
-            }
-        }
+    @DisplayName("Three-param lookup matches two-param with continentalness=0.6")
+    @ParameterizedTest
+    @MethodSource("gridPositions")
+    void lookup_threeParam_backwardCompatible(double temp, double hum) {
+        String twoParam = BiomeLookupTable.lookup(temp, hum);
+        String threeParam = BiomeLookupTable.lookup(temp, hum, 0.6);
+        assertEquals(twoParam, threeParam,
+                "3-param with c=0.6 must match 2-param at temp=" + temp + ", hum=" + hum);
     }
 
-    @Test
-    void lookup_oceanContinentalness_returnsOceanBiome() {
+    @DisplayName("Ocean continentalness returns ocean biomes")
+    @ParameterizedTest
+    @MethodSource("gridPositions")
+    void lookup_oceanContinentalness_returnsOceanBiome(double temp, double hum) {
         var oceanBiomes = Set.of(
                 "frozen_ocean", "deep_frozen_ocean",
                 "cold_ocean", "deep_cold_ocean",
                 "ocean", "deep_ocean",
                 "lukewarm_ocean", "deep_lukewarm_ocean",
                 "warm_ocean");
-        for (int ti = 0; ti < 8; ti++) {
-            for (int hi = 0; hi < 8; hi++) {
-                double temp = -1.0 + ti * 0.25 + 0.125;
-                double hum = hi * 0.125 + 0.0625;
-                String biome = BiomeLookupTable.lookup(temp, hum, 0.15);
-                assertTrue(oceanBiomes.contains(biome),
-                        "Ocean c=0.15 should return ocean biome, got '" + biome
-                                + "' at temp=" + temp + ", hum=" + hum);
-            }
-        }
+        String biome = BiomeLookupTable.lookup(temp, hum, 0.15);
+        assertThat(oceanBiomes).contains(biome);
     }
 
-    @Test
-    void lookup_coastContinentalness_returnsCoastBiome() {
+    @DisplayName("Coast continentalness returns coast biomes")
+    @ParameterizedTest
+    @MethodSource("gridPositions")
+    void lookup_coastContinentalness_returnsCoastBiome(double temp, double hum) {
         var coastBiomes = Set.of("beach", "snowy_beach", "stony_shore");
-        for (int ti = 0; ti < 8; ti++) {
-            for (int hi = 0; hi < 8; hi++) {
-                double temp = -1.0 + ti * 0.25 + 0.125;
-                double hum = hi * 0.125 + 0.0625;
-                String biome = BiomeLookupTable.lookup(temp, hum, 0.4);
-                assertTrue(coastBiomes.contains(biome),
-                        "Coast c=0.4 should return coast biome, got '" + biome
-                                + "' at temp=" + temp + ", hum=" + hum);
-            }
-        }
+        String biome = BiomeLookupTable.lookup(temp, hum, 0.4);
+        assertThat(coastBiomes).contains(biome);
     }
 
-    @Test
-    void lookup_inlandContinentalness_matchesBaseLookup() {
-        for (int ti = 0; ti < 8; ti++) {
-            for (int hi = 0; hi < 8; hi++) {
-                double temp = -1.0 + ti * 0.25 + 0.125;
-                double hum = hi * 0.125 + 0.0625;
-                String expected = BiomeLookupTable.lookup(temp, hum);
-                String actual = BiomeLookupTable.lookup(temp, hum, 0.6);
-                assertEquals(expected, actual,
-                        "Inland c=0.6 must match base lookup at temp=" + temp + ", hum=" + hum);
-            }
-        }
+    @DisplayName("Inland continentalness matches base lookup")
+    @ParameterizedTest
+    @MethodSource("gridPositions")
+    void lookup_inlandContinentalness_matchesBaseLookup(double temp, double hum) {
+        String expected = BiomeLookupTable.lookup(temp, hum);
+        String actual = BiomeLookupTable.lookup(temp, hum, 0.6);
+        assertEquals(expected, actual,
+                "Inland c=0.6 must match base lookup at temp=" + temp + ", hum=" + hum);
     }
 
-    @Test
-    void lookup_highlandContinentalness_returnsHighlandBiome() {
+    @DisplayName("Highland continentalness returns highland biomes")
+    @ParameterizedTest
+    @MethodSource("gridPositions")
+    void lookup_highlandContinentalness_returnsHighlandBiome(double temp, double hum) {
         var highlandBiomes = Set.of(
                 "frozen_peaks", "jagged_peaks",
                 "grove",
@@ -175,18 +175,11 @@ class BiomeLookupTableTest {
                 "windswept_hills", "windswept_forest",
                 "windswept_savanna",
                 "badlands");
-        for (int ti = 0; ti < 8; ti++) {
-            for (int hi = 0; hi < 8; hi++) {
-                double temp = -1.0 + ti * 0.25 + 0.125;
-                double hum = hi * 0.125 + 0.0625;
-                String biome = BiomeLookupTable.lookup(temp, hum, 0.85);
-                assertTrue(highlandBiomes.contains(biome),
-                        "Highland c=0.85 should return highland biome, got '" + biome
-                                + "' at temp=" + temp + ", hum=" + hum);
-            }
-        }
+        String biome = BiomeLookupTable.lookup(temp, hum, 0.85);
+        assertThat(highlandBiomes).contains(biome);
     }
 
+    @DisplayName("Same continentalness inputs are deterministic")
     @Test
     void lookup_deterministic_withContinentalness() {
         String first = BiomeLookupTable.lookup(0.3, 0.7, 0.9);
@@ -196,6 +189,7 @@ class BiomeLookupTableTest {
         }
     }
 
+    @DisplayName("All continentalness boundary values return valid biomes")
     @Test
     void lookup_continentalnessBoundaries() {
         assertNotNull(BiomeLookupTable.lookup(0.0, 0.5, 0.0));
@@ -203,5 +197,17 @@ class BiomeLookupTableTest {
         assertNotNull(BiomeLookupTable.lookup(0.0, 0.5, 0.5));
         assertNotNull(BiomeLookupTable.lookup(0.0, 0.5, 0.7));
         assertNotNull(BiomeLookupTable.lookup(0.0, 0.5, 1.0));
+    }
+
+    private static Stream<Arguments> gridPositions() {
+        var args = new java.util.ArrayList<Arguments>();
+        for (int ti = 0; ti < 8; ti++) {
+            for (int hi = 0; hi < 8; hi++) {
+                double temp = -1.0 + ti * 0.25 + 0.125;
+                double hum = hi * 0.125 + 0.0625;
+                args.add(Arguments.of(temp, hum));
+            }
+        }
+        return args.stream();
     }
 }

@@ -7,6 +7,11 @@ import com.tngtech.archunit.lang.ArchRule;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
+
+@Tag("architecture")
+@DisplayName("Engine isolation from Bukkit dependencies")
 @AnalyzeClasses(
     packages = "com.geoforge.engine",
     importOptions = ImportOption.DoNotIncludeTests.class
