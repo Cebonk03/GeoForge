@@ -25,10 +25,6 @@ class GeoForgeConfigTest {
         assertEquals(63, cfg.seaLevel());
         assertEquals(50.0, cfg.continentalBase());
         assertEquals(120.0, cfg.continentalHeightAmplitude());
-        assertEquals(0.004, cfg.continentalFrequency());
-        assertEquals(4, cfg.continentalOctaves());
-        assertEquals(2.0, cfg.continentalLacunarity());
-        assertEquals(0.5, cfg.continentalPersistence());
         assertEquals(0.001, cfg.temperatureFrequency());
         assertEquals(0.005, cfg.temperatureYFrequency());
         assertEquals(0.001, cfg.humidityFrequency());
@@ -66,8 +62,6 @@ class GeoForgeConfigTest {
         return GeoForgeConfig.builder()
                 .minHeight((int) args[0]).maxHeight((int) args[1]).seaLevel((int) args[2])
                 .continentalBase((double) args[3]).continentalHeightAmplitude((double) args[4])
-                .continentalFrequency((double) args[5]).continentalOctaves((int) args[6])
-                .continentalLacunarity((double) args[7]).continentalPersistence((double) args[8])
                 .temperatureFrequency((double) args[9]).temperatureYFrequency((double) args[10])
                 .humidityFrequency((double) args[11])
                 .caveFrequency((double) args[12]).caveAmplitude((double) args[13])
@@ -96,11 +90,6 @@ class GeoForgeConfigTest {
         assertThrows(IllegalArgumentException.class, () -> makeCfg(args(-64, 180, 181, 50.0, 120.0, 0.004, 4, 2.0, 0.5, 0.001, 0.005, 0.001, 0.03, 8.0, 2, 2.0, 0.5, RIV_FREQ, RIV_DEPTH, RIV_WIDTH, 10, 64)));
     }
 
-    @Test
-    void validation_octavesMustBePositive() {
-        assertThrows(IllegalArgumentException.class, () -> makeCfg(args(-64, 180, 63, 50.0, 120.0, 0.004, 0, 2.0, 0.5, 0.001, 0.005, 0.001, 0.03, 8.0, 2, 2.0, 0.5, RIV_FREQ, RIV_DEPTH, RIV_WIDTH, 10, 64)));
-        assertThrows(IllegalArgumentException.class, () -> makeCfg(args(-64, 180, 63, 50.0, 120.0, 0.004, -1, 2.0, 0.5, 0.001, 0.005, 0.001, 0.03, 8.0, 2, 2.0, 0.5, RIV_FREQ, RIV_DEPTH, RIV_WIDTH, 10, 64)));
-    }
 
     @Test
     void validation_erosionStepsMustBePositive() {
@@ -114,11 +103,6 @@ class GeoForgeConfigTest {
         assertThrows(IllegalArgumentException.class, () -> makeCfg(args(-64, 180, 63, 50.0, 120.0, 0.004, 4, 2.0, 0.5, 0.001, 0.005, 0.001, 0.03, 8.0, 2, 2.0, 0.5, RIV_FREQ, RIV_DEPTH, RIV_WIDTH, 10, -10)));
     }
 
-    @Test
-    void validation_frequenciesMustBePositive() {
-        assertThrows(IllegalArgumentException.class, () -> makeCfg(args(-64, 180, 63, 50.0, 120.0, 0.0, 4, 2.0, 0.5, 0.001, 0.005, 0.001, 0.03, 8.0, 2, 2.0, 0.5, RIV_FREQ, RIV_DEPTH, RIV_WIDTH, 10, 64)));
-        assertThrows(IllegalArgumentException.class, () -> makeCfg(args(-64, 180, 63, 50.0, 120.0, -1.0, 4, 2.0, 0.5, 0.001, 0.005, 0.001, 0.03, 8.0, 2, 2.0, 0.5, RIV_FREQ, RIV_DEPTH, RIV_WIDTH, 10, 64)));
-    }
 
     @Test
     void validation_temperatureFrequenciesMustBePositive() {
@@ -188,10 +172,6 @@ class GeoForgeConfigTest {
         assertEquals(defaults.maxHeight(), cfg.maxHeight());
         assertEquals(defaults.continentalBase(), cfg.continentalBase());
         assertEquals(defaults.continentalHeightAmplitude(), cfg.continentalHeightAmplitude());
-        assertEquals(defaults.continentalFrequency(), cfg.continentalFrequency());
-        assertEquals(defaults.continentalOctaves(), cfg.continentalOctaves());
-        assertEquals(defaults.continentalLacunarity(), cfg.continentalLacunarity());
-        assertEquals(defaults.continentalPersistence(), cfg.continentalPersistence());
         assertEquals(defaults.temperatureFrequency(), cfg.temperatureFrequency());
         assertEquals(defaults.temperatureYFrequency(), cfg.temperatureYFrequency());
         assertEquals(defaults.humidityFrequency(), cfg.humidityFrequency());
@@ -218,10 +198,6 @@ class GeoForgeConfigTest {
         assertEquals(defaults.seaLevel(), cfg.seaLevel());
         assertEquals(defaults.continentalBase(), cfg.continentalBase());
         assertEquals(defaults.continentalHeightAmplitude(), cfg.continentalHeightAmplitude());
-        assertEquals(defaults.continentalFrequency(), cfg.continentalFrequency());
-        assertEquals(defaults.continentalOctaves(), cfg.continentalOctaves());
-        assertEquals(defaults.continentalLacunarity(), cfg.continentalLacunarity());
-        assertEquals(defaults.continentalPersistence(), cfg.continentalPersistence());
         assertEquals(defaults.temperatureFrequency(), cfg.temperatureFrequency());
         assertEquals(defaults.temperatureYFrequency(), cfg.temperatureYFrequency());
         assertEquals(defaults.humidityFrequency(), cfg.humidityFrequency());

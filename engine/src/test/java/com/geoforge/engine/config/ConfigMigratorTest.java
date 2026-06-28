@@ -27,10 +27,6 @@ class ConfigMigratorTest {
                 70,     // seaLevel (default: 63)
                 40.0,   // continentalBase (default: 50.0)
                 100.0,  // continentalHeightAmplitude (default: 120.0)
-                0.005,  // continentalFrequency (default: 0.004)
-                5,      // continentalOctaves (default: 4)
-                2.5,    // continentalLacunarity (default: 2.0)
-                0.6,    // continentalPersistence (default: 0.5)
                 0.002,  // temperatureFrequency (default: 0.001)
                 0.01,   // temperatureYFrequency (default: 0.005)
                 0.002,  // humidityFrequency (default: 0.001)
@@ -89,10 +85,6 @@ class ConfigMigratorTest {
         assertEquals(70, result.seaLevel());
         assertEquals(40.0, result.continentalBase());
         assertEquals(100.0, result.continentalHeightAmplitude());
-        assertEquals(0.005, result.continentalFrequency());
-        assertEquals(5, result.continentalOctaves());
-        assertEquals(2.5, result.continentalLacunarity());
-        assertEquals(0.6, result.continentalPersistence());
         assertEquals(0.002, result.temperatureFrequency());
         assertEquals(0.01, result.temperatureYFrequency());
         assertEquals(0.002, result.humidityFrequency());

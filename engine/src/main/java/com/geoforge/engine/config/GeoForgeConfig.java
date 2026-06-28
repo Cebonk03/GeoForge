@@ -11,8 +11,7 @@ package com.geoforge.engine.config;
  *   <dd>{@code minHeight}, {@code maxHeight}, {@code seaLevel} — define the vertical extent of
  *       the world and the target water level.
  *   <dt>Continental noise</dt>
- *   <dd>{@code continentalBase}, {@code continentalHeightAmplitude}, {@code continentalFrequency},
- *       {@code continentalOctaves}, {@code continentalLacunarity}, {@code continentalPersistence} —
+ *   <dd>{@code continentalBase}, {@code continentalHeightAmplitude} —
  *       control the large-scale landmass shape via octaved noise.
  *   <dt>Climate noise</dt>
  *   <dd>{@code temperatureFrequency}, {@code temperatureYFrequency}, {@code humidityFrequency} —
@@ -52,12 +51,6 @@ package com.geoforge.engine.config;
  * @param seaLevel                   Target sea level. Must be {@code >= minHeight && <= maxHeight}.
  * @param continentalBase            Base Y offset for continental noise.
  * @param continentalHeightAmplitude Amplitude of continental noise in blocks.
- * @param continentalFrequency       Base frequency of continental noise (higher = more smaller
- *                                   continents).
- * @param continentalOctaves         Number of octaves for fractal continental noise. Must be
- *                                   {@code > 0}.
- * @param continentalLacunarity      Frequency multiplier between octaves. Must be {@code > 0}.
- * @param continentalPersistence     Amplitude multiplier between octaves. Must be {@code > 0}.
  * @param temperatureFrequency       Horizontal frequency for temperature noise.
  * @param temperatureYFrequency      Vertical (Y-axis) frequency for temperature noise.
  * @param humidityFrequency          Horizontal frequency for humidity noise.
@@ -110,10 +103,6 @@ public record GeoForgeConfig(
         int seaLevel,
         double continentalBase,
         double continentalHeightAmplitude,
-        double continentalFrequency,
-        int continentalOctaves,
-        double continentalLacunarity,
-        double continentalPersistence,
         double temperatureFrequency,
         double temperatureYFrequency,
         double humidityFrequency,
@@ -181,25 +170,6 @@ public record GeoForgeConfig(
             throw new IllegalArgumentException(
                     "seaLevel (%d) must be between minHeight (%d) and maxHeight (%d)"
                             .formatted(seaLevel, minHeight, maxHeight));
-        }
-        if (continentalOctaves <= 0) {
-            throw new IllegalArgumentException(
-                    "continentalOctaves must be > 0, got %d".formatted(continentalOctaves));
-        }
-        if (continentalFrequency <= 0) {
-            throw new IllegalArgumentException(
-                    "continentalFrequency must be > 0, got %s"
-                            .formatted(continentalFrequency));
-        }
-        if (continentalLacunarity <= 0) {
-            throw new IllegalArgumentException(
-                    "continentalLacunarity must be > 0, got %s"
-                            .formatted(continentalLacunarity));
-        }
-        if (continentalPersistence <= 0) {
-            throw new IllegalArgumentException(
-                    "continentalPersistence must be > 0, got %s"
-                            .formatted(continentalPersistence));
         }
         if (temperatureFrequency <= 0) {
             throw new IllegalArgumentException(
@@ -432,10 +402,6 @@ public record GeoForgeConfig(
                 63,    // seaLevel
                 50.0,  // continentalBase
                 120.0, // continentalHeightAmplitude
-                0.004, // continentalFrequency
-                4,     // continentalOctaves
-                2.0,   // continentalLacunarity
-                0.5,   // continentalPersistence
                 0.001, // temperatureFrequency
                 0.005, // temperatureYFrequency
                 0.001, // humidityFrequency
@@ -512,10 +478,6 @@ public record GeoForgeConfig(
         private int seaLevel = 63;
         private double continentalBase = 50.0;
         private double continentalHeightAmplitude = 120.0;
-        private double continentalFrequency = 0.004;
-        private int continentalOctaves = 4;
-        private double continentalLacunarity = 2.0;
-        private double continentalPersistence = 0.5;
         private double temperatureFrequency = 0.001;
         private double temperatureYFrequency = 0.005;
         private double humidityFrequency = 0.001;
@@ -576,10 +538,6 @@ public record GeoForgeConfig(
         public Builder seaLevel(int seaLevel) { this.seaLevel = seaLevel; return this; }
         public Builder continentalBase(double continentalBase) { this.continentalBase = continentalBase; return this; }
         public Builder continentalHeightAmplitude(double continentalHeightAmplitude) { this.continentalHeightAmplitude = continentalHeightAmplitude; return this; }
-        public Builder continentalFrequency(double continentalFrequency) { this.continentalFrequency = continentalFrequency; return this; }
-        public Builder continentalOctaves(int continentalOctaves) { this.continentalOctaves = continentalOctaves; return this; }
-        public Builder continentalLacunarity(double continentalLacunarity) { this.continentalLacunarity = continentalLacunarity; return this; }
-        public Builder continentalPersistence(double continentalPersistence) { this.continentalPersistence = continentalPersistence; return this; }
         public Builder temperatureFrequency(double temperatureFrequency) { this.temperatureFrequency = temperatureFrequency; return this; }
         public Builder temperatureYFrequency(double temperatureYFrequency) { this.temperatureYFrequency = temperatureYFrequency; return this; }
         public Builder humidityFrequency(double humidityFrequency) { this.humidityFrequency = humidityFrequency; return this; }
@@ -642,8 +600,6 @@ public record GeoForgeConfig(
             return new GeoForgeConfig(
                     minHeight, maxHeight, seaLevel,
                     continentalBase, continentalHeightAmplitude,
-                    continentalFrequency, continentalOctaves,
-                    continentalLacunarity, continentalPersistence,
                     temperatureFrequency, temperatureYFrequency,
                     humidityFrequency,
                     caveFrequency, caveAmplitude, caveOctaves,
