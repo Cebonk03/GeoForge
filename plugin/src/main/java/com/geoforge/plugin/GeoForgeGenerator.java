@@ -6,6 +6,7 @@ import com.geoforge.engine.feature.BlockSetter;
 import com.geoforge.engine.feature.TreePlacer;
 import com.geoforge.engine.feature.VegetationPlacer;
 import com.geoforge.engine.util.ThreadLocalBuffers;
+import com.geoforge.engine.biome.BiomeTerrainConfig;
 import org.bukkit.Material;
 import org.bukkit.generator.BiomeProvider;
 import org.bukkit.generator.ChunkGenerator;
@@ -49,9 +50,10 @@ public final class GeoForgeGenerator extends ChunkGenerator {
         this.biomeProvider = new GeoForgeBiomeProvider(adapter, engine);
         this.treePlacer = new TreePlacer(
                 engine.config().treeDensity(),
-                engine.config().maxTreeHeight());
+                engine.config().maxTreeHeight(),
+                engine.getBiomeConfigs());
         this.vegetationPlacer = new VegetationPlacer(
-                engine.config().vegetationDensity());
+                engine.config().vegetationDensity(), engine.getBiomeConfigs());
     }
 
     @Override
@@ -135,7 +137,7 @@ public final class GeoForgeGenerator extends ChunkGenerator {
         BlockSetter blockSetter = (wx, wy, wz, mat) -> {
             int lx = wx - chunkX * CHUNK_SIZE;
             int lz = wz - chunkZ * CHUNK_SIZE;
-            if (lx >= 0 && lx < CHUNK_SIZE && lz >= 0 && lz < CHUNK_SIZE) {
+            if (lx >= 0 && lx < CHUNK_SIZE && lz >= 0 && lz < CHUNK_SIZE && wy >= minY && wy < maxY) {
                 chunkData.setBlock(lx, wy, lz, adapter.mapBlock(mat));
             }
         };
@@ -156,8 +158,9 @@ public final class GeoForgeGenerator extends ChunkGenerator {
 
                 // Query biome at actual terrain height — altitude affects temperature
                 String biomeId = engine.getBiomeId(blockX, heightY, blockZ);
-                Material topBlock = resolveTopBlock(biomeId);
-                Material subBlock = resolveSubBlock(biomeId);
+                BiomeTerrainConfig biomeConfig = engine.getBiomeConfig(biomeId);
+                Material topBlock = resolveTopBlock(biomeId, biomeConfig);
+                Material subBlock = resolveSubBlock(biomeId, biomeConfig);
 
                 // Top block
                 chunkData.setBlock(x, heightY, z, topBlock);
@@ -171,8 +174,10 @@ public final class GeoForgeGenerator extends ChunkGenerator {
                 }
 
                 // Surface features (trees and vegetation)
-                treePlacer.place(blockSetter, blockX, blockZ, heightY, biomeId, random);
-                vegetationPlacer.place(blockSetter, blockX, blockZ, heightY, biomeId, random);
+                long fs = engine.config().featureSeedOffset();
+                Random fr = fs != 0 ? new Random(random.nextLong() ^ fs) : random;
+                treePlacer.place(blockSetter, blockX, blockZ, heightY, biomeId, fr);
+                vegetationPlacer.place(blockSetter, blockX, blockZ, heightY, biomeId, fr);
             }
         }
     }
@@ -217,7 +222,11 @@ public final class GeoForgeGenerator extends ChunkGenerator {
         return true;
     }
 
-    private Material resolveTopBlock(String biomeId) {
+    private Material resolveTopBlock(String biomeId, BiomeTerrainConfig biomeConfig) {
+        // Check biome config for explicit surface block override first
+        if (biomeConfig != null && !biomeConfig.surfaceBlock().isEmpty()) {
+            return adapter.mapBlock(biomeConfig.surfaceBlock());
+        }
         return switch (biomeId) {
             case "desert" -> adapter.mapBlock("sand");
             case "badlands" -> adapter.mapBlock("red_sand");
@@ -232,7 +241,11 @@ public final class GeoForgeGenerator extends ChunkGenerator {
         };
     }
 
-    private Material resolveSubBlock(String biomeId) {
+    private Material resolveSubBlock(String biomeId, BiomeTerrainConfig biomeConfig) {
+        // Check biome config for explicit sub-surface block override first
+        if (biomeConfig != null && !biomeConfig.subSurfaceBlock().isEmpty()) {
+            return adapter.mapBlock(biomeConfig.subSurfaceBlock());
+        }
         return switch (biomeId) {
             case "desert", "badlands" -> adapter.mapBlock("sandstone");
             case "beach", "stony_shore" -> adapter.mapBlock("sand");

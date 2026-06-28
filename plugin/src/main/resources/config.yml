@@ -17,10 +17,11 @@ terrain:
 
 # Fractal noise tuning
 noise:
-  continental-frequency: 0.004
-  continental-octaves: 4
-  continental-lacunarity: 2.0
-  continental-persistence: 0.5
+  backend: simplex     # Noise backend: "simplex" or "fastnoise"
+  continental-frequency: 0.004  # UNUSED — reserved for future terrain noise
+  continental-octaves: 4        # UNUSED — reserved for future terrain noise
+  continental-lacunarity: 2.0   # UNUSED — reserved for future terrain noise
+  continental-persistence: 0.5  # UNUSED — reserved for future terrain noise
   cave-frequency: 0.03       # 3D cave noise frequency (period ~33 blocks)
   cave-amplitude: 8.0        # Cave carving strength (0 = no caves)
   cave-octaves: 2            # Detail octaves for cave shape
@@ -75,6 +76,11 @@ decorations:
   feature-seed-offset: 3405691582
   max-tree-height: 12
 
+# Structure terrain flattening (chunk-centered, for development use)
+plateau:
+  size: 0                # Side length in blocks (0 = disabled)
+  target-height: 64      # Flattened surface height
+
 # Domain warping -- terrain distortion amplitude
 domain-warp:
-  amplitude: 0.0
+  amplitude: 1.5

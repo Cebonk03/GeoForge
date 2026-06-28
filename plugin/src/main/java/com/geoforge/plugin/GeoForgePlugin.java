@@ -3,6 +3,7 @@ package com.geoforge.plugin;
 import com.geoforge.api.adapter.GeoForgeAdapter;
 import com.geoforge.engine.GeoForgeEngine;
 import com.geoforge.engine.config.GeoForgeConfig;
+import com.geoforge.engine.config.RiverProfile;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.generator.ChunkGenerator;
@@ -29,7 +30,7 @@ public final class GeoForgePlugin extends JavaPlugin {
         long seed = cfg.getLong("seed", 0L);
 
         // Config version check for future migration support
-        int configVersion = cfg.getInt("config-version", 0);
+        int configVersion = cfg.getInt("config-version", 2);
         int expectedVersion = 2;
         if (configVersion != expectedVersion) {
             getLogger().warning(
@@ -70,7 +71,7 @@ public final class GeoForgePlugin extends JavaPlugin {
 .caveNoodleFrequency(cfg.getDouble("cave.noodle-frequency", 0.05))
 .riverCanyonDepth(cfg.getInt("river.canyon-depth", 0))
 .riverCanyonWidth(cfg.getInt("river.canyon-width", 2))
-.riverValleyProfile(cfg.getString("river.valley-profile", "vshaped"))
+.riverValleyProfile(RiverProfile.fromString(cfg.getString("river.valley-profile", "vshaped")))
 .riverFloodplainWidth(cfg.getInt("river.floodplain-width", 5))
 .riverTableResponse(cfg.getDouble("river.table-response", 0.0))
 .ridgeFrequency(cfg.getDouble("noise.ridge-frequency", 0.003))
@@ -86,7 +87,10 @@ public final class GeoForgePlugin extends JavaPlugin {
 .maxTreeHeight(cfg.getInt("decorations.max-tree-height", 12))
 .erosionDropletCount(cfg.getInt("erosion.droplet-count", 1024))
 .erosionGravity((float) cfg.getDouble("erosion.gravity", 0.2))
-.domainWarpAmplitude(cfg.getDouble("domain-warp.amplitude", 0.0))
+.noiseBackend(cfg.getString("noise.backend", "simplex"))
+            .domainWarpAmplitude(cfg.getDouble("domain-warp.amplitude", 1.5))
+            .plateauSize(cfg.getInt("plateau.size", 0))
+            .plateauTargetHeight(cfg.getInt("plateau.target-height", 64))
 .configVersion(cfg.getInt("config-version", 2))
 .build();
         this.engine = new GeoForgeEngine(seed, engineConfig);
