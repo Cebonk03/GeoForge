@@ -22,11 +22,15 @@ import com.geoforge.engine.geology.TectonicPlateMapper;
 import com.geoforge.engine.density.MultiNoiseHeightFunction;
 import com.geoforge.engine.noise.FractalNoise;
 import com.geoforge.engine.noise.SimplexNoise;
+import com.geoforge.engine.noise.FastNoiseLiteSource;
+import com.geoforge.engine.plateau.StructurePlateauModifier;
 import java.util.Set;
 import com.geoforge.engine.biome.BiomeTerrainConfig;
 import com.geoforge.engine.density.EnhancedCaveSystem;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Collections;
+import java.util.logging.Logger;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
@@ -40,10 +44,11 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
  * <p>The density field is computed as: {@code density(x,y,z) = heightFunc(x,z) - y + caveNoise(x,y,z)}.
  * Positive density = solid block, negative density = air.
  *
- * <p>Hydraulic erosion may be applied as a post-process step (see {@link #erode}).
+ * <p>Hydraulic erosion may be applied as a post-process step (see {@link #erodeColumn(float[], int, int, int, long)}).
  */
 public final class GeoForgeEngine {
 
+    private static final Logger LOG = Logger.getLogger(GeoForgeEngine.class.getName());
     private final GeoForgeConfig config;
     private final NoiseSource temperatureNoise;
     private final NoiseSource humidityNoise;
@@ -65,7 +70,9 @@ public final class GeoForgeEngine {
     private static final class BiomeModifierCache {
         int lastX = Integer.MIN_VALUE;
         int lastZ = Integer.MIN_VALUE;
-        double modifier;
+        double caveModifier;
+        double heightOffset;
+        double amplitudeMultiplier;
     }
 
     /**
@@ -80,14 +87,14 @@ public final class GeoForgeEngine {
 
         // Multi-noise terrain: ridge (mountains, multi-octave), FBM (hills, multi-octave), flat (plains/oceans, single-octave)
         var ridgeNoise = new FractalNoise(
-                new SimplexNoise(seed ^ 0xA123456789ABCDEFL),
+                createNoiseSource(seed ^ 0xA123456789ABCDEFL),
                 config.ridgeOctaves(), 2.0, 0.5);
         var fbmNoise = new FractalNoise(
-                new SimplexNoise(seed ^ 0xB23456789ABCDEF1L),
+                createNoiseSource(seed ^ 0xB23456789ABCDEF1L),
                 config.fbmOctaves(), 2.0, 0.5);
-        var flatNoise = new SimplexNoise(seed ^ 0xC3456789ABCDEF12L);
-        this.temperatureNoise = new SimplexNoise(seed ^ 0x23456789ABCDEF1L);
-        this.humidityNoise = new SimplexNoise(seed ^ 0x3456789ABCDEF12L);
+        var flatNoise = createNoiseSource(seed ^ 0xC3456789ABCDEF12L);
+        this.temperatureNoise = createNoiseSource(seed ^ 0x23456789ABCDEF1L);
+        this.humidityNoise = createNoiseSource(seed ^ 0x3456789ABCDEF12L);
         // Build composite height function using multi-noise blending:
         // 1. MultiNoiseHeightFunction blends ridge/FBM/flat based on continentalness
         var multiNoise = new MultiNoiseHeightFunction(
@@ -115,8 +122,8 @@ public final class GeoForgeEngine {
 
         // Domain warping: wrap the height function for terrain distortion
         this.domainWarpedHeight = new DomainWarpDensity(
-                new SimplexNoise(seed ^ 0xABCDEFABCDEFL),
-                new SimplexNoise(seed ^ 0xBCDEFA12345L),
+                createNoiseSource(seed ^ 0xABCDEFABCDEFL),
+                createNoiseSource(seed ^ 0xBCDEFA12345L),
                 this.heightFunction,
                 config.domainWarpAmplitude());
 
@@ -125,36 +132,37 @@ public final class GeoForgeEngine {
 
         // 3D cave noise: multi-octave fractal for underground carving
         this.caveNoise = new FractalNoise(
-                new SimplexNoise(seed ^ 0x456789ABCDEF123L),
+                createNoiseSource(seed ^ 0x456789ABCDEF123L),
                 config.caveOctaves(),
                 config.caveLacunarity(),
                 config.cavePersistence());
 
         // Noodle cave noise source (seed-decorrelated from spaghetti cave noise)
-        this.noodleNoise = new SimplexNoise(seed ^ 0x56789ABCDEF0123L);
+        this.noodleNoise = createNoiseSource(seed ^ 0x56789ABCDEF0123L);
 
         // Initialize per-biome terrain configs with defaults for all known biomes
         // These can be overridden via config for biome-specific terrain modifiers
         var biomeDefaults = BiomeTerrainConfig.defaults();
-        this.biomeConfigs = new HashMap<>((int) (allBiomeIds.size() / 0.75f) + 1);
+        Map<String, BiomeTerrainConfig> cfg = new HashMap<>((int) (allBiomeIds.size() / 0.75f) + 1);
         for (String biomeId : this.allBiomeIds) {
-            biomeConfigs.put(biomeId, biomeDefaults);
+            cfg.put(biomeId, biomeDefaults);
         }
+        this.biomeConfigs = Collections.unmodifiableMap(cfg);
         if (config.riverDepth() == 0) {
             this.riverCarver = NoopRiverCarver.instance();
         } else {
             this.riverCarver = switch (config.riverValleyProfile()) {
-                case "canyon" -> new CanyonRiverCarver(
+                case CANYON -> new CanyonRiverCarver(
                         seed ^ 0xFEEDBEEFL,
                         config.riverFrequency(),
                         config.riverCanyonDepth(),
                         config.riverCanyonWidth());
-                case "floodplain" -> new FloodplainRiverCarver(
+                case FLOODPLAIN -> new FloodplainRiverCarver(
                         seed ^ 0xFEEDBEEFL,
                         config.riverFrequency(),
                         config.riverDepth(),
                         config.riverFloodplainWidth());
-                default -> new SimplexRiverCarver(
+                case VSHAPED -> new SimplexRiverCarver(
                         seed ^ 0xFEEDBEEFL,
                         config.riverFrequency(),
                         config.riverDepth(),
@@ -162,6 +170,23 @@ public final class GeoForgeEngine {
             };
 
         }
+    }
+
+    /**
+     * Creates a noise source based on the configured noise backend.
+     *
+     * @param seed the seed for the noise source
+     * @return a new noise source (SimplexNoise or FastNoiseLiteSource)
+     */
+    private NoiseSource createNoiseSource(long seed) {
+        return switch (config.noiseBackend()) {
+            case "fastnoise" -> new FastNoiseLiteSource(seed);
+            case "simplex" -> new SimplexNoise(seed);
+            default -> {
+                LOG.warning("Unknown noise backend '" + config.noiseBackend() + "', falling back to SimplexNoise");
+                yield new SimplexNoise(seed);
+            }
+        };
     }
 
     /**
@@ -198,23 +223,31 @@ public final class GeoForgeEngine {
                 blockX * config.caveFrequency(),
                 blockY * config.caveFrequency(),
                 blockZ * config.caveFrequency());
-        double density = targetHeight - blockY + cave * config.caveAmplitude();
-
-        // Per-biome cave amplitude modifier with column cache
+        // Per-biome modifiers with column cache
         BiomeModifierCache cache = biomeModifierCache.get();
-        double modifier;
-        if (cache.lastX == blockX && cache.lastZ == blockZ) {
-            modifier = cache.modifier;
-        } else {
-            modifier = biomeConfigs.getOrDefault(
+        if (cache.lastX != blockX || cache.lastZ != blockZ) {
+            BiomeTerrainConfig cfg = biomeConfigs.getOrDefault(
                     getBiomeId(blockX, blockY, blockZ),
-                    BiomeTerrainConfig.defaults()).caveAmplitudeModifier();
+                    BiomeTerrainConfig.defaults());
             cache.lastX = blockX;
             cache.lastZ = blockZ;
-            cache.modifier = modifier;
+            cache.caveModifier = cfg.caveAmplitudeModifier();
+            cache.heightOffset = cfg.heightOffset();
+            cache.amplitudeMultiplier = cfg.amplitudeMultiplier();
         }
-        if (modifier != 1.0) {
-            density = targetHeight - blockY + cave * config.caveAmplitude() * modifier;
+
+        // Apply biome-specific terrain modifiers
+        double heightComponent = targetHeight - blockY;
+        double caveComponent = cave * config.caveAmplitude();
+        if (cache.amplitudeMultiplier != 1.0) {
+            heightComponent *= cache.amplitudeMultiplier;
+        }
+        if (cache.caveModifier != 1.0) {
+            caveComponent *= cache.caveModifier;
+        }
+        double density = heightComponent + caveComponent;
+        if (cache.heightOffset != 0.0) {
+            density += cache.heightOffset;
         }
 
         // Enhanced cave system (v2+): additional three-type cave carving
@@ -312,20 +345,21 @@ public final class GeoForgeEngine {
      * @param seed      a random seed for the erosion droplets
      */
     public void erode(float[] heightmap, int size, long seed) {
-        erosion.erode(heightmap, size, config.erosionIterations(), seed);
+        erosion.erode(heightmap, size, config.erosionDropletCount(), seed);
     }
 
     /**
-     * Populates a heightmap with surface heights and applies hydraulic erosion
-     * in place for the given column area.
+     * Populates a {@code size × size} heightmap area with surface heights and applies
+     * hydraulic erosion in place for the given column area (size × size).
      *
      * <p>The heightmap is filled with the surface heights from {@link #getSurfaceHeight}
-     * for each column in the {@code size × size} region starting at
-     * {@code (blockX, blockZ)}. When erosion is configured (both
-     * {@link GeoForgeConfig#erosionIterations erosionIterations} and
-     * {@link GeoForgeConfig#erosionDropletCount erosionDropletCount} are positive),
-     * hydraulic erosion is applied to the heightmap in place, modifying the surface
-     * heights to simulate natural erosion processes.
+     * for each column in the region starting at {@code (blockX, blockZ)}. When erosion
+     * is configured (both {@link GeoForgeConfig#erosionIterations erosionIterations}
+     * and {@link GeoForgeConfig#erosionDropletCount erosionDropletCount} are positive),
+     * hydraulic erosion is applied to the heightmap in place.
+     *
+     * <p>Despite its name, this method processes a multi-column area, not a single
+     * column. The name reflects per-column processing within the area.
      *
      * @param heightmap a flat float array of size {@code size × size} (modified in place)
      * @param size      the width and height of the square column area
@@ -344,7 +378,35 @@ public final class GeoForgeEngine {
         // Apply hydraulic erosion when both config guards are satisfied
         if (config.erosionIterations() > 0 && config.erosionDropletCount() > 0) {
             long erosionSeed = seed ^ (blockX * 1664525L + blockZ * 1013904223L) ^ 0xE70DE1L;
-            erosion.erode(heightmap, size, config.erosionIterations(), erosionSeed);
+            float[] orig = new float[size * size];
+            System.arraycopy(heightmap, 0, orig, 0, size * size);
+            erosion.erode(heightmap, size, config.erosionDropletCount(), erosionSeed);
+            // Apply surface hardness: blend eroded heights toward original
+            for (int x = 0; x < size; x++) {
+                for (int z = 0; z < size; z++) {
+                    int idx = z * size + x;
+                    int surfaceY = Math.round(orig[idx]);
+                    double h = biomeConfigs.getOrDefault(
+                        getBiomeId(blockX + x, surfaceY, blockZ + z),
+                        BiomeTerrainConfig.defaults()).surfaceHardness();
+                    if (Math.abs(h - 0.5) > 1e-12) {
+                        float blend = (float) Math.max(0.0, Math.min(2.0, (1.0 - h) / 0.5));
+                        heightmap[idx] = orig[idx] + (heightmap[idx] - orig[idx]) * blend;
+                    }
+                }
+            }
+        }
+
+        // Apply structure plateau flattening when plateauSize > 0 (chunk-centered,
+        // for development/testing use — produces a flat area at each chunk's center.
+        // For production structure-aligned placement, the plateau center coordinates
+        // should be derived from a structure locator rather than chunk center.
+
+        if (config.plateauSize() > 0) {
+            int half = config.plateauSize() / 2;
+            int cx = size / 2;
+            int cz = size / 2;
+            StructurePlateauModifier.applyPlateau(heightmap, size, cx - half, cz - half, cx + half, cz + half, (float) config.plateauTargetHeight());
         }
     }
 
@@ -374,5 +436,24 @@ public final class GeoForgeEngine {
     @SuppressFBWarnings("EI_EXPOSE_REP")
     public Set<String> getAllBiomeIds() {
         return allBiomeIds;
+    }
+
+    /**
+     * Returns the biome terrain config for the given biome ID.
+     *
+     * @param biomeId the biome identifier
+     * @return the biome terrain config (never null, returns defaults if unknown)
+     */
+    public BiomeTerrainConfig getBiomeConfig(String biomeId) {
+        return biomeConfigs.getOrDefault(biomeId, BiomeTerrainConfig.defaults());
+    }
+
+    /**
+     * Returns the map of all biome terrain configs.
+     *
+     * @return the map of biome ID to terrain config
+     */
+    public Map<String, BiomeTerrainConfig> getBiomeConfigs() {
+        return biomeConfigs;
     }
 }
