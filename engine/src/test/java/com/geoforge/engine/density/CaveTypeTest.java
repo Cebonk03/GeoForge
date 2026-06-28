@@ -132,4 +132,10 @@ class CaveTypeTest {
         assertEquals(CaveType.CHEESE, values[1]);
         assertEquals(CaveType.NOODLE, values[2]);
     }
+
+    @DisplayName("VALUES cache matches values() in order and size")
+    @Test
+    void valuesCache_matchesValues() {
+        assertThat(CaveType.VALUES).containsExactly(CaveType.values());
+    }
 }

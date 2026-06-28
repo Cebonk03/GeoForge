@@ -81,6 +81,12 @@ public enum CaveType {
         }
     };
 
+    /**
+     * Cached array of all CaveType values for hot-path iteration.
+     * Use this instead of {@link #values()} in performance-critical loops.
+     */
+    public static final CaveType[] VALUES = values();
+
     private static final double EPSILON = 1e-12;
 
     /**

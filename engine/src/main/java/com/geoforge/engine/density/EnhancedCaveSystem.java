@@ -56,7 +56,7 @@ public final class EnhancedCaveSystem {
         }
         double result = originalDensity;
         double carveTarget = -envelope;
-        for (CaveType type : CaveType.values()) {
+        for (CaveType type : CaveType.VALUES) {
             double thresh = clampToUnit(type.threshold(config));
             if (!type.isDisabled(thresh) && type.test(noise3D, noiseA, noiseB, thresh)) {
                 result = Math.min(result, carveTarget);
