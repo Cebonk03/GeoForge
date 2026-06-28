@@ -1,7 +1,7 @@
 package com.geoforge.engine.config;
 
 /**
- * Utility for migrating a {@link GeoForgeConfig} from v1 (22 fields) to v2 (49 fields).
+ * Utility for migrating a {@link GeoForgeConfig} from v1 (22 fields) to v2 (52 fields).
  *
  * <p>Migration extracts all 22 original values from the old config and fills the 27 new
  * fields with their defaults from {@link GeoForgeConfig#defaults()}. If the config already
@@ -50,6 +50,7 @@ public final class ConfigMigrator {
                 .riverWidth(oldConfig.riverWidth())
                 .erosionMaxDropletSteps(oldConfig.erosionMaxDropletSteps())
                 .erosionIterations(oldConfig.erosionIterations())
+                .erosionDropletCount(1024)
                 .build();
     }
 }

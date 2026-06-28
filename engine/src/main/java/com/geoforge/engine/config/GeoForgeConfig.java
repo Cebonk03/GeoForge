@@ -1,6 +1,5 @@
 package com.geoforge.engine.config;
 
-import java.util.Objects;
 
 /**
  * Immutable configuration record for all terrain generation tuning parameters.
@@ -83,7 +82,7 @@ import java.util.Objects;
  * @param caveNoodleFrequency        Frequency for noodle cave noise.
  * @param riverCanyonDepth           Depth of river canyon carving. {@code 0} disables canyon.
  * @param riverCanyonWidth           Width of river canyon blocks.
- * @param riverValleyProfile         Valley profile shape identifier string.
+ * @param riverValleyProfile         Valley profile shape (VSHAPED, CANYON, or FLOODPLAIN).
  * @param riverFloodplainWidth       Width of river floodplain in blocks.
  * @param riverTableResponse         Response factor for river water table adjustment.
  * @param ridgeFrequency             Base frequency for ridge noise.
@@ -99,6 +98,9 @@ import java.util.Objects;
  * @param maxTreeHeight              Maximum tree height in blocks.
  * @param erosionDropletCount        Number of erosion droplets per column.
  * @param erosionGravity             Gravity factor for erosion droplet simulation.
+ * @param noiseBackend               Noise backend implementation ("simplex" or "fastnoise").
+ * @param plateauSize                Side length of flattened plateau region in blocks (0 = disabled). Must be {@code >= 0}.
+ * @param plateauTargetHeight        Target height for plateau flattening in blocks. Must be within {@code [minHeight, maxHeight]}.
  * @param domainWarpAmplitude        Amplitude of domain-warping noise distortion.
  * @param configVersion              Configuration version for migration support.
  */
@@ -136,7 +138,7 @@ public record GeoForgeConfig(
         // --- River v2 ---
         int riverCanyonDepth,
         int riverCanyonWidth,
-        String riverValleyProfile,
+        RiverProfile riverValleyProfile,
         int riverFloodplainWidth,
         double riverTableResponse,
         // --- Multi-noise terrain ---
@@ -147,6 +149,8 @@ public record GeoForgeConfig(
         int fbmOctaves,
         double flatFrequency,
         double continentalnessBlendSharpness,
+        // --- Noise backend ---
+        String noiseBackend,
         // --- Decorations ---
         double treeDensity,
         double vegetationDensity,
@@ -155,6 +159,9 @@ public record GeoForgeConfig(
         // --- Erosion ---
         int erosionDropletCount,
         float erosionGravity,
+        // --- Plateau (structure flattening) ---
+        int plateauSize,
+        int plateauTargetHeight,
         // --- Domain warping ---
         double domainWarpAmplitude,
         // --- Config version ---
@@ -261,14 +268,8 @@ public record GeoForgeConfig(
                     "caveNoodleFrequency must be > 0, got %s"
                             .formatted(caveNoodleFrequency));
         }
-        // River v2 validation
-        Objects.requireNonNull(riverValleyProfile, "riverValleyProfile must not be null");
-        if (!riverValleyProfile.equals("vshaped")
-                && !riverValleyProfile.equals("canyon")
-                && !riverValleyProfile.equals("floodplain")) {
-            throw new IllegalArgumentException(
-                    "riverValleyProfile must be 'vshaped', 'canyon', or 'floodplain', got '"
-                            + riverValleyProfile + "'");
+        if (riverValleyProfile == null) {
+            throw new IllegalArgumentException("riverValleyProfile must not be null");
         }
         if (riverCanyonDepth < 0) {
             throw new IllegalArgumentException(
@@ -340,6 +341,21 @@ public record GeoForgeConfig(
             throw new IllegalArgumentException(
                     "erosionGravity must be > 0, got %s".formatted(erosionGravity));
         }
+        // Plateau validation
+        if (plateauSize < 0) {
+            throw new IllegalArgumentException(
+                    "plateauSize must be >= 0, got %d".formatted(plateauSize));
+        }
+        if (plateauTargetHeight < minHeight || plateauTargetHeight > maxHeight) {
+            throw new IllegalArgumentException(
+                    "plateauTargetHeight (%d) must be between minHeight (%d) and maxHeight (%d)"
+                            .formatted(plateauTargetHeight, minHeight, maxHeight));
+        }
+        // Noise backend validation
+        if (!"simplex".equals(noiseBackend) && !"fastnoise".equals(noiseBackend)) {
+            throw new IllegalArgumentException(
+                    "noiseBackend must be 'simplex' or 'fastnoise', got '" + noiseBackend + "'");
+        }
         // Domain warping validation
         if (domainWarpAmplitude < 0) {
             throw new IllegalArgumentException(
@@ -392,6 +408,11 @@ public record GeoForgeConfig(
         if (treeDensity > 0.8) {
             warnings.add("treeDensity (" + treeDensity + ") very high — chunks may be dense forests");
         }
+        if (plateauSize > 0 && configVersion < 2) {
+            warnings.add("plateauSize=" + plateauSize
+                    + " but configVersion=" + configVersion
+                    + " — plateau flattening requires configVersion >= 2");
+        }
         if (domainWarpAmplitude > maxHeight - minHeight) {
             warnings.add("domainWarpAmplitude (" + domainWarpAmplitude
                     + ") exceeds world height — terrain will be severely distorted");
@@ -439,7 +460,7 @@ public record GeoForgeConfig(
                 // River v2
                 0,     // riverCanyonDepth
                 2,     // riverCanyonWidth
-                "vshaped", // riverValleyProfile
+                RiverProfile.VSHAPED, // riverValleyProfile
                 5,     // riverFloodplainWidth
                 0.0,   // riverTableResponse
                 // Multi-noise terrain
@@ -450,6 +471,7 @@ public record GeoForgeConfig(
                 4,     // fbmOctaves
                 0.008, // flatFrequency
                 2.0,   // continentalnessBlendSharpness
+                "simplex", // noiseBackend
                 // Decorations
                 0.1,   // treeDensity
                 0.3,   // vegetationDensity
@@ -458,8 +480,11 @@ public record GeoForgeConfig(
                 // Erosion
                 1024,  // erosionDropletCount
                 0.2f,  // erosionGravity
+                // Plateau (structure flattening)
+                0,     // plateauSize (0 = disabled)
+                64,    // plateauTargetHeight
                 // Domain warping
-                0.0,   // domainWarpAmplitude
+                1.5,   // domainWarpAmplitude
                 // Config version
                 2      // configVersion
         );
@@ -515,7 +540,7 @@ public record GeoForgeConfig(
         // River v2
         private int riverCanyonDepth = 0;
         private int riverCanyonWidth = 2;
-        private String riverValleyProfile = "vshaped";
+        private RiverProfile riverValleyProfile = RiverProfile.VSHAPED;
         private int riverFloodplainWidth = 5;
         private double riverTableResponse = 0.0;
         // Multi-noise terrain
@@ -526,6 +551,8 @@ public record GeoForgeConfig(
         private int fbmOctaves = 4;
         private double flatFrequency = 0.008;
         private double continentalnessBlendSharpness = 2.0;
+        // Noise backend
+        private String noiseBackend = "simplex";
         // Decorations
         private double treeDensity = 0.1;
         private double vegetationDensity = 0.3;
@@ -534,8 +561,11 @@ public record GeoForgeConfig(
         // Erosion
         private int erosionDropletCount = 1024;
         private float erosionGravity = 0.2f;
+        // Plateau (structure flattening)
+        private int plateauSize = 0;
+        private int plateauTargetHeight = 64;
         // Domain warping
-        private double domainWarpAmplitude = 0.0;
+        private double domainWarpAmplitude = 1.5;
         // Config version
         private int configVersion = 2;
 
@@ -574,7 +604,7 @@ public record GeoForgeConfig(
         // River v2
         public Builder riverCanyonDepth(int riverCanyonDepth) { this.riverCanyonDepth = riverCanyonDepth; return this; }
         public Builder riverCanyonWidth(int riverCanyonWidth) { this.riverCanyonWidth = riverCanyonWidth; return this; }
-        public Builder riverValleyProfile(String riverValleyProfile) { this.riverValleyProfile = riverValleyProfile; return this; }
+        public Builder riverValleyProfile(RiverProfile riverValleyProfile) { this.riverValleyProfile = riverValleyProfile; return this; }
         public Builder riverFloodplainWidth(int riverFloodplainWidth) { this.riverFloodplainWidth = riverFloodplainWidth; return this; }
         public Builder riverTableResponse(double riverTableResponse) { this.riverTableResponse = riverTableResponse; return this; }
         // Multi-noise terrain
@@ -585,6 +615,8 @@ public record GeoForgeConfig(
         public Builder fbmOctaves(int fbmOctaves) { this.fbmOctaves = fbmOctaves; return this; }
         public Builder flatFrequency(double flatFrequency) { this.flatFrequency = flatFrequency; return this; }
         public Builder continentalnessBlendSharpness(double continentalnessBlendSharpness) { this.continentalnessBlendSharpness = continentalnessBlendSharpness; return this; }
+        // Noise backend
+        public Builder noiseBackend(String noiseBackend) { this.noiseBackend = noiseBackend; return this; }
         // Decorations
         public Builder treeDensity(double treeDensity) { this.treeDensity = treeDensity; return this; }
         public Builder vegetationDensity(double vegetationDensity) { this.vegetationDensity = vegetationDensity; return this; }
@@ -593,6 +625,9 @@ public record GeoForgeConfig(
         // Erosion
         public Builder erosionDropletCount(int erosionDropletCount) { this.erosionDropletCount = erosionDropletCount; return this; }
         public Builder erosionGravity(float erosionGravity) { this.erosionGravity = erosionGravity; return this; }
+        // Plateau (structure flattening)
+        public Builder plateauSize(int plateauSize) { this.plateauSize = plateauSize; return this; }
+        public Builder plateauTargetHeight(int plateauTargetHeight) { this.plateauTargetHeight = plateauTargetHeight; return this; }
         // Domain warping
         public Builder domainWarpAmplitude(double domainWarpAmplitude) { this.domainWarpAmplitude = domainWarpAmplitude; return this; }
         // Config version
@@ -626,11 +661,15 @@ public record GeoForgeConfig(
                     ridgeFrequency, ridgeOctaves, ridgeAmplitude,
                     fbmFrequency, fbmOctaves, flatFrequency,
                     continentalnessBlendSharpness,
+                    // Noise backend
+                    noiseBackend,
                     // Decorations
                     treeDensity, vegetationDensity, featureSeedOffset,
                     maxTreeHeight,
                     // Erosion
                     erosionDropletCount, erosionGravity,
+                    // Plateau (structure flattening)
+                    plateauSize, plateauTargetHeight,
                     // Domain warping
                     domainWarpAmplitude,
                     // Config version
