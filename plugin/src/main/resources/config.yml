@@ -18,10 +18,6 @@ terrain:
 # Fractal noise tuning
 noise:
   backend: simplex     # Noise backend: "simplex" or "fastnoise"
-  continental-frequency: 0.004  # UNUSED — reserved for future terrain noise
-  continental-octaves: 4        # UNUSED — reserved for future terrain noise
-  continental-lacunarity: 2.0   # UNUSED — reserved for future terrain noise
-  continental-persistence: 0.5  # UNUSED — reserved for future terrain noise
   cave-frequency: 0.03       # 3D cave noise frequency (period ~33 blocks)
   cave-amplitude: 8.0        # Cave carving strength (0 = no caves)
   cave-octaves: 2            # Detail octaves for cave shape
