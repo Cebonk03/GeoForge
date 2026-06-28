@@ -23,6 +23,7 @@ checkstyle = "13.6.0"
 jacoco = "0.8.15"
 spotbugsTool = "4.10.2"
 checkstyleTool = "13.6.0"
+jmh = "1.37"
 
 [libraries]
 # Test libraries
@@ -41,6 +42,10 @@ paperApi26 = { module = "io.papermc.paper:paper-api", version.ref = "paperApi26"
 
 # SpotBugs annotations for targeted @SuppressFBWarnings
 spotbugsAnnotations = { module = "com.github.spotbugs:spotbugs-annotations", version.ref = "spotbugsTool" }
+
+# JMH microbenchmarks
+jmhCore = { module = "org.openjdk.jmh:jmh-core", version.ref = "jmh" }
+jmhAnnotationProcessor = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "jmh" }
 [bundles]
 # Common test dependencies for all modules
 junitTesting = ["junitJupiter", "assertjCore", "junitPlatformLauncher"]

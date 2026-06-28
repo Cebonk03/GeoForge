@@ -7,8 +7,8 @@ dependencies {
     compileOnly(libs.spotbugsAnnotations)
     testImplementation(libs.bundles.junitTesting)
     testImplementation(libs.archunitJunit5)
-    testImplementation("org.openjdk.jmh:jmh-core:1.37")
-    testAnnotationProcessor("org.openjdk.jmh:jmh-generator-annprocess:1.37")
+    testImplementation(libs.jmhCore)
+    testAnnotationProcessor(libs.jmhAnnotationProcessor)
 }
 
 tasks.register<JavaExec>("jmh") {
