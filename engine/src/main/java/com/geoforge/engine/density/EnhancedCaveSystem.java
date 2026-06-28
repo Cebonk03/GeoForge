@@ -15,10 +15,10 @@ import com.geoforge.engine.config.GeoForgeConfig;
  *   <li><b>Noodle:</b>  {@code |noiseA| + |noiseB| < noodleThreshold} &mdash; thin branching tunnels.
  * </ul>
  *
- * <p>All carving is modulated by {@link CaveYEnvelope#envelope} so that caves
- * are suppressed near the surface and at extreme depths. When all three thresholds
- * are at their extreme (disabled) values the method returns the original density
- * with near-zero overhead.
+ * <p>Each type is dispatched via the {@link CaveType} enum. All carving is modulated
+ * by {@link CaveYEnvelope#envelope} so that caves are suppressed near the surface and
+ * at extreme depths. When all three thresholds are at their extreme (disabled) values
+ * the method returns the original density with near-zero overhead.
  */
 public final class EnhancedCaveSystem {
 
@@ -49,47 +49,19 @@ public final class EnhancedCaveSystem {
             double surfaceY,
             GeoForgeConfig config) {
 
-        double spaghettiThreshold = clampToUnit(config.caveSpaghettiThreshold());
-        double cheeseThreshold = clampToUnit(config.caveCheeseThreshold());
-        double noodleThreshold = clampToUnit(config.caveNoodleThreshold());
-
-        // Early exit: all thresholds at extreme (disabled) values → no carving
-        if (spaghettiThreshold <= EPSILON
-                && cheeseThreshold >= 1.0 - EPSILON
-                && noodleThreshold <= EPSILON) {
-            return originalDensity;
-        }
-
-        double envelope = CaveYEnvelope.envelope(
-                y,
-                surfaceY,
-                config.caveCenterY(),
-                config.caveSpread(),
-                config.caveSurfaceCutoff());
-
-        // If the envelope is negligible, no carving occurs
+        double envelope = CaveYEnvelope.envelope(y, surfaceY, config.caveCenterY(),
+                config.caveSpread(), config.caveSurfaceCutoff());
         if (envelope <= EPSILON) {
             return originalDensity;
         }
-
         double result = originalDensity;
         double carveTarget = -envelope;
-
-        // 1) Spaghetti caves: |noise| < threshold → narrow winding tunnels
-        if (spaghettiThreshold > EPSILON && Math.abs(noise3D) < spaghettiThreshold) {
-            result = Math.min(result, carveTarget);
+        for (CaveType type : CaveType.values()) {
+            double thresh = clampToUnit(type.threshold(config));
+            if (!type.isDisabled(thresh) && type.test(noise3D, noiseA, noiseB, thresh)) {
+                result = Math.min(result, carveTarget);
+            }
         }
-
-        // 2) Cheese caves: noise > threshold → large open chambers
-        if (cheeseThreshold < 1.0 - EPSILON && noise3D > cheeseThreshold) {
-            result = Math.min(result, carveTarget);
-        }
-
-        // 3) Noodle caves: |noiseA| + |noiseB| < threshold → thin branching tunnels
-        if (noodleThreshold > EPSILON && (Math.abs(noiseA) + Math.abs(noiseB)) < noodleThreshold) {
-            result = Math.min(result, carveTarget);
-        }
-
         return result;
     }
 
