@@ -1,4 +1,7 @@
 # GeoForge Knowledge Base
+**Generated:** 2026-06-28T16:01:49Z
+**Commit:** 38deaaf
+**Branch:** main
 
 **Stack:** Java 21/25 + Gradle 9.6 + Paper API (1.21.x / 26.x)
 
@@ -18,12 +21,12 @@ geoforge/
 
 | Module | Main Srcs | Tests | Java | Role |
 |--------|-----------|-------|------|------|
-| engine | 36 | 31 | 21 | 3D density engine, zero Bukkit |
-| api | 4 | 2 | 21 | Adapter interface + ServerVersion + FoliaDetectorTest |
+| engine | 38 | 33 | 21 | 3D density engine, zero Bukkit |
+| api | 5 | 3 | 21 | Adapter interface + AbstractPaperAdapter + ServerVersion + FoliaDetector |
 | v1_21_x | 1 | 1 | 21 | Paper 1.21.x adapter |
-|| v26_x | 1 | 1 | 25 | Paper 26.x adapter (constructor injection for testability) |
+| v26_x | 1 | 1 | 25 | Paper 26.x adapter (constructor injection for testability) |
 | plugin | 4 | 4 | 25 | Plugin + ShadowJAR + GeoForgePluginTest |
-||| **Total** | **46** | **39** | — | **~311 tests, 0 failures** |
+|||| **Total** | **49** | **42** | — | **~2,126 tests, 0 failures** |
 
 ## 3D Density Architecture
 
@@ -34,11 +37,11 @@ Positive density = solid, negative density = air
 
 - Engine: `GeoForgeEngine.getDensity()` + `getSurfaceHeight()` (binary search)
 - Generator: `GeoForgeGenerator.generateNoise()` uses per-block density sampling
-- Caves: Enhanced 3-type system (spaghetti/cheese/noodle) with Y-envelope gating
-- Rivers: 3-profile system (vshaped/canyon/floodplain) via RiverCarver interface
+- Caves: Enhanced 3-type system with CaveType enum (SPAGHETTI/CHEESE/NOODLE) and Y-envelope gating
+- Rivers: 3-profile system with RiverProfile enum (VSHAPED/CANYON/FLOODPLAIN) via RiverCarver interface
 - Biomes: 3D continuous noise (temperature × humidity × continentalness)
 - Multi-noise terrain: ridge/FBM/flat blended by continentalness + erosion
-- Features: 5-tree-type placer + vegetation placer in generateSurface()
+- Features: 6-tree-type placer (incl. ACACIA) + vegetation placer in generateSurface()
 - Erosion: 2D hydraulic erosion on extracted heightmap (for future 3D adaptation)
 
 ## Where To Look
@@ -60,20 +63,21 @@ Positive density = solid, negative density = air
 | `GeoForgePlugin` | `JavaPlugin` | plugin | — | Entry point — adapter+engine init, getDefaultWorldGenerator |
 | `AdapterFactory` | factory | plugin | 1 | Selects Paper1_21_xAdapter / Paper26xAdapter / VanillaFallbackAdapter by major version |
 | `GeoForgeAdapter` | interface | api | 4 | mapBlock, mapBiome, scheduleTask, isFolia — version-bridging contract |
+| `AbstractPaperAdapter` | abstract class | api | 2 | Shared base for Paper adapters — injected lookup functions for testability |
 | `Paper1_21_xAdapter` | impl | v1_21_x | 1 | RegistryAccess-based biome lookup, Java 21 |
 | `Paper26xAdapter` | impl | v26_x | 1 | Function-injected lookups for testability, Java 25 |
 | `VanillaFallbackAdapter` | impl | api | 1 | Degraded fallback — always STONE + plains biome |
 | `GeoForgeEngine` | core | engine | 3 | Density = heightFunc - y + caveNoise*ampl, surface via binary search |
-|| `GeoForgeConfig` | record | engine | 2 | 49 immutable terrain params |
+| `GeoForgeConfig` | record | engine | 2 | 52 immutable terrain params |
 | `DensityFunctionTree` | @FunctionalInterface | engine | 9 | sample(x,y,z)→double; composable tree (Add/Clamp/Constant/Multiply/PlateContinentalness) |
 | `SimplexNoise` | noise | engine | 5 | 2D/3D simplex noise, deterministic from long seed |
 | `FractalNoise` | noise | engine | 2 | Multi-octave fractal noise (sum octaves with lacunarity/persistence) |
 | `BiomeLookupTable` | lookup | engine | 2 | 8x8 temp×humidity grid → 38 biome IDs |
 | `TectonicPlateMapper` | geology | engine | 1 | 12 plates with Voronoi centres + coastline modulation |
 | `HydraulicErosion` | geology | engine | 1 | 2D droplet-based heightmap erosion |
-|| `RiverCarver` | @FunctionalInterface | engine | 1 | Pluggable 3D river carving (current: SimplexRiverCarver) |
-|| `SimplexRiverCarver` | RiverCarver impl | engine | 1 | 2D simplex noise river valley carving with configurable frequency/depth/width |
-| `StructurePlateauModifier` | util | engine | 0 | Terrain flattening with feathered border (unwired) |
+| `RiverCarver` | @FunctionalInterface | engine | 1 | Pluggable 3D river carving (current: SimplexRiverCarver) |
+| `SimplexRiverCarver` | RiverCarver impl | engine | 1 | 2D simplex noise river valley carving with configurable frequency/depth/width |
+| `StructurePlateauModifier` | util | engine | 0 | Terrain flattening with feathered border (wired in erodeColumn when plateauSize > 0) |
 | `ServerVersion` | record | api | 2 | Regex-parsed major.minor.patch version |
 | `FoliaDetector` | util | api | 2 | Class.forName("io.papermc.paper.threadedregions.RegionizedServer") |
 
@@ -105,7 +109,7 @@ Positive density = solid, negative density = air
 - (all dynamic version ranges removed; versions pinned in `gradle/libs.versions.toml`)
 - `26.1.2.build.+` is NOT a dynamic range — it resolves to the latest stable build of 26.1.2.x (Paper's versioning scheme)
 - `shouldGenerateBedrock()` deprecated but we handle bedrock in `generateNoise()` now
-- `StructurePlateauModifier` exists but unwired — terrain flattening for future structure integration
+- `StructurePlateauModifier` wired in `GeoForgeEngine.erodeColumn()` when `plateauSize > 0` for structure terrain flattening
 - `ScaledNoise` + `ScaledNoise2D` implement `DensityFunctionTree` but unused in production — available for future density tree composition
 
 ## CI/CD

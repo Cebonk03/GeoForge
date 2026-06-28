@@ -1,4 +1,7 @@
 # GeoForge Plugin
+**Generated:** 2026-06-28T16:01:49Z
+**Commit:** 38deaaf
+**Branch:** main
 
 Paper integration layer. ShadowJAR output — the deployable artifact.
 

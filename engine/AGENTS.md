@@ -1,4 +1,7 @@
 # GeoForge Engine
+**Generated:** 2026-06-28T16:01:49Z
+**Commit:** 38deaaf
+**Branch:** main
 
 Zero-Bukkit math engine for terrain generation. All classes pure Java 21 with no server dependencies.
 
@@ -6,28 +9,22 @@ Zero-Bukkit math engine for terrain generation. All classes pure Java 21 with no
 
 ```
 engine/src/main/java/com/geoforge/engine/
-engine/src/main/java/com/geoforge/engine/
-├── config/       GeoForgeConfig.java (49-field immutable record), ConfigMigrator.java
+├── config/       GeoForgeConfig.java (52-field immutable record), ConfigMigrator.java, RiverProfile.java
 ├── noise/        NoiseSource.java, SimplexNoise.java, FractalNoise.java,
 │                FastNoiseLite.java, FastNoiseLiteSource.java
-├── density/      DensityFunctionTree.java + 17 impls (Add, Clamp, CanyonRiverCarver,
-│                CaveYEnvelope, Constant, DomainWarpDensity, EnhancedCaveSystem,
+├── density/      DensityFunctionTree.java + 18 impls (Add, Clamp, CanyonRiverCarver,
+│                CaveType, CaveYEnvelope, Constant, DomainWarpDensity, EnhancedCaveSystem,
 │                FloodplainRiverCarver, MultiNoiseHeightFunction, Multiply,
 │                NoopRiverCarver, PlateContinentalness, RiverCarver, ScaledNoise,
 │                ScaledNoise2D, SimplexRiverCarver)
 ├── geology/      TectonicPlateMapper.java, HydraulicErosion.java
 ├── biome/        BiomeLookupTable.java, BiomeTerrainConfig.java
-├── plateau/      StructurePlateauModifier.java (terrain flattening, unwired)
+├── plateau/      StructurePlateauModifier.java (terrain flattening, wired in erodeColumn when plateauSize > 0)
 ├── feature/      BlockSetter.java, GeoForgeFeature.java, TreePlacer.java,
 │                VegetationPlacer.java
 ├── util/         DensityGuard.java, ThreadLocalBuffers.java
 └── GeoForgeEngine.java (3D density: heightFunc - y + caveNoise)
-├── noise/        SimplexNoise.java, FractalNoise.java
-├── density/      DensityFunctionTree.java + 9 impls (Constant, ScaledNoise, etc.)
-├── geology/      TectonicPlateMapper.java, HydraulicErosion.java
-├── biome/        BiomeLookupTable.java (8×8 temp×humidity grid)
-├── plateau/      StructurePlateauModifier.java (terrain flattening, unwired)
-└── GeoForgeEngine.java (3D density: heightFunc - y + caveNoise)
+
 ```
 
 ## Where To Look
@@ -66,12 +63,21 @@ engine/src/main/java/com/geoforge/engine/
 | Package | Source | Tests | Role |
 |---------|--------|-------|------|
 | `arch` | 0 | 1 | ArchUnit — zero Bukkit dependency enforcement |
-| `config` | 2 | 2 | GeoForgeConfig (49 params), ConfigMigrator |
+| `config` | 3 | 2 | GeoForgeConfig (52 params), ConfigMigrator, RiverProfile |
 | `noise` | 5 | 3 | NoiseSource, SimplexNoise, FractalNoise, FastNoiseLite, FastNoiseLiteSource |
-| `density` | 17 | 10 | DensityFunctionTree + 17 implementations incl. RiverCarvers, CaveSystem |
+| `density` | 18 | 10 | DensityFunctionTree + 18 implementations incl. CaveType, RiverCarvers, CaveSystem |
 | `geology` | 2 | 2 | Tectonic plate mapper, hydraulic erosion simulation |
-| `biome` | 2 | 1 | BiomeLookupTable, BiomeTerrainConfig |
-| `plateau` | 1 | 1 | Terrain flattening utility (unwired in production) |
+| `biome` | 2 | 2 | BiomeLookupTable, BiomeTerrainConfig |
+| `plateau` | 1 | 1 | Terrain flattening utility (wired in erodeColumn when plateauSize > 0) |
 | `feature` | 4 | 2 | GeoForgeFeature, BlockSetter, TreePlacer, VegetationPlacer |
 | `util` | 2 | 2 | DensityGuard, ThreadLocalBuffers |
 | root | 1 | 5 | GeoForgeEngine + Density3D, Integration, Snapshot, ThreadSafety |
+
+
+## Available But Unused
+
+- **ScaledNoise** / **ScaledNoise2D** (`density/ScaledNoise.java`, `density/ScaledNoise2D.java`):
+  DensityFunctionTree implementations available for future biome-specific noise scaling.
+  ScaledNoise applies per-axis scaling on (x, y, z) inputs; ScaledNoise2D scales only (x, z).
+  These can be wired into GeoForgeEngine's density tree for specialized terrain features
+  (e.g., amplified mountains, compressed valleys).
