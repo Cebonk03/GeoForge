@@ -9,7 +9,7 @@ Zero-Bukkit math engine for terrain generation. All classes pure Java 21 with no
 
 ```
 engine/src/main/java/com/geoforge/engine/
-├── config/       GeoForgeConfig.java (52-field immutable record), ConfigMigrator.java, RiverProfile.java
+├── config/       GeoForgeConfig.java (48-field immutable record), ConfigMigrator.java, RiverProfile.java
 ├── noise/        NoiseSource.java, SimplexNoise.java, FractalNoise.java,
 │                FastNoiseLite.java, FastNoiseLiteSource.java
 ├── density/      DensityFunctionTree.java + 18 impls (Add, Clamp, CanyonRiverCarver,
@@ -63,7 +63,7 @@ engine/src/main/java/com/geoforge/engine/
 | Package | Source | Tests | Role |
 |---------|--------|-------|------|
 | `arch` | 0 | 1 | ArchUnit — zero Bukkit dependency enforcement |
-| `config` | 3 | 2 | GeoForgeConfig (52 params), ConfigMigrator, RiverProfile |
+| `config` | 3 | 2 | GeoForgeConfig (48 params), ConfigMigrator, RiverProfile |
 | `noise` | 5 | 3 | NoiseSource, SimplexNoise, FractalNoise, FastNoiseLite, FastNoiseLiteSource |
 | `density` | 18 | 10 | DensityFunctionTree + 18 implementations incl. CaveType, RiverCarvers, CaveSystem |
 | `geology` | 2 | 2 | Tectonic plate mapper, hydraulic erosion simulation |

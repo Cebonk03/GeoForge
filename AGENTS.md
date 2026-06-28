@@ -68,7 +68,7 @@ Positive density = solid, negative density = air
 | `Paper26xAdapter` | impl | v26_x | 1 | Function-injected lookups for testability, Java 25 |
 | `VanillaFallbackAdapter` | impl | api | 1 | Degraded fallback — always STONE + plains biome |
 | `GeoForgeEngine` | core | engine | 3 | Density = heightFunc - y + caveNoise*ampl, surface via binary search |
-| `GeoForgeConfig` | record | engine | 2 | 52 immutable terrain params |
+| `GeoForgeConfig` | record | engine | 2 | 48 immutable terrain params |
 | `DensityFunctionTree` | @FunctionalInterface | engine | 9 | sample(x,y,z)→double; composable tree (Add/Clamp/Constant/Multiply/PlateContinentalness) |
 | `SimplexNoise` | noise | engine | 5 | 2D/3D simplex noise, deterministic from long seed |
 | `FractalNoise` | noise | engine | 2 | Multi-octave fractal noise (sum octaves with lacunarity/persistence) |
