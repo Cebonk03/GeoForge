@@ -1,18 +1,19 @@
 package com.geoforge.engine.feature;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.geoforge.engine.feature.TreePlacer.TreeType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag("unit")
+@DisplayName("Tree placer tests")
 class TreePlacerTest {
-
-    // ───────────────────────────────────────────────────────
-    //  Recording BlockSetter — captures every setBlock call
-    // ───────────────────────────────────────────────────────
 
     private static final class RecordingSetter implements BlockSetter {
         final List<String[]> blocks = new ArrayList<>();
@@ -22,35 +23,30 @@ class TreePlacerTest {
             blocks.add(new String[]{String.valueOf(x), String.valueOf(y), String.valueOf(z), materialName});
         }
 
-        void reset() {
-            blocks.clear();
-        }
+        void reset() { blocks.clear(); }
     }
 
     private static final long FIXED_SEED = 42L;
 
-    // ───────────────────────────────────────────────────────
-    //  1. Constructor validation
-    // ───────────────────────────────────────────────────────
-
+    @DisplayName("Constructor rejects negative tree density")
     @Test
     void constructor_rejectsNegativeDensity() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new TreePlacer(-0.1, 12));
+        assertThrows(IllegalArgumentException.class, () -> new TreePlacer(-0.1, 12));
     }
 
+    @DisplayName("Constructor rejects density above 1.0")
     @Test
     void constructor_rejectsDensityAboveOne() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new TreePlacer(1.5, 12));
+        assertThrows(IllegalArgumentException.class, () -> new TreePlacer(1.5, 12));
     }
 
+    @DisplayName("Constructor rejects max tree height below 4")
     @Test
     void constructor_rejectsMaxTreeHeightBelowFour() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new TreePlacer(0.1, 3));
+        assertThrows(IllegalArgumentException.class, () -> new TreePlacer(0.1, 3));
     }
 
+    @DisplayName("Constructor accepts valid values")
     @Test
     void constructor_acceptsValidValues() {
         var placer = new TreePlacer(0.5, 10);
@@ -58,15 +54,13 @@ class TreePlacerTest {
         assertEquals(10, placer.maxTreeHeight());
     }
 
+    @DisplayName("Density zero is valid")
     @Test
     void constructor_densityZeroIsValid() {
         assertDoesNotThrow(() -> new TreePlacer(0.0, 4));
     }
 
-    // ───────────────────────────────────────────────────────
-    //  2. Deterministic placement
-    // ───────────────────────────────────────────────────────
-
+    @DisplayName("Same seed produces same placed blocks (deterministic)")
     @Test
     void place_sameSeedProducesSameBlocks() {
         var placer = new TreePlacer(1.0, 12);
@@ -79,14 +73,13 @@ class TreePlacerTest {
         Random rng2 = new Random(FIXED_SEED);
         placer.place(second, 0, 0, 60, "forest", rng2);
 
-        assertEquals(first.blocks.size(), second.blocks.size(),
-                "Same seed should produce same number of placed blocks");
+        assertEquals(first.blocks.size(), second.blocks.size());
         for (int i = 0; i < first.blocks.size(); i++) {
-            assertArrayEquals(first.blocks.get(i), second.blocks.get(i),
-                    "Block " + i + " differs between deterministic runs");
+            assertArrayEquals(first.blocks.get(i), second.blocks.get(i));
         }
     }
 
+    @DisplayName("Different seeds produce different tree placements")
     @Test
     void place_differentSeedsMayProduceDifferentPlacement() {
         var placer = new TreePlacer(1.0, 12);
@@ -97,36 +90,28 @@ class TreePlacerTest {
         RecordingSetter second = new RecordingSetter();
         placer.place(second, 0, 0, 60, "forest", new Random(9999));
 
-        // Very unlikely that two different seeds produce identical tree placement
-        // across all block coordinates — but we don't enforce difference, we
-        // just verify that the call completes without error and at least one
-        // block was placed (density=1 guarantees a tree).
-        assertFalse(first.blocks.isEmpty(), "Tree should be placed at density 1.0");
-        assertFalse(second.blocks.isEmpty(), "Tree should be placed at density 1.0");
+        assertThat(first.blocks).isNotEmpty();
+        assertThat(second.blocks).isNotEmpty();
     }
 
-    // ───────────────────────────────────────────────────────
-    //  3. Correct tree types per biome
-    // ───────────────────────────────────────────────────────
-
+    @DisplayName("Forest biome uses oak or birch trees")
     @Test
     void place_forestBiome_usesOakOrBirch() {
         var placer = new TreePlacer(1.0, 12);
         RecordingSetter recorder = new RecordingSetter();
         Random rng = new Random(12345);
 
-        // Run many placements across a forest biome
         for (int i = 0; i < 100; i++) {
             recorder.reset();
             placer.place(recorder, i, 0, 60, "forest", rng);
             if (!recorder.blocks.isEmpty()) {
                 String logMat = findLogMaterial(recorder.blocks);
-                assertTrue("oak_log".equals(logMat) || "birch_log".equals(logMat),
-                        "Forest biome should produce oak or birch trees, got: " + logMat);
+                assertThat(logMat).isIn("oak_log", "birch_log");
             }
         }
     }
 
+    @DisplayName("Taiga biome uses spruce trees")
     @Test
     void place_taigaBiome_usesSpruce() {
         var placer = new TreePlacer(1.0, 12);
@@ -137,13 +122,12 @@ class TreePlacerTest {
             recorder.reset();
             placer.place(recorder, i, 0, 60, "taiga", rng);
             if (!recorder.blocks.isEmpty()) {
-                String logMat = findLogMaterial(recorder.blocks);
-                assertEquals("spruce_log", logMat,
-                        "Taiga biome should produce spruce trees, got: " + logMat);
+                assertEquals("spruce_log", findLogMaterial(recorder.blocks));
             }
         }
     }
 
+    @DisplayName("Jungle biome uses jungle trees")
     @Test
     void place_jungleBiome_usesJungle() {
         var placer = new TreePlacer(1.0, 12);
@@ -154,13 +138,12 @@ class TreePlacerTest {
             recorder.reset();
             placer.place(recorder, i, 0, 60, "jungle", rng);
             if (!recorder.blocks.isEmpty()) {
-                String logMat = findLogMaterial(recorder.blocks);
-                assertEquals("jungle_log", logMat,
-                        "Jungle biome should produce jungle trees, got: " + logMat);
+                assertEquals("jungle_log", findLogMaterial(recorder.blocks));
             }
         }
     }
 
+    @DisplayName("Birch forest biome uses birch trees")
     @Test
     void place_birchForestBiome_usesBirch() {
         var placer = new TreePlacer(1.0, 12);
@@ -171,13 +154,12 @@ class TreePlacerTest {
             recorder.reset();
             placer.place(recorder, i, 0, 60, "birch_forest", rng);
             if (!recorder.blocks.isEmpty()) {
-                String logMat = findLogMaterial(recorder.blocks);
-                assertEquals("birch_log", logMat,
-                        "Birch forest biome should produce birch trees, got: " + logMat);
+                assertEquals("birch_log", findLogMaterial(recorder.blocks));
             }
         }
     }
 
+    @DisplayName("Dark forest biome uses dark oak or oak trees")
     @Test
     void place_darkForestBiome_usesDarkOakOrOak() {
         var placer = new TreePlacer(1.0, 12);
@@ -190,20 +172,16 @@ class TreePlacerTest {
             placer.place(recorder, i, 0, 60, "dark_forest", rng);
             if (!recorder.blocks.isEmpty()) {
                 String logMat = findLogMaterial(recorder.blocks);
-                assertTrue("dark_oak_log".equals(logMat) || "oak_log".equals(logMat),
-                        "Dark forest biome should produce dark_oak or oak trees, got: " + logMat);
+                assertThat(logMat).isIn("dark_oak_log", "oak_log");
                 if ("dark_oak_log".equals(logMat)) {
                     sawDarkOak = true;
                 }
             }
         }
-        assertTrue(sawDarkOak, "Dark forest biome should produce at least one dark_oak tree");
+        assertThat(sawDarkOak).isTrue();
     }
 
-    // ───────────────────────────────────────────────────────
-    //  4. treeDensity=0 → no trees
-    // ───────────────────────────────────────────────────────
-
+    @DisplayName("Density zero places no blocks")
     @Test
     void place_densityZero_placesNoBlocks() {
         var placer = new TreePlacer(0.0, 12);
@@ -213,28 +191,23 @@ class TreePlacerTest {
         for (int i = 0; i < 50; i++) {
             recorder.reset();
             placer.place(recorder, i, 0, 60, "forest", rng);
-            assertTrue(recorder.blocks.isEmpty(),
-                    "No blocks should be placed when treeDensity is 0");
+            assertThat(recorder.blocks).isEmpty();
         }
     }
 
-    // ───────────────────────────────────────────────────────
-    //  5. Biome with no trees → no trees
-    // ───────────────────────────────────────────────────────
-
+    @DisplayName("Biome without trees places nothing")
     @Test
     void place_biomeWithoutTrees_placesNothing() {
         var placer = new TreePlacer(1.0, 12);
         RecordingSetter recorder = new RecordingSetter();
         Random rng = new Random(FIXED_SEED);
 
-        // Desert has no tree types
         recorder.reset();
         placer.place(recorder, 0, 0, 60, "desert", rng);
-        assertTrue(recorder.blocks.isEmpty(),
-                "Desert biome should not produce any tree blocks");
+        assertThat(recorder.blocks).isEmpty();
     }
 
+    @DisplayName("Ocean biome places no trees")
     @Test
     void place_oceanBiome_placesNothing() {
         var placer = new TreePlacer(1.0, 12);
@@ -243,14 +216,10 @@ class TreePlacerTest {
 
         recorder.reset();
         placer.place(recorder, 0, 0, 60, "ocean", rng);
-        assertTrue(recorder.blocks.isEmpty(),
-                "Ocean biome should not produce any tree blocks");
+        assertThat(recorder.blocks).isEmpty();
     }
 
-    // ───────────────────────────────────────────────────────
-    //  6. Tree shape verification — trunk always present
-    // ───────────────────────────────────────────────────────
-
+    @DisplayName("Tree has trunk blocks present")
     @Test
     void place_treeHasTrunkBlocks() {
         var placer = new TreePlacer(1.0, 12);
@@ -258,14 +227,13 @@ class TreePlacerTest {
         Random rng = new Random(77777);
 
         placer.place(recorder, 10, 20, 60, "forest", rng);
-        assertFalse(recorder.blocks.isEmpty(), "A tree should be placed");
+        assertThat(recorder.blocks).isNotEmpty();
 
-        // At least one log should be present in the placed blocks
-        boolean hasLog = recorder.blocks.stream()
-                .anyMatch(b -> b[3].endsWith("_log"));
-        assertTrue(hasLog, "Tree placement should include at least one log block");
+        boolean hasLog = recorder.blocks.stream().anyMatch(b -> b[3].endsWith("_log"));
+        assertThat(hasLog).isTrue();
     }
 
+    @DisplayName("Tree trunk blocks start above surface")
     @Test
     void place_treeTrunkStartsAboveSurface() {
         var placer = new TreePlacer(1.0, 12);
@@ -274,49 +242,109 @@ class TreePlacerTest {
 
         int surfaceY = 60;
         placer.place(recorder, 0, 0, surfaceY, "forest", rng);
-        assertFalse(recorder.blocks.isEmpty(), "A tree should be placed");
+        assertThat(recorder.blocks).isNotEmpty();
 
-        // All log blocks should be above the surface (y > surfaceY)
         boolean allLogsAboveSurface = recorder.blocks.stream()
                 .filter(b -> b[3].endsWith("_log"))
                 .allMatch(b -> Integer.parseInt(b[1]) > surfaceY);
-        assertTrue(allLogsAboveSurface,
-                "All log blocks should be above the surface height");
+        assertThat(allLogsAboveSurface).isTrue();
     }
 
-    // ───────────────────────────────────────────────────────
-    //  7. Biome tree map coverage
-    // ───────────────────────────────────────────────────────
-
+    @DisplayName("Biome tree map contains forest")
     @Test
     void biomeTreeMap_containsForest() {
-        assertTrue(TreePlacer.biomeTreeMap().containsKey("forest"));
+        assertThat(TreePlacer.biomeTreeMap()).containsKey("forest");
     }
 
+    @DisplayName("All biome tree map values are non-empty")
     @Test
     void biomeTreeMap_allValuesAreNonEmpty() {
         var map = TreePlacer.biomeTreeMap();
-        assertFalse(map.isEmpty(), "Biome tree map should not be empty");
+        assertThat(map).isNotEmpty();
         map.forEach((biome, types) -> {
-            assertFalse(types.isEmpty(),
-                    "Biome '" + biome + "' should have at least one tree type");
+            assertThat(types).isNotEmpty();
         });
     }
 
+    @DisplayName("Biome tree map is unmodifiable")
     @Test
     void biomeTreeMap_isUnmodifiable() {
         var map = TreePlacer.biomeTreeMap();
-        assertThrows(UnsupportedOperationException.class,
-                () -> map.put("test", List.of(TreeType.OAK)));
+        assertThrows(UnsupportedOperationException.class, () -> map.put("test", List.of(TreeType.OAK)));
     }
 
-    // ───────────────────────────────────────────────────────
-    //  Helpers
-    // ───────────────────────────────────────────────────────
+    @DisplayName("Savanna biome contains acacia tree type")
+    @Test
+    void biomeTreeMap_savannaContainsAcacia() {
+        var map = TreePlacer.biomeTreeMap();
+        assertThat(map).containsKey("savanna");
+        assertThat(map.get("savanna")).contains(TreeType.ACACIA);
+    }
 
-    /**
-     * Finds the first log material name from recorded blocks, or null if none.
-     */
+    @DisplayName("Savanna biome uses acacia trees")
+    @Test
+    void place_savannaBiome_usesAcacia() {
+        var placer = new TreePlacer(1.0, 12);
+        RecordingSetter recorder = new RecordingSetter();
+        Random rng = new Random(44444);
+
+        for (int i = 0; i < 100; i++) {
+            recorder.reset();
+            placer.place(recorder, i, 0, 60, "savanna", rng);
+            if (!recorder.blocks.isEmpty()) {
+                assertEquals("acacia_log", findLogMaterial(recorder.blocks));
+            }
+        }
+    }
+
+    @DisplayName("Acacia tree has trunk blocks at consecutive Y levels")
+    @Test
+    void place_acaciaTree_hasTrunkBlocksAtDifferentY() {
+        var placer = new TreePlacer(1.0, 12);
+        RecordingSetter recorder = new RecordingSetter();
+        Random rng = new Random(55555);
+        int surfaceY = 60;
+        placer.place(recorder, 5, 5, surfaceY, "savanna", rng);
+        assertThat(recorder.blocks).isNotEmpty();
+
+        var logYs = recorder.blocks.stream()
+                .filter(b -> "acacia_log".equals(b[3]))
+                .map(b -> Integer.parseInt(b[1]))
+                .sorted()
+                .toList();
+        assertThat(logYs.size()).isGreaterThanOrEqualTo(4);
+        for (int i = 1; i < logYs.size(); i++) {
+            assertEquals(logYs.get(i - 1) + 1, logYs.get(i).intValue());
+        }
+    }
+
+    @DisplayName("Acacia tree has flat canopy shape with many leaves per layer")
+    @Test
+    void place_acaciaTree_hasFlatCanopyShape() {
+        var placer = new TreePlacer(1.0, 12);
+        RecordingSetter recorder = new RecordingSetter();
+        Random rng = new Random(66666);
+        int surfaceY = 60;
+        placer.place(recorder, 0, 0, surfaceY, "savanna", rng);
+        assertThat(recorder.blocks).isNotEmpty();
+
+        var leafBlocks = recorder.blocks.stream()
+                .filter(b -> "acacia_leaves".equals(b[3]))
+                .toList();
+        assertThat(leafBlocks).isNotEmpty();
+
+        var counts = new java.util.HashMap<Integer, Integer>();
+        for (var b : leafBlocks) {
+            int y = Integer.parseInt(b[1]);
+            counts.merge(y, 1, Integer::sum);
+        }
+        int maxPerLayer = counts.values().stream()
+                .mapToInt(Integer::intValue)
+                .max()
+                .orElse(0);
+        assertThat(maxPerLayer).isGreaterThanOrEqualTo(9);
+    }
+
     private static String findLogMaterial(List<String[]> blocks) {
         return blocks.stream()
                 .filter(b -> b[3].endsWith("_log"))

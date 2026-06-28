@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import com.geoforge.engine.biome.BiomeTerrainConfig;
+import java.util.logging.Logger;
 
 /**
  * Surface feature placer for trees.
@@ -13,12 +15,15 @@ import java.util.Random;
  * determines whether a tree spawns. The tree type is selected from the biome's
  * tree palette, and a suitable trunk-and-leaves shape is placed.
  *
- * <p>Supported tree types: oak, birch, dark_oak, jungle, spruce.
+ * <p>Supported tree types: oak, birch, dark_oak, jungle, spruce, acacia.
  */
 public final class TreePlacer implements GeoForgeFeature {
 
+    private static final Logger LOG = Logger.getLogger(TreePlacer.class.getName());
+
     private final double treeDensity;
     private final int maxTreeHeight;
+    private final Map<String, BiomeTerrainConfig> biomeConfigs;
 
     private static final Map<String, List<TreeType>> BIOME_TREES = buildBiomeTreeMap();
 
@@ -29,6 +34,18 @@ public final class TreePlacer implements GeoForgeFeature {
      * @param maxTreeHeight maximum trunk height in blocks
      */
     public TreePlacer(double treeDensity, int maxTreeHeight) {
+        this(treeDensity, maxTreeHeight, Map.of());
+    }
+
+    /**
+     * Creates a tree placer with the given density, height cap, and biome terrain configs.
+     *
+     * @param treeDensity   probability in {@code [0, 1]} that any eligible column gets a tree
+     * @param maxTreeHeight maximum trunk height in blocks
+     * @param biomeConfigs  per-biome terrain configs for tree type overrides
+     */
+    public TreePlacer(double treeDensity, int maxTreeHeight,
+                      Map<String, BiomeTerrainConfig> biomeConfigs) {
         if (treeDensity < 0.0 || treeDensity > 1.0) {
             throw new IllegalArgumentException(
                     "treeDensity must be in [0, 1], got " + treeDensity);
@@ -39,6 +56,7 @@ public final class TreePlacer implements GeoForgeFeature {
         }
         this.treeDensity = treeDensity;
         this.maxTreeHeight = maxTreeHeight;
+        this.biomeConfigs = biomeConfigs != null ? Map.copyOf(biomeConfigs) : Map.of();
     }
 
     public double treeDensity() {
@@ -64,7 +82,8 @@ public final class TreePlacer implements GeoForgeFeature {
         BIRCH("birch_log", "birch_leaves"),
         DARK_OAK("dark_oak_log", "dark_oak_leaves"),
         JUNGLE("jungle_log", "jungle_leaves"),
-        SPRUCE("spruce_log", "spruce_leaves");
+        SPRUCE("spruce_log", "spruce_leaves"),
+        ACACIA("acacia_log", "acacia_leaves");
 
         private final String logName;
         private final String leavesName;
@@ -90,6 +109,20 @@ public final class TreePlacer implements GeoForgeFeature {
             return;
         }
 
+        // Check biome config for explicit tree type override first
+        BiomeTerrainConfig cfg = biomeConfigs.get(biomeId);
+        if (cfg != null && !cfg.treeType().isEmpty()) {
+            try {
+                TreeType overrideType = TreeType.valueOf(cfg.treeType().toUpperCase());
+                placeTree(setter, blockX, blockZ, surfaceY, overrideType, random);
+                return;
+            } catch (IllegalArgumentException e) {
+                LOG.warning("Ignoring invalid tree type '" + cfg.treeType()
+                        + "' for biome '" + biomeId + "': " + e.getMessage());
+            }
+        }
+
+        // Fall back to static BIOME_TREES map
         List<TreeType> candidates = BIOME_TREES.get(biomeId);
         if (candidates == null || candidates.isEmpty()) {
             return;
@@ -107,6 +140,8 @@ public final class TreePlacer implements GeoForgeFeature {
             case DARK_OAK -> placeDarkOak(setter, blockX, blockZ, surfaceY, random);
             case JUNGLE -> placeJungle(setter, blockX, blockZ, surfaceY, random);
             case SPRUCE -> placeSpruce(setter, blockX, blockZ, surfaceY, random);
+            case ACACIA -> placeAcacia(setter, blockX, blockZ, surfaceY, random);
+            default -> LOG.warning("Unknown tree type: " + type);
         }
     }
 
@@ -141,7 +176,7 @@ public final class TreePlacer implements GeoForgeFeature {
             setter.setBlock(bx, sy + dy, bz, log);
         }
 
-        // Canopy: 2 layers of 3x3 leaves (birch has slightly smaller canopy)
+        // Canopy: 2 layers of 3x3 leaves
         fillLeavesFlat(setter, bx, sy + height, bz, 1, leaf);
         fillLeavesFlat(setter, bx, sy + height + 1, bz, 1, leaf);
     }
@@ -211,6 +246,23 @@ public final class TreePlacer implements GeoForgeFeature {
         fillLeavesFlat(setter, bx, sy + height + 2, bz, 1, leaf);
     }
 
+    private void placeAcacia(BlockSetter setter, int bx, int bz,
+                            int sy, Random random) {
+        int height = 4 + random.nextInt(Math.min(maxTreeHeight - 3, 2));
+        String log = TreeType.ACACIA.logName();
+        String leaf = TreeType.ACACIA.leavesName();
+
+        // 1x1 straight trunk
+        for (int dy = 1; dy <= height; dy++) {
+            setter.setBlock(bx, sy + dy, bz, log);
+        }
+
+        // Flat hat canopy: 5x5 brim, 3x3 crown, 1 top cap
+        fillLeavesFlat(setter, bx, sy + height, bz, 2, leaf);
+        fillLeavesFlat(setter, bx, sy + height + 1, bz, 1, leaf);
+        setter.setBlock(bx, sy + height + 2, bz, leaf);
+    }
+
     // ──────────────────────────────────────────────
     //  Utility
     // ──────────────────────────────────────────────
@@ -271,9 +323,9 @@ public final class TreePlacer implements GeoForgeFeature {
         // Windswept
         map.put("windswept_hills", List.of(TreeType.OAK, TreeType.SPRUCE));
 
-        // Savanna — oak substitute for acacia
-        map.put("savanna", List.of(TreeType.OAK));
-        map.put("windswept_savanna", List.of(TreeType.OAK));
+        // Savanna — acacia
+        map.put("savanna", List.of(TreeType.ACACIA));
+        map.put("windswept_savanna", List.of(TreeType.ACACIA));
 
         return map;
     }
