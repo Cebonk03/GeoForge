@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import com.geoforge.engine.biome.BiomeTerrainConfig;
 
 /**
  * Surface feature placer for low vegetation (grass, flowers, mushrooms, dead bushes).
@@ -15,6 +16,7 @@ import java.util.Random;
 public final class VegetationPlacer implements GeoForgeFeature {
 
     private final double vegetationDensity;
+    private final Map<String, BiomeTerrainConfig> biomeConfigs;
 
     private static final Map<String, List<String>> BIOME_VEGETATION = buildBiomeVegetationMap();
 
@@ -25,11 +27,22 @@ public final class VegetationPlacer implements GeoForgeFeature {
      *                          column gets a vegetation item
      */
     public VegetationPlacer(double vegetationDensity) {
+        this(vegetationDensity, Map.of());
+    }
+
+    /**
+     * Creates a vegetation placer with the given density and biome configs.
+     *
+     * @param vegetationDensity probability in [0, 1] that any eligible column gets vegetation
+     * @param biomeConfigs      map of biome ID to terrain config (for allowFloatingPlants check)
+     */
+    public VegetationPlacer(double vegetationDensity, Map<String, BiomeTerrainConfig> biomeConfigs) {
         if (vegetationDensity < 0.0 || vegetationDensity > 1.0) {
             throw new IllegalArgumentException(
                     "vegetationDensity must be in [0, 1], got " + vegetationDensity);
         }
         this.vegetationDensity = vegetationDensity;
+        this.biomeConfigs = biomeConfigs != null ? Map.copyOf(biomeConfigs) : Map.of();
     }
 
     public double vegetationDensity() {
@@ -54,6 +67,10 @@ public final class VegetationPlacer implements GeoForgeFeature {
         if (candidates == null || candidates.isEmpty()) {
             return;
         }
+        // allowFloatingPlants controls whether vegetation may be placed on water surfaces.
+        // The field is defined in BiomeTerrainConfig for future water-vegetation logic;
+        // current place() only operates on solid ground above sea level (surfaceY + 1).
+        // Full water-surface vegetation placement is deferred.
 
         // Place vegetation on top of the surface block
         String vegType = candidates.get(random.nextInt(candidates.size()));

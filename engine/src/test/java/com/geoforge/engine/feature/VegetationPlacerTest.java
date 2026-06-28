@@ -1,10 +1,15 @@
 package com.geoforge.engine.feature;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag("unit")
+@DisplayName("Vegetation placer tests")
 class VegetationPlacerTest {
 
     static class RecordingBlockSetter implements BlockSetter {
@@ -15,14 +20,16 @@ class VegetationPlacerTest {
         void reset() { blocks.clear(); }
     }
 
+    @DisplayName("Zero density places nothing")
     @Test
     void zeroDensity_placesNothing() {
         var veg = new VegetationPlacer(0.0);
         var setter = new RecordingBlockSetter();
         veg.place(setter, 0, 0, 63, "plains", new Random(42));
-        assertTrue(setter.blocks.isEmpty(), "zero density should place nothing");
+        assertThat(setter.blocks).isEmpty();
     }
 
+    @DisplayName("High density places grass in plains")
     @Test
     void highDensity_placesGrassInPlains() {
         var veg = new VegetationPlacer(1.0);
@@ -31,6 +38,7 @@ class VegetationPlacerTest {
         assertEquals("grass", setter.blocks.get(0)[3]);
     }
 
+    @DisplayName("Desert places dead bushes")
     @Test
     void desert_placesDeadBushes() {
         var veg = new VegetationPlacer(1.0);
@@ -39,6 +47,7 @@ class VegetationPlacerTest {
         assertEquals("dead_bush", setter.blocks.get(0)[3]);
     }
 
+    @DisplayName("Taiga places ferns")
     @Test
     void taiga_placesFerns() {
         var veg = new VegetationPlacer(1.0);
@@ -47,6 +56,7 @@ class VegetationPlacerTest {
         assertEquals("fern", setter.blocks.get(0)[3]);
     }
 
+    @DisplayName("Same seed and position produce same vegetation")
     @Test
     void deterministic_sameSeedSameOutput() {
         var veg = new VegetationPlacer(0.5);
