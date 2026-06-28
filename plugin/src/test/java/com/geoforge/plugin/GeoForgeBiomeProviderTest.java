@@ -1,5 +1,6 @@
 package com.geoforge.plugin;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -7,22 +8,24 @@ import com.geoforge.api.adapter.GeoForgeAdapter;
 import com.geoforge.engine.GeoForgeEngine;
 import com.geoforge.engine.config.GeoForgeConfig;
 import org.bukkit.block.Biome;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.*;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 
 import java.util.Set;
 
+@Tag("integration")
+@DisplayName("GeoForgeBiomeProvider tests")
 class GeoForgeBiomeProviderTest {
 
     private ServerMock server;
     private GeoForgeBiomeProvider biomeProvider;
 
     @Nested
+    @DisplayName("Mockito-based tests")
     class MockitoTests {
+
+        @DisplayName("getBiomes returns all biomes from engine")
         @Test
         void getBiomes_returnsAllFromEngine() {
             var engine = mock(GeoForgeEngine.class);
@@ -31,9 +34,10 @@ class GeoForgeBiomeProviderTest {
             when(adapter.mapBiome("plains")).thenReturn(mock(Biome.class));
             when(adapter.mapBiome("desert")).thenReturn(mock(Biome.class));
             var provider = new GeoForgeBiomeProvider(adapter, engine);
-            assertEquals(2, provider.getBiomes(null).size());
+            assertThat(provider.getBiomes(null)).hasSize(2);
         }
 
+        @DisplayName("getBiome delegates to engine and adapter")
         @Test
         void getBiome_usesEngineAndAdapter() {
             var engine = mock(GeoForgeEngine.class);
@@ -63,25 +67,27 @@ class GeoForgeBiomeProviderTest {
         MockBukkit.unmock();
     }
 
+    @DisplayName("getBiomes returns non-empty list")
     @Test
     void getBiomes_returnsNonEmpty() {
         var biomes = biomeProvider.getBiomes(null);
-        assertNotNull(biomes);
-        assertFalse(biomes.isEmpty(), "getBiomes() should return non-empty list");
+        assertThat(biomes).isNotNull().isNotEmpty();
     }
 
+    @DisplayName("getBiome returns non-null biome")
     @Test
     void getBiome_returnsNonNull() {
         Biome biome = biomeProvider.getBiome(null, 0, 63, 0);
-        assertNotNull(biome);
+        assertThat(biome).isNotNull();
     }
 
+    @DisplayName("getBiome returns non-null for all positions")
     @Test
     void getBiome_variousPositions_allNonNull() {
         for (int x = -50; x <= 50; x += 25) {
             for (int z = -50; z <= 50; z += 25) {
                 Biome biome = biomeProvider.getBiome(null, x, 63, z);
-                assertNotNull(biome, "Biome should not be null at (" + x + ",63," + z + ")");
+                assertThat(biome).isNotNull();
             }
         }
     }

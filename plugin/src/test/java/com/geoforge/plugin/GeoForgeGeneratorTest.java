@@ -1,16 +1,17 @@
 package com.geoforge.plugin;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.geoforge.api.adapter.GeoForgeAdapter;
 import com.geoforge.engine.GeoForgeEngine;
 import com.geoforge.engine.config.GeoForgeConfig;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 
+@Tag("integration")
+@DisplayName("GeoForgeGenerator tests")
 class GeoForgeGeneratorTest {
 
     private ServerMock server;
@@ -31,6 +32,7 @@ class GeoForgeGeneratorTest {
         MockBukkit.unmock();
     }
 
+    @DisplayName("Generator pass-through flags match expected values")
     @Test
     void shouldGenerateMethods_correctValues() {
         assertFalse(generator.shouldGenerateNoise());
@@ -42,10 +44,10 @@ class GeoForgeGeneratorTest {
         assertTrue(generator.shouldGenerateMobs());
     }
 
+    @DisplayName("getDefaultBiomeProvider returns non-null provider")
     @Test
     void getDefaultBiomeProvider_returnsNonNull() {
         var provider = generator.getDefaultBiomeProvider(null);
-        assertNotNull(provider);
-        assertInstanceOf(GeoForgeBiomeProvider.class, provider);
+        assertThat(provider).isNotNull().isInstanceOf(GeoForgeBiomeProvider.class);
     }
 }
