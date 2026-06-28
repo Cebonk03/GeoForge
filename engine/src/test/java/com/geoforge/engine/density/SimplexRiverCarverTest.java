@@ -1,11 +1,17 @@
 package com.geoforge.engine.density;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag("unit")
+@DisplayName("Simplex river carver tests")
 class SimplexRiverCarverTest {
 
+    @DisplayName("Carve reduces density at some coordinates")
     @Test
     void carve_reducesDensityAtSomeCoordinates() {
         var carver = new SimplexRiverCarver(42L, 0.1, 8, 10);
@@ -18,9 +24,10 @@ class SimplexRiverCarverTest {
                 }
             }
         }
-        assertTrue(carved, "River carver should reduce density at some coordinates");
+        assertThat(carved).isTrue();
     }
 
+    @DisplayName("Low noise frequency produces no carving")
     @Test
     void carve_noCarvingWhenNoiseIsPositive() {
         var carver = new SimplexRiverCarver(42L, 0.01, 8, 3);
@@ -29,31 +36,35 @@ class SimplexRiverCarverTest {
         assertEquals(original, result, 1e-12);
     }
 
+    @DisplayName("Depth factor decreases with density (deeper = less carving)")
     @Test
     void carve_depthFactorDecreasesWithDensity() {
         var carver = new SimplexRiverCarver(42L, 0.1, 8, 10);
         double nearSurface = 1.0;
         int riverX = 0, riverZ = 0;
         boolean found = false;
-        for (int x = 1; x <= 20 && !found; x++) {
-            for (int z = 1; z <= 20 && !found; z++) {
+        outer:
+        for (int x = 1; x <= 20; x++) {
+            for (int z = 1; z <= 20; z++) {
                 if (carver.carve(nearSurface, x, 0, z) < nearSurface) {
                     riverX = x;
                     riverZ = z;
                     found = true;
+                    break outer;
                 }
             }
         }
-        assertTrue(found, "Need a river coordinate for depth test");
+        assertThat(found).isTrue();
 
         double surfaceValue = carver.carve(nearSurface, riverX, 0, riverZ);
         double deepValue = carver.carve(100.0, riverX, 0, riverZ);
 
-        assertTrue(surfaceValue < nearSurface, "Near-surface density should be reduced by river carving");
-        assertTrue(deepValue > surfaceValue, "Deep underground should have less carving than near surface");
-        assertEquals(100.0, deepValue, 1e-9, "At density >> depth, no carving should occur");
+        assertThat(surfaceValue).isLessThan(nearSurface);
+        assertThat(deepValue).isGreaterThan(surfaceValue);
+        assertEquals(100.0, deepValue, 1e-9);
     }
 
+    @DisplayName("Already negative density (air) is not affected")
     @Test
     void carve_doesNotAffectAir() {
         var carver = new SimplexRiverCarver(42L, 0.1, 8, 10);
@@ -61,6 +72,7 @@ class SimplexRiverCarverTest {
         assertEquals(-5.0, result, 1e-12);
     }
 
+    @DisplayName("Carve is deterministic")
     @Test
     void carve_deterministic() {
         var carver = new SimplexRiverCarver(42L, 0.1, 8, 10);
@@ -69,18 +81,23 @@ class SimplexRiverCarverTest {
         assertEquals(r1, r2, 1e-12);
     }
 
+    @DisplayName("Different seeds produce different carving results")
     @Test
     void carve_differentSeedsProduceDifferentCarving() {
         var carver1 = new SimplexRiverCarver(42L, 0.1, 8, 10);
         var carver2 = new SimplexRiverCarver(99L, 0.1, 8, 10);
         boolean anyDiff = false;
-        for (int x = 1; x <= 20 && !anyDiff; x++) {
-            for (int z = 1; z <= 20 && !anyDiff; z++) {
+        outer:
+        for (int x = 1; x <= 20; x++) {
+            for (int z = 1; z <= 20; z++) {
                 double r1 = carver1.carve(1.0, x, 0, z);
                 double r2 = carver2.carve(1.0, x, 0, z);
-                if (Math.abs(r1 - r2) > 1e-12) anyDiff = true;
+                if (Math.abs(r1 - r2) > 1e-12) {
+                    anyDiff = true;
+                    break outer;
+                }
             }
         }
-        assertTrue(anyDiff, "Different seeds should produce different carving results");
+        assertThat(anyDiff).isTrue();
     }
 }

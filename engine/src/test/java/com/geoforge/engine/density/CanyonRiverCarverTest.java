@@ -1,11 +1,17 @@
 package com.geoforge.engine.density;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag("unit")
+@DisplayName("Canyon river carver tests")
 class CanyonRiverCarverTest {
 
+    @DisplayName("Carve reduces density at some coordinates")
     @Test
     void carve_reducesDensityAtSomeCoordinates() {
         var carver = new CanyonRiverCarver(42L, 0.1, 8, 10);
@@ -18,9 +24,10 @@ class CanyonRiverCarverTest {
                 }
             }
         }
-        assertTrue(carved, "Canyon carver should reduce density at some coordinates");
+        assertThat(carved).isTrue();
     }
 
+    @DisplayName("Low noise frequency produces no carving")
     @Test
     void carve_noCarvingWhenNoiseIsPositive() {
         var carver = new CanyonRiverCarver(42L, 0.01, 8, 3);
@@ -29,6 +36,7 @@ class CanyonRiverCarverTest {
         assertEquals(original, result, 1e-12);
     }
 
+    @DisplayName("Already negative density (air) is not affected")
     @Test
     void carve_doesNotAffectAir() {
         var carver = new CanyonRiverCarver(42L, 0.1, 8, 10);
@@ -36,6 +44,7 @@ class CanyonRiverCarverTest {
         assertEquals(-5.0, result, 1e-12);
     }
 
+    @DisplayName("Carve is deterministic")
     @Test
     void carve_deterministic() {
         var carver = new CanyonRiverCarver(42L, 0.1, 8, 10);
@@ -44,36 +53,47 @@ class CanyonRiverCarverTest {
         assertEquals(r1, r2, 1e-12);
     }
 
+    @DisplayName("Different seeds produce different carving results")
     @Test
     void carve_differentSeedsProduceDifferentCarving() {
         var carver1 = new CanyonRiverCarver(42L, 0.1, 8, 10);
         var carver2 = new CanyonRiverCarver(99L, 0.1, 8, 10);
         boolean anyDiff = false;
-        for (int x = 1; x <= 20 && !anyDiff; x++) {
-            for (int z = 1; z <= 20 && !anyDiff; z++) {
+        outer:
+        for (int x = 1; x <= 20; x++) {
+            for (int z = 1; z <= 20; z++) {
                 double r1 = carver1.carve(1.0, x, 0, z);
                 double r2 = carver2.carve(1.0, x, 0, z);
-                if (Math.abs(r1 - r2) > 1e-12) anyDiff = true;
+                if (Math.abs(r1 - r2) > 1e-12) {
+                    anyDiff = true;
+                    break outer;
+                }
             }
         }
-        assertTrue(anyDiff, "Different seeds should produce different carving results");
+        assertThat(anyDiff).isTrue();
     }
 
+    @DisplayName("Different depths produce different carving results")
     @Test
     void carve_differentDepthsProduceDifferentCarving() {
         var shallow = new CanyonRiverCarver(42L, 0.1, 4, 10);
         var deep = new CanyonRiverCarver(42L, 0.1, 8, 10);
         boolean anyDiff = false;
-        for (int x = 1; x <= 20 && !anyDiff; x++) {
-            for (int z = 1; z <= 20 && !anyDiff; z++) {
+        outer:
+        for (int x = 1; x <= 20; x++) {
+            for (int z = 1; z <= 20; z++) {
                 double r1 = shallow.carve(1.0, x, 0, z);
                 double r2 = deep.carve(1.0, x, 0, z);
-                if (Math.abs(r1 - r2) > 1e-12) anyDiff = true;
+                if (Math.abs(r1 - r2) > 1e-12) {
+                    anyDiff = true;
+                    break outer;
+                }
             }
         }
-        assertTrue(anyDiff, "Different canyon depths should produce different carving results");
+        assertThat(anyDiff).isTrue();
     }
 
+    @DisplayName("Deep carving subtracts at least as much as shallow carving")
     @Test
     void carve_deepCarvingSubtractsMoreThanShallow() {
         var shallow = new CanyonRiverCarver(42L, 0.1, 4, 10);
@@ -82,14 +102,12 @@ class CanyonRiverCarverTest {
             for (int z = 1; z <= 20; z++) {
                 double r1 = shallow.carve(1.0, x, 0, z);
                 double r2 = deep.carve(1.0, x, 0, z);
-                // Deep carving should always subtract at least as much as shallow
-                assertTrue(r1 >= r2 - 1e-12,
-                        "Deep canyon carving should not produce higher density than shallow at ("
-                                + x + ", " + z + "): shallow=" + r1 + " deep=" + r2);
+                assertThat(r1).isGreaterThanOrEqualTo(r2 - 1e-12);
             }
         }
     }
 
+    @DisplayName("Carve with depth zero does not alter density")
     @Test
     void carve_noCarvingWhenCanyonDepthIsZero() {
         var carver = new CanyonRiverCarver(42L, 0.1, 0, 10);
@@ -102,12 +120,12 @@ class CanyonRiverCarverTest {
                 }
             }
         }
-        assertTrue(unchanged, "Canyon carver with depth=0 should not alter density");
+        assertThat(unchanged).isTrue();
     }
 
+    @DisplayName("Canyon subtracts full depth uniformly (flat bottom)")
     @Test
     void carve_canyonSubtractsFullDepthUniformly() {
-        // For canyon, points inside the river should all have the same density reduction
         var carver = new CanyonRiverCarver(42L, 0.1, 8, 10);
         double nearSurface = 1.0;
         boolean foundRiver = false;
@@ -120,14 +138,11 @@ class CanyonRiverCarverTest {
                         carvedDensity = result;
                         foundRiver = true;
                     } else {
-                        // All carved points at the same surface density should
-                        // have the same carved density (flat bottom)
-                        assertEquals(carvedDensity, result, 1e-12,
-                                "Canyon should have uniform flat bottom at (" + x + ", " + z + ")");
+                        assertEquals(carvedDensity, result, 1e-12);
                     }
                 }
             }
         }
-        assertTrue(foundRiver, "Need a river coordinate for canyon test");
+        assertThat(foundRiver).isTrue();
     }
 }

@@ -1,16 +1,22 @@
 package com.geoforge.engine.density;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.geoforge.engine.geology.TectonicPlateMapper;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag("unit")
+@DisplayName("Plate continentalness tests")
 class PlateContinentalnessTest {
 
     private static final long SEED = 42L;
     private static final double BASE = -50.0;
     private static final double AMPLITUDE = 170.0;
 
+    @DisplayName("Constructor creates record with correct field values")
     @Test
     void constructor_createsRecord() {
         var mapper = new TectonicPlateMapper(SEED);
@@ -21,6 +27,7 @@ class PlateContinentalnessTest {
         assertEquals(AMPLITUDE, pc.continentalHeightAmplitude());
     }
 
+    @DisplayName("Sample values are within expected range")
     @Test
     void sample_returnsValueInExpectedRange() {
         var mapper = new TectonicPlateMapper(SEED);
@@ -28,25 +35,21 @@ class PlateContinentalnessTest {
         for (int x = -500; x <= 500; x += 50) {
             for (int z = -500; z <= 500; z += 50) {
                 double value = pc.sample(x, 0, z);
-                assertTrue(
-                        value >= BASE && value <= BASE + AMPLITUDE,
-                        "Value at (" + x + "," + z + ") = " + value + " outside expected range ["
-                                + BASE + ", " + (BASE + AMPLITUDE) + "]");
+                assertThat(value).isBetween(BASE, BASE + AMPLITUDE);
             }
         }
     }
 
+    @DisplayName("Sample near ocean basin returns a low value")
     @Test
     void sample_oceanBasin_lowValue() {
         var mapper = new TectonicPlateMapper(SEED);
         var pc = new PlateContinentalness(mapper, BASE, AMPLITUDE);
-        // For a position far from any plate center, continentalness is near 0
-        // so value should be near BASE
         double value = pc.sample(0, 0, 0);
-        assertTrue(value > BASE, "Should be above base: " + value);
-        assertTrue(value < BASE + AMPLITUDE, "Should be below max: " + value);
+        assertThat(value).isGreaterThan(BASE).isLessThan(BASE + AMPLITUDE);
     }
 
+    @DisplayName("Sample is deterministic for same coordinates")
     @Test
     void sample_deterministic() {
         var mapper = new TectonicPlateMapper(SEED);
@@ -57,15 +60,17 @@ class PlateContinentalnessTest {
         }
     }
 
+    @DisplayName("Y coordinate is ignored")
     @Test
     void sample_ignoresY() {
         var mapper = new TectonicPlateMapper(SEED);
         var pc = new PlateContinentalness(mapper, BASE, AMPLITUDE);
         double v1 = pc.sample(10, 50, 20);
         double v2 = pc.sample(10, -999, 20);
-        assertEquals(v1, v2, 1e-9, "Y coordinate should be ignored");
+        assertEquals(v1, v2, 1e-9);
     }
 
+    @DisplayName("Different seeds produce different values")
     @Test
     void sample_differentSeed_differentValues() {
         var mapper1 = new TectonicPlateMapper(SEED);
@@ -79,6 +84,6 @@ class PlateContinentalnessTest {
                 break;
             }
         }
-        assertTrue(anyDiff, "Different seeds should produce different values");
+        assertThat(anyDiff).isTrue();
     }
 }
