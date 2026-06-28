@@ -42,7 +42,7 @@ jobs:
         uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
         with:
           java-version: ${{ matrix.java }}
-          distribution: ${{ matrix.java == 25 && 'oracle' || 'temurin' }}
+          distribution: temurin
           cache: gradle
 
       # gradle/actions/setup-gradle@v6
@@ -60,6 +60,10 @@ jobs:
       - name: Run unit tests (JDK 21 - engine, api, v1_21_x adapter)
         if: matrix.java == 21
         run: ./gradlew :engine:test :api:test :adapters:v1_21_x:test --no-daemon
+
+      - name: Run ArchUnit engine isolation test
+        if: matrix.java == 21
+        run: ./gradlew :engine:test --tests "com.geoforge.engine.arch.*" --no-daemon
 
       - name: Run unit tests (JDK 25 - v26_x adapter, plugin)
         if: matrix.java == 25

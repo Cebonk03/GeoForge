@@ -128,30 +128,7 @@ jobs:
         run: ./gradlew :engine:test --tests "com.geoforge.engine.arch.*" --no-daemon
 
       - name: Banned API scan
-        run: |
-          echo "=== Banned API Check ==="
-          errors=0
-          for pattern in "Registry\\.BIOME" "Biome\\.valueOf" "Biome\\.values()" \
-            "Material\\.valueOf" "Material\\.getMaterial" "Material\\.matchMaterial" \
-            "getScheduler()\\.run" "chunkData\\.setBiome(" "net\\.minecraft\\." "craftbukkit\\." \
-            "ReentrantLock" "synchronized" "Class\\.forName"; do
-            matches=$(grep -rn "$pattern" --include='*.java' . \
-              | grep -v ":[[:space:]][*]" \
-              | grep -v "EngineIsolationTest.java" \
-              | grep -v "FoliaDetector.java" \
-              || true)
-            if [ -n "$matches" ]; then
-                echo "FAIL: $pattern found in:"
-                echo "$matches"
-                errors=$((errors + 1))
-            fi
-          done
-          if [ $errors -eq 0 ]; then
-            echo "PASS: No banned APIs found"
-          else
-            echo "FATAL: $errors banned API pattern(s) detected"
-            exit 1
-          fi
+        run: ./gradlew bannedApiScan --no-daemon
 
       - name: Quality gate passed
         run: echo "✓ All quality checks passed"
