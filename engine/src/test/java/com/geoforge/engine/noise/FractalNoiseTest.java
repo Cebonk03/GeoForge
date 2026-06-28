@@ -1,11 +1,17 @@
 package com.geoforge.engine.noise;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag("unit")
+@DisplayName("Fractal noise tests")
 class FractalNoiseTest {
 
+    @DisplayName("Single octave matches simplex output")
     @Test
     void singleOctave_matchesSimplexOutput() {
         var noise = new SimplexNoise(42L);
@@ -15,25 +21,28 @@ class FractalNoiseTest {
         assertEquals(noise.sample(-3.0, 4.0), fractal.sample2D(-3.0, 4.0), 1e-9);
     }
 
+    @DisplayName("Multi-octave output differs from single-octave")
     @Test
     void multiOctave_differsFromSingleOctave() {
         var single = new FractalNoise(new SimplexNoise(42L), 1, 2.0, 0.5);
         var multi = new FractalNoise(new SimplexNoise(42L), 4, 2.0, 0.5);
 
-        var anyDifferent = false;
-        for (int i = -10; i <= 10 && !anyDifferent; i++) {
-            for (int j = -10; j <= 10 && !anyDifferent; j++) {
+        boolean anyDifferent = false;
+        outer:
+        for (int i = -10; i <= 10; i++) {
+            for (int j = -10; j <= 10; j++) {
                 double x = i + 0.3;
                 double z = j + 0.7;
                 if (Math.abs(single.sample2D(x, z) - multi.sample2D(x, z)) > 1e-12) {
                     anyDifferent = true;
+                    break outer;
                 }
             }
         }
-        assertTrue(anyDifferent,
-                "multi-octave noise should differ from single-octave noise");
+        assertThat(anyDifferent).isTrue();
     }
 
+    @DisplayName("All 2D samples are within [-1, 1] range")
     @Test
     void outputIsNormalized() {
         var fractal = new FractalNoise(new SimplexNoise(99L), 3, 2.0, 0.5);
@@ -43,11 +52,11 @@ class FractalNoiseTest {
             double x = rng.nextDouble(-100, 100);
             double z = rng.nextDouble(-100, 100);
             double value = fractal.sample2D(x, z);
-            assertTrue(value >= -1.0 && value <= 1.0,
-                    "Value " + value + " at (" + x + ", " + z + ") outside [-1, 1]");
+            assertThat(value).isBetween(-1.0, 1.0);
         }
     }
 
+    @DisplayName("Same seed produces same output")
     @Test
     void determinism_sameSeedProducesSameOutput() {
         var f1 = new FractalNoise(new SimplexNoise(17L), 4, 2.0, 0.5);
@@ -60,6 +69,7 @@ class FractalNoiseTest {
         }
     }
 
+    @DisplayName("Constructor rejects zero or negative octaves")
     @Test
     void validation_octavesMustBePositive() {
         assertThrows(IllegalArgumentException.class,
@@ -68,6 +78,7 @@ class FractalNoiseTest {
                 () -> new FractalNoise(new SimplexNoise(0L), -1, 2.0, 0.5));
     }
 
+    @DisplayName("Constructor rejects non-positive lacunarity")
     @Test
     void validation_lacunarityMustBePositive() {
         assertThrows(IllegalArgumentException.class,
@@ -76,6 +87,7 @@ class FractalNoiseTest {
                 () -> new FractalNoise(new SimplexNoise(0L), 1, -1.0, 0.5));
     }
 
+    @DisplayName("Constructor rejects non-positive persistence")
     @Test
     void validation_persistenceMustBePositive() {
         assertThrows(IllegalArgumentException.class,
@@ -84,15 +96,17 @@ class FractalNoiseTest {
                 () -> new FractalNoise(new SimplexNoise(0L), 1, 2.0, -0.5));
     }
 
+    @DisplayName("Different Y coordinates produce different 3D noise")
     @Test
     void sample3D_usesYCoordinate() {
         var noise = new SimplexNoise(42L);
         var fractal = new FractalNoise(noise, 1, 2.0, 0.5);
         double v1 = fractal.sample3D(10.5, 20.3, 30.7);
         double v2 = fractal.sample3D(10.5, 99.9, 30.7);
-        assertNotEquals(v1, v2, 1e-9, "Different Y should produce different noise");
+        assertNotEquals(v1, v2, 1e-9);
     }
 
+    @DisplayName("Single-octave 3D matches simplex output")
     @Test
     void sample3D_singleOctave_matchesSimplexOutput() {
         var noise = new SimplexNoise(42L);

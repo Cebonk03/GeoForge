@@ -1,19 +1,23 @@
 package com.geoforge.engine.plateau;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag("unit")
+@DisplayName("Structure plateau modifier tests")
 class StructurePlateauModifierTest {
 
+    @DisplayName("Core interior cells are at target height")
     @Test
     void applyPlateau_coreInteriorEqualToTarget() {
         float[] heightmap = new float[32 * 32];
         java.util.Arrays.fill(heightmap, 40.0f);
         float target = 60.0f;
 
-        // Plateau from (10,10) to (20,20) — feather width is 3, so core interior
-        // is (13,13) to (17,17) where all cells should be exactly at target.
         StructurePlateauModifier.applyPlateau(heightmap, 32, 10, 10, 20, 20, target);
 
         for (int z = 13; z <= 17; z++) {
@@ -25,6 +29,7 @@ class StructurePlateauModifierTest {
         }
     }
 
+    @DisplayName("Cells outside bounding box are unchanged")
     @Test
     void applyPlateau_cellsOutsideBoundingBoxUnchanged() {
         float[] heightmap = new float[32 * 32];
@@ -38,6 +43,7 @@ class StructurePlateauModifierTest {
         assertEquals(initialOutside, heightmap[31 * 32 + 0], 1e-6f);
     }
 
+    @DisplayName("Applying plateau with out-of-range coordinates does not throw")
     @Test
     void applyPlateau_clampsToSizeBoundary() {
         float[] heightmap = new float[16 * 16];
@@ -47,6 +53,7 @@ class StructurePlateauModifierTest {
                 StructurePlateauModifier.applyPlateau(heightmap, 16, -5, -5, 25, 25, 80.0f));
     }
 
+    @DisplayName("Plateau on the edge of the heightmap does not throw")
     @Test
     void applyPlateau_plateauOnEdge_doesNotThrow() {
         float[] heightmap = new float[16 * 16];
@@ -56,6 +63,7 @@ class StructurePlateauModifierTest {
                 StructurePlateauModifier.applyPlateau(heightmap, 16, 0, 0, 3, 3, 90.0f));
     }
 
+    @DisplayName("Single-cell plateau unchanged in flat terrain")
     @Test
     void applyPlateau_singleCell_unchangedInFlatTerrain() {
         float[] heightmap = new float[16 * 16];
