@@ -11,7 +11,7 @@ mockbukkit = "4.110.0"
 junitPlatformLauncher = "2.1.0"
 
 # Paper API versions
-paperApi121 = "1.21.11-R0.1-SNAPSHOT"
+paperApi121 = "26.1.2.build.72-stable"
 paperApi26 = "26.1.2.build.+"
 
 # Gradle plugins
