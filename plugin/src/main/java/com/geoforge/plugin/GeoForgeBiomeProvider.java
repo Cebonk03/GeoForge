@@ -16,6 +16,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
  *
  * <p>The biome list is computed once at construction from the engine's palette and cached.
  */
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public final class GeoForgeBiomeProvider extends BiomeProvider {
 
     private final GeoForgeAdapter adapter;

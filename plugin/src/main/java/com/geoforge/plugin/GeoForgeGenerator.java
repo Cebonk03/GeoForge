@@ -1,4 +1,5 @@
 package com.geoforge.plugin;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import com.geoforge.api.adapter.GeoForgeAdapter;
 import com.geoforge.engine.GeoForgeEngine;
@@ -23,6 +24,7 @@ import java.util.SplittableRandom;
  * plate continentalness and 3D cave noise, places biome-specific surface blocks,
  * and delegates biome assignment to {@link GeoForgeBiomeProvider}.
  */
+@SuppressFBWarnings("EI_EXPOSE_REP")
 public final class GeoForgeGenerator extends ChunkGenerator {
 
     private static final int SURFACE_DEPTH = 3;
@@ -64,14 +66,16 @@ public final class GeoForgeGenerator extends ChunkGenerator {
                 worldSeed, engine.config().treeDensityFrequency(),
                 java.util.Collections.unmodifiableMap(biomeModifiers));
         this.treePlacer = new TreePlacer(
-                engine.config().treeDensity(),
-                engine.config().maxTreeHeight(),
-                engine.config().minTreeHeight(),
+                0.1,   // treeDensity global fallback (now per-biome)
+                12,    // maxTreeHeight global fallback (now per-biome)
+                4,     // minTreeHeight global fallback (now per-biome)
                 variantSelector,
                 registry,
                 engine.getBiomeConfigs());
         this.vegetationPlacer = new VegetationPlacer(
-                engine.config().vegetationDensity(), engine.getBiomeConfigs());
+                0.3,   // vegetationDensity global fallback (now per-biome)
+                engine.getBiomeConfigs(),
+                engine.getBiomeVegetation());
     }
 
     @Override
@@ -177,8 +181,14 @@ public final class GeoForgeGenerator extends ChunkGenerator {
                 // Query biome at actual terrain height — altitude affects temperature
                 String biomeId = engine.getBiomeId(blockX, heightY, blockZ);
                 BiomeTerrainConfig biomeConfig = engine.getBiomeConfig(biomeId);
-                Material topBlock = resolveTopBlock(biomeId, biomeConfig);
-                Material subBlock = resolveSubBlock(biomeId, biomeConfig);
+                String surfaceBlockStr = biomeConfig != null ? biomeConfig.surfaceBlock() : "";
+                Material topBlock = !surfaceBlockStr.isEmpty()
+                        ? adapter.mapBlock(surfaceBlockStr)
+                        : adapter.mapBlock("grass_block");
+                String subSurfaceBlockStr = biomeConfig != null ? biomeConfig.subSurfaceBlock() : "";
+                Material subBlock = !subSurfaceBlockStr.isEmpty()
+                        ? adapter.mapBlock(subSurfaceBlockStr)
+                        : adapter.mapBlock("dirt");
 
                 // Top block
                 chunkData.setBlock(x, heightY, z, topBlock);
@@ -240,37 +250,4 @@ public final class GeoForgeGenerator extends ChunkGenerator {
         return true;
     }
 
-    private Material resolveTopBlock(String biomeId, BiomeTerrainConfig biomeConfig) {
-        // Check biome config for explicit surface block override first
-        if (biomeConfig != null && !biomeConfig.surfaceBlock().isEmpty()) {
-            return adapter.mapBlock(biomeConfig.surfaceBlock());
-        }
-        return switch (biomeId) {
-            case "desert" -> adapter.mapBlock("sand");
-            case "badlands" -> adapter.mapBlock("red_sand");
-            case "snowy_plains", "ice_spikes", "snowy_taiga", "snowy_beach",
-                 "frozen_peaks", "grove" -> adapter.mapBlock("snow_block");
-            case "beach", "stony_shore" -> adapter.mapBlock("sand");
-            case "mushroom_fields" -> adapter.mapBlock("mycelium");
-            case "ocean", "deep_ocean", "cold_ocean", "deep_cold_ocean",
-                 "lukewarm_ocean", "deep_lukewarm_ocean", "frozen_ocean",
-                 "deep_frozen_ocean", "warm_ocean" -> adapter.mapBlock("gravel");
-            default -> adapter.mapBlock("grass_block");
-        };
-    }
-
-    private Material resolveSubBlock(String biomeId, BiomeTerrainConfig biomeConfig) {
-        // Check biome config for explicit sub-surface block override first
-        if (biomeConfig != null && !biomeConfig.subSurfaceBlock().isEmpty()) {
-            return adapter.mapBlock(biomeConfig.subSurfaceBlock());
-        }
-        return switch (biomeId) {
-            case "desert", "badlands" -> adapter.mapBlock("sandstone");
-            case "beach", "stony_shore" -> adapter.mapBlock("sand");
-            case "ocean", "deep_ocean", "cold_ocean", "deep_cold_ocean",
-                 "lukewarm_ocean", "deep_lukewarm_ocean", "frozen_ocean",
-                 "deep_frozen_ocean", "warm_ocean" -> adapter.mapBlock("gravel");
-            default -> adapter.mapBlock("dirt");
-        };
-    }
 }

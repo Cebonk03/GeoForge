@@ -1,9 +1,14 @@
 package com.geoforge.plugin;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import com.geoforge.api.adapter.GeoForgeAdapter;
 import com.geoforge.engine.GeoForgeEngine;
 import com.geoforge.engine.config.GeoForgeConfig;
 import com.geoforge.engine.config.RiverProfile;
+import com.geoforge.engine.config.biome.BiomeConfigLoader;
+import com.geoforge.plugin.command.GeoForgeReloadCommand;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.generator.ChunkGenerator;
@@ -78,11 +83,7 @@ public final class GeoForgePlugin extends JavaPlugin {
 .fbmOctaves(cfg.getInt("noise.fbm-octaves", 4))
 .flatFrequency(cfg.getDouble("noise.flat-frequency", 0.008))
 .continentalnessBlendSharpness(cfg.getDouble("noise.continentalness-blend-sharpness", 2.0))
-.treeDensity(cfg.getDouble("decorations.tree-density", 0.1))
-.vegetationDensity(cfg.getDouble("decorations.vegetation-density", 0.3))
 .featureSeedOffset(cfg.getLong("decorations.feature-seed-offset", 0xCAFEBABEL))
-        .maxTreeHeight(cfg.getInt("decorations.max-tree-height", 12))
-        .minTreeHeight(cfg.getInt("decorations.min-tree-height", 4))
         .treeDensityFrequency(cfg.getDouble("decorations.tree-density-frequency", 0.02))
 .erosionDropletCount(cfg.getInt("erosion.droplet-count", 1024))
 .erosionGravity((float) cfg.getDouble("erosion.gravity", 0.2))
@@ -94,11 +95,39 @@ public final class GeoForgePlugin extends JavaPlugin {
 .build();
         this.engine = new GeoForgeEngine(worldSeed, engineConfig);
 
+        // Initialize biome registry from config files (optional)
+        Path biomesDir = getDataFolder().toPath().resolve("Biomes");
+        if (Files.isDirectory(biomesDir)) {
+            var loader = new BiomeConfigLoader();
+            var result = loader.loadFromDirectory(biomesDir);
+            int biomeCount = result.biomes().size();
+            if (!result.hasErrors()) {
+                getLogger().info("Loaded " + biomeCount + " biome definitions from " + biomesDir);
+                if (biomeCount > 0) {
+                    engine.replaceBiomeRegistry(new com.geoforge.engine.config.biome.BiomeRegistry(result, engine.getBiomeRegistry().climateResolver()));
+                    getLogger().info("Applied " + biomeCount + " biome definitions to engine.");
+                }
+            } else {
+                getLogger().warning("Biome loading had errors: " + result.errors());
+            }
+        } else {
+            getLogger().info("No Biomes directory found at " + biomesDir + " \u2014 using built-in biome defaults");
+        }
+
         // Log config sanity warnings
         var sanityWarnings = engineConfig.sanityCheck();
         if (!sanityWarnings.isEmpty()) {
             getLogger().warning("GeoForge config sanity warnings:");
             sanityWarnings.forEach(w -> getLogger().warning("  - " + w));
+        }
+
+        // Register reload command
+        var reloadCmd = getCommand("geoforgereload");
+        if (reloadCmd != null) {
+            reloadCmd.setExecutor(new GeoForgeReloadCommand(this));
+            getLogger().info("Registered /geoforgereload command");
+        } else {
+            getLogger().warning("Could not register /geoforgereload — not defined in plugin.yml");
         }
 
         getLogger().info(
@@ -113,5 +142,24 @@ public final class GeoForgePlugin extends JavaPlugin {
     public @Nullable ChunkGenerator getDefaultWorldGenerator(
             @NotNull String worldName, @Nullable String id) {
         return new GeoForgeGenerator(adapter, engine, worldSeed);
+    }
+
+    /**
+     * Returns the engine instance for access by commands.
+     *
+     * @return the GeoForgeEngine
+     */
+    @SuppressFBWarnings("EI_EXPOSE_REP")
+    public GeoForgeEngine getEngine() {
+        return engine;
+    }
+
+    /**
+     * Returns the world generation seed.
+     *
+     * @return the seed
+     */
+    public long getWorldSeed() {
+        return worldSeed;
     }
 }
