@@ -1,4 +1,5 @@
 package com.geoforge.engine.feature.tree.canopy;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import com.geoforge.engine.feature.BlockSetter;
 import com.geoforge.engine.feature.tree.CanopyProfile;
@@ -16,6 +17,7 @@ import java.util.random.RandomGenerator;
  *   <li>Lower skirt: drips downward with decreasing radius</li>
  * </ol>
  */
+@SuppressFBWarnings("ICAST_IDIV_CAST_TO_DOUBLE")
 public final class WeepingCanopy implements CanopyProfile {
 
     @Override
@@ -41,7 +43,7 @@ public final class WeepingCanopy implements CanopyProfile {
         // Middle ring (widest)
         for (int dx = -skirtRadius; dx <= skirtRadius; dx++) {
             for (int dz = -skirtRadius; dz <= skirtRadius; dz++) {
-                double distSq = dx * dx + dz * dz;
+                double distSq = (double) dx * dx + (double) dz * dz;
                 if (distSq <= skirtRadius * skirtRadius && distSq >= topRadius * topRadius / 2) {
                     if (random.nextDouble() < leafDensity) {
                         setter.setBlock(tipX + dx, baseY - 1, tipZ + dz, leafMaterial);
@@ -55,7 +57,7 @@ public final class WeepingCanopy implements CanopyProfile {
             int weepR = Math.max(1, skirtRadius - w);
             for (int dx = -weepR; dx <= weepR; dx++) {
                 for (int dz = -weepR; dz <= weepR; dz++) {
-                    double distSq = dx * dx + dz * dz;
+                    double distSq = (double) dx * dx + (double) dz * dz;
                     if (distSq <= weepR * weepR && random.nextDouble() < leafDensity * 0.7) {
                         setter.setBlock(tipX + dx, baseY - 1 - w, tipZ + dz, leafMaterial);
                     }
