@@ -18,6 +18,7 @@ import java.util.Objects;
  * @see TreeType
  * @see BiomeTreeConfig
  */
+@Deprecated
 public final class TreeRegistry {
 
     private final Map<String, List<TreeType>> biomeTreeMap;

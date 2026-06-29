@@ -1,6 +1,5 @@
 package com.geoforge.engine.feature;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,76 +11,30 @@ import com.geoforge.engine.biome.BiomeTerrainConfig;
  *
  * <p>Each surface column has a chance (determined by {@code vegetationDensity}) of
  * receiving one vegetation item, selected from the biome's vegetation palette.
+ *
+ * <p>Vegetation types are read from an instance-level map keyed by biome ID. This map
+ * is typically provided from {@link com.geoforge.engine.config.biome.BiomeDefinition}
+ * via the config-driven YAML system. A hardcoded default mapping exists as a fallback
+ * for backward compatibility.
  */
 public final class VegetationPlacer implements GeoForgeFeature {
 
     private final double vegetationDensity;
     private final Map<String, BiomeTerrainConfig> biomeConfigs;
-
-    private static final Map<String, List<String>> BIOME_VEGETATION = buildBiomeVegetationMap();
-
-    /**
-     * Creates a vegetation placer with the given density.
-     *
-     * @param vegetationDensity probability in {@code [0, 1]} that any eligible
-     *                          column gets a vegetation item
-     */
-    public VegetationPlacer(double vegetationDensity) {
-        this(vegetationDensity, Map.of());
-    }
-
-    /**
-     * Creates a vegetation placer with the given density and biome configs.
-     *
-     * @param vegetationDensity probability in [0, 1] that any eligible column gets vegetation
-     * @param biomeConfigs      map of biome ID to terrain config (for allowFloatingPlants check)
-     */
-    public VegetationPlacer(double vegetationDensity, Map<String, BiomeTerrainConfig> biomeConfigs) {
-        if (vegetationDensity < 0.0 || vegetationDensity > 1.0) {
-            throw new IllegalArgumentException(
-                    "vegetationDensity must be in [0, 1], got " + vegetationDensity);
-        }
-        this.vegetationDensity = vegetationDensity;
-        this.biomeConfigs = biomeConfigs != null ? Map.copyOf(biomeConfigs) : Map.of();
-    }
-
-    public double vegetationDensity() {
-        return vegetationDensity;
-    }
-
-    /**
-     * Returns an unmodifiable view of the biome-to-vegetation mapping.
-     */
-    public static Map<String, List<String>> biomeVegetationMap() {
-        return Collections.unmodifiableMap(BIOME_VEGETATION);
-    }
-
-    @Override
-    public void place(BlockSetter setter, int blockX, int blockZ, int surfaceY,
-                      String biomeId, RandomGenerator random) {
-        if (random.nextDouble() >= vegetationDensity) {
-            return;
-        }
-
-        List<String> candidates = BIOME_VEGETATION.get(biomeId);
-        if (candidates == null || candidates.isEmpty()) {
-            return;
-        }
-        // allowFloatingPlants controls whether vegetation may be placed on water surfaces.
-        // The field is defined in BiomeTerrainConfig for future water-vegetation logic;
-        // current place() only operates on solid ground above sea level (surfaceY + 1).
-        // Full water-surface vegetation placement is deferred.
-
-        // Place vegetation on top of the surface block
-        String vegType = candidates.get(random.nextInt(candidates.size()));
-        setter.setBlock(blockX, surfaceY + 1, blockZ, vegType);
-    }
+    private final Map<String, List<String>> vegetationMap;
 
     // ──────────────────────────────────────────────
-    //  Biome → vegetation mapping
+    //  Default fallback vegetation mapping
     // ──────────────────────────────────────────────
 
-    private static Map<String, List<String>> buildBiomeVegetationMap() {
+    /**
+     * Default vegetation mapping used when no config-driven data is provided.
+     * Retained for backward compatibility; production code should supply
+     * vegetation data from {@link com.geoforge.engine.config.biome.BiomeDefinition}.
+     */
+    private static final Map<String, List<String>> DEFAULT_VEGETATION = buildDefaultVegetationMap();
+
+    private static Map<String, List<String>> buildDefaultVegetationMap() {
         Map<String, List<String>> map = new HashMap<>(34);
 
         // Grassy biomes — short grass + flowers
@@ -130,7 +83,7 @@ public final class VegetationPlacer implements GeoForgeFeature {
         applyToAll(map, List.of("grass"),
                 "savanna", "windswept_savanna");
 
-        return map;
+        return Map.copyOf(map);
     }
 
     /**
@@ -142,5 +95,82 @@ public final class VegetationPlacer implements GeoForgeFeature {
         for (String biome : biomes) {
             map.put(biome, vegetation);
         }
+    }
+
+    // ──────────────────────────────────────────────
+    //  Constructors
+    // ──────────────────────────────────────────────
+
+    /**
+     * Creates a vegetation placer with the given density.
+     *
+     * @param vegetationDensity probability in {@code [0, 1]} that any eligible
+     *                          column gets a vegetation item
+     */
+    public VegetationPlacer(double vegetationDensity) {
+        this(vegetationDensity, Map.of(), DEFAULT_VEGETATION);
+    }
+
+    /**
+     * Creates a vegetation placer with the given density and biome configs.
+     *
+     * @param vegetationDensity probability in [0, 1] that any eligible column gets vegetation
+     * @param biomeConfigs      map of biome ID to terrain config (for allowFloatingPlants check)
+     */
+    public VegetationPlacer(double vegetationDensity, Map<String, BiomeTerrainConfig> biomeConfigs) {
+        this(vegetationDensity, biomeConfigs, DEFAULT_VEGETATION);
+    }
+
+    /**
+     * Creates a vegetation placer with the given density, biome configs, and
+     * config-driven vegetation mapping.
+     *
+     * @param vegetationDensity probability in [0, 1] that any eligible column gets vegetation
+     * @param biomeConfigs      map of biome ID to terrain config (for allowFloatingPlants check)
+     * @param vegetationMap     map of biome ID to list of vegetation block types;
+     *                          uses the built-in default if {@code null}
+     */
+    public VegetationPlacer(double vegetationDensity,
+                            Map<String, BiomeTerrainConfig> biomeConfigs,
+                            Map<String, List<String>> vegetationMap) {
+        if (vegetationDensity < 0.0 || vegetationDensity > 1.0) {
+            throw new IllegalArgumentException(
+                    "vegetationDensity must be in [0, 1], got " + vegetationDensity);
+        }
+        this.vegetationDensity = vegetationDensity;
+        this.biomeConfigs = biomeConfigs != null ? Map.copyOf(biomeConfigs) : Map.of();
+        this.vegetationMap = vegetationMap != null ? Map.copyOf(vegetationMap) : Map.of();
+    }
+
+    public double vegetationDensity() {
+        return vegetationDensity;
+    }
+
+    /**
+     * Returns an unmodifiable view of the biome-to-vegetation mapping.
+     */
+    public Map<String, List<String>> biomeVegetationMap() {
+        return vegetationMap;
+    }
+
+    @Override
+    public void place(BlockSetter setter, int blockX, int blockZ, int surfaceY,
+                      String biomeId, RandomGenerator random) {
+        if (random.nextDouble() >= vegetationDensity) {
+            return;
+        }
+
+        List<String> candidates = vegetationMap.get(biomeId);
+        if (candidates == null || candidates.isEmpty()) {
+            return;
+        }
+        // allowFloatingPlants controls whether vegetation may be placed on water surfaces.
+        // The field is defined in BiomeTerrainConfig for future water-vegetation logic;
+        // current place() only operates on solid ground above sea level (surfaceY + 1).
+        // Full water-surface vegetation placement is deferred.
+
+        // Place vegetation on top of the surface block
+        String vegType = candidates.get(random.nextInt(candidates.size()));
+        setter.setBlock(blockX, surfaceY + 1, blockZ, vegType);
     }
 }
