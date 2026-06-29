@@ -1,0 +1,6 @@
+# Shared terrain defaults — apply to all biomes unless overridden per-biome
+height-offset: 0
+amplitude-multiplier: 1.0
+surface-block: "grass_block"
+sub-surface-block: "dirt"
+surface-hardness: 0.5

@@ -1,0 +1,4 @@
+# Shared default river parameters
+depth: 8
+width: 3
+profile: vshaped

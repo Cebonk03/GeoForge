@@ -1,0 +1,11 @@
+surface-block: "sand"
+sub-surface-block: "sand"
+
+# Climate envelope (from BiomeLookupTable)
+temp-min: -0.75
+temp-max: 0.25
+humidity-min: 0
+humidity-max: 1
+continentalness-min: 0.3
+continentalness-max: 0.7
+priority: 10

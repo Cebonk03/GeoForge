@@ -1,0 +1,356 @@
+# Climate sampling configuration and per-biome climate envelopes
+# Derived from BiomeLookupTable (8x8 temperature-humidity grid)
+
+sampling:
+  temperature:
+    frequency: 0.001
+    y-frequency: 0.005
+  humidity:
+    frequency: 0.001
+
+# Per-biome climate envelopes (temperature/humidity/continentalness ranges)
+biomes:
+  badlands:
+    temp-min: 0.5
+    temp-max: 1
+    humidity-min: 0
+    humidity-max: 1
+    continentalness-min: 0.5
+    continentalness-max: 1
+    priority: 10
+  bamboo_jungle:
+    temp-min: 0.25
+    temp-max: 1
+    humidity-min: 0.375
+    humidity-max: 0.625
+    continentalness-min: 0.5
+    continentalness-max: 0.7
+    priority: 10
+  beach:
+    temp-min: 0.25
+    temp-max: 1
+    humidity-min: 0
+    humidity-max: 1
+    continentalness-min: 0.3
+    continentalness-max: 0.7
+    priority: 10
+  birch_forest:
+    temp-min: -0.5
+    temp-max: 0
+    humidity-min: 0.25
+    humidity-max: 0.625
+    continentalness-min: 0.5
+    continentalness-max: 0.7
+    priority: 10
+  cherry_grove:
+    temp-min: -0.5
+    temp-max: 0.25
+    humidity-min: 0
+    humidity-max: 1
+    continentalness-min: 0.5
+    continentalness-max: 1
+    priority: 10
+  cold_ocean:
+    temp-min: -0.75
+    temp-max: -0.25
+    humidity-min: 0.5
+    humidity-max: 1
+    continentalness-min: 0
+    continentalness-max: 0.7
+    priority: 10
+  dark_forest:
+    temp-min: -0.25
+    temp-max: 0.25
+    humidity-min: 0.375
+    humidity-max: 0.5
+    continentalness-min: 0.5
+    continentalness-max: 0.7
+    priority: 10
+  deep_cold_ocean:
+    temp-min: -0.75
+    temp-max: -0.5
+    humidity-min: 0
+    humidity-max: 0.875
+    continentalness-min: 0
+    continentalness-max: 0.7
+    priority: 10
+  deep_frozen_ocean:
+    temp-min: -1
+    temp-max: -0.75
+    humidity-min: 0
+    humidity-max: 1
+    continentalness-min: 0
+    continentalness-max: 0.7
+    priority: 10
+  deep_lukewarm_ocean:
+    temp-min: 0
+    temp-max: 0.5
+    humidity-min: 0
+    humidity-max: 1
+    continentalness-min: 0
+    continentalness-max: 0.7
+    priority: 10
+  deep_ocean:
+    temp-min: -0.5
+    temp-max: 0
+    humidity-min: 0
+    humidity-max: 0.875
+    continentalness-min: 0
+    continentalness-max: 0.7
+    priority: 10
+  desert:
+    temp-min: 0.5
+    temp-max: 1
+    humidity-min: 0
+    humidity-max: 0.125
+    continentalness-min: 0.5
+    continentalness-max: 0.7
+    priority: 10
+  flower_forest:
+    temp-min: -1
+    temp-max: 1
+    humidity-min: 0
+    humidity-max: 1
+    continentalness-min: 0.5
+    continentalness-max: 0.7
+    priority: 10
+  forest:
+    temp-min: -0.25
+    temp-max: 0
+    humidity-min: 0.125
+    humidity-max: 0.25
+    continentalness-min: 0.5
+    continentalness-max: 0.7
+    priority: 10
+  frozen_ocean:
+    temp-min: -1
+    temp-max: -0.5
+    humidity-min: 0.5
+    humidity-max: 1
+    continentalness-min: 0
+    continentalness-max: 0.7
+    priority: 10
+  frozen_peaks:
+    temp-min: -1
+    temp-max: -0.75
+    humidity-min: 0
+    humidity-max: 0.5
+    continentalness-min: 0.5
+    continentalness-max: 1
+    priority: 10
+  grove:
+    temp-min: -1
+    temp-max: -0.5
+    humidity-min: 0
+    humidity-max: 1
+    continentalness-min: 0.5
+    continentalness-max: 1
+    priority: 10
+  ice_spikes:
+    temp-min: -1
+    temp-max: -0.75
+    humidity-min: 0.125
+    humidity-max: 0.25
+    continentalness-min: 0.5
+    continentalness-max: 0.7
+    priority: 10
+  jagged_peaks:
+    temp-min: -1
+    temp-max: -0.75
+    humidity-min: 0.5
+    humidity-max: 1
+    continentalness-min: 0.5
+    continentalness-max: 1
+    priority: 10
+  jungle:
+    temp-min: 0.25
+    temp-max: 0.75
+    humidity-min: 0.375
+    humidity-max: 0.5
+    continentalness-min: 0.5
+    continentalness-max: 0.7
+    priority: 10
+  lukewarm_ocean:
+    temp-min: -0.25
+    temp-max: 0.75
+    humidity-min: 0.5
+    humidity-max: 1
+    continentalness-min: 0
+    continentalness-max: 0.7
+    priority: 10
+  mangrove_swamp:
+    temp-min: 0.25
+    temp-max: 0.75
+    humidity-min: 0.75
+    humidity-max: 0.875
+    continentalness-min: 0.5
+    continentalness-max: 0.7
+    priority: 10
+  meadow:
+    temp-min: -0.5
+    temp-max: 0.25
+    humidity-min: 0
+    humidity-max: 0.5
+    continentalness-min: 0.5
+    continentalness-max: 1
+    priority: 10
+  mushroom_fields:
+    temp-min: 0.75
+    temp-max: 1
+    humidity-min: 0.5
+    humidity-max: 0.75
+    continentalness-min: 0.5
+    continentalness-max: 0.7
+    priority: 10
+  ocean:
+    temp-min: -0.5
+    temp-max: 0
+    humidity-min: 0.5
+    humidity-max: 1
+    continentalness-min: 0
+    continentalness-max: 0.7
+    priority: 10
+  old_growth_birch_forest:
+    temp-min: 0
+    temp-max: 0.25
+    humidity-min: 0.25
+    humidity-max: 0.375
+    continentalness-min: 0.5
+    continentalness-max: 0.7
+    priority: 10
+  old_growth_pine_taiga:
+    temp-min: -0.75
+    temp-max: -0.5
+    humidity-min: 0.25
+    humidity-max: 0.375
+    continentalness-min: 0.5
+    continentalness-max: 0.7
+    priority: 10
+  old_growth_spruce_taiga:
+    temp-min: -0.5
+    temp-max: -0.25
+    humidity-min: 0.375
+    humidity-max: 0.5
+    continentalness-min: 0.5
+    continentalness-max: 0.7
+    priority: 10
+  pale_garden:
+    temp-min: 0
+    temp-max: 0.25
+    humidity-min: 0.125
+    humidity-max: 0.25
+    continentalness-min: 0.5
+    continentalness-max: 0.7
+    priority: 10
+  plains:
+    temp-min: -0.25
+    temp-max: 0.25
+    humidity-min: 0.5
+    humidity-max: 0.875
+    continentalness-min: 0.5
+    continentalness-max: 0.7
+    priority: 10
+  savanna:
+    temp-min: 0.25
+    temp-max: 0.5
+    humidity-min: 0
+    humidity-max: 0.25
+    continentalness-min: 0.5
+    continentalness-max: 0.7
+    priority: 10
+  snowy_beach:
+    temp-min: -1
+    temp-max: -0.5
+    humidity-min: 0
+    humidity-max: 1
+    continentalness-min: 0.3
+    continentalness-max: 0.7
+    priority: 10
+  snowy_plains:
+    temp-min: -1
+    temp-max: -0.75
+    humidity-min: 0
+    humidity-max: 0.125
+    continentalness-min: 0.5
+    continentalness-max: 0.7
+    priority: 10
+  snowy_taiga:
+    temp-min: -1
+    temp-max: -0.5
+    humidity-min: 0
+    humidity-max: 0.625
+    continentalness-min: 0.5
+    continentalness-max: 0.7
+    priority: 10
+  sparse_jungle:
+    temp-min: 0.5
+    temp-max: 1
+    humidity-min: 0.125
+    humidity-max: 0.625
+    continentalness-min: 0.5
+    continentalness-max: 0.7
+    priority: 10
+  stony_shore:
+    temp-min: -0.75
+    temp-max: 0.25
+    humidity-min: 0
+    humidity-max: 1
+    continentalness-min: 0.3
+    continentalness-max: 0.7
+    priority: 10
+  sunflower_plains:
+    temp-min: -1
+    temp-max: 1
+    humidity-min: 0
+    humidity-max: 1
+    continentalness-min: 0.5
+    continentalness-max: 0.7
+    priority: 10
+  swamp:
+    temp-min: -1
+    temp-max: 1
+    humidity-min: 0
+    humidity-max: 1
+    continentalness-min: 0.5
+    continentalness-max: 0.7
+    priority: 10
+  taiga:
+    temp-min: -0.75
+    temp-max: -0.25
+    humidity-min: 0.125
+    humidity-max: 0.375
+    continentalness-min: 0.5
+    continentalness-max: 0.7
+    priority: 10
+  warm_ocean:
+    temp-min: 0.5
+    temp-max: 1
+    humidity-min: 0
+    humidity-max: 1
+    continentalness-min: 0
+    continentalness-max: 0.7
+    priority: 10
+  windswept_forest:
+    temp-min: -0.5
+    temp-max: 0.5
+    humidity-min: 0.125
+    humidity-max: 1
+    continentalness-min: 0.5
+    continentalness-max: 1
+    priority: 10
+  windswept_hills:
+    temp-min: -0.5
+    temp-max: 0.5
+    humidity-min: 0
+    humidity-max: 0.5
+    continentalness-min: 0.5
+    continentalness-max: 1
+    priority: 10
+  windswept_savanna:
+    temp-min: 0.25
+    temp-max: 0.75
+    humidity-min: 0
+    humidity-max: 0.5
+    continentalness-min: 0.5
+    continentalness-max: 1
+    priority: 10
