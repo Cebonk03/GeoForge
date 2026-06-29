@@ -3,12 +3,12 @@
 
 [versions]
 # Test frameworks
-junitJupiter = "6.1.0"
+junitJupiter = "6.1.1"
 archunit = "1.4.2"
 assertj = "3.27.7"
 mockito = "5.23.0"
 mockbukkit = "4.110.0"
-junitPlatformLauncher = "6.1.0"
+junitPlatformLauncher = "6.1.1"
 
 # Paper API versions
 paperApi121 = "1.21.11-R0.1-SNAPSHOT"
