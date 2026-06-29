@@ -8,6 +8,8 @@ dependencies {
     testImplementation(libs.bundles.junitTesting)
     testImplementation(libs.archunitJunit5)
     testImplementation(libs.jmhCore)
+    compileOnly(libs.snakeyaml)
+    testImplementation(libs.snakeyaml)
     testAnnotationProcessor(libs.jmhAnnotationProcessor)
 }
 

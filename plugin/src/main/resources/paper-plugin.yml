@@ -9,3 +9,14 @@ load: STARTUP
 generators:
   GeoForge:
     class: com.geoforge.plugin.GeoForgePlugin
+
+commands:
+  geoforgereload:
+    description: Reload GeoForge biome configurations
+    usage: /geoforgereload
+    permission: geoforge.reload
+
+permissions:
+  geoforge.reload:
+    description: Allows reloading GeoForge biome configs
+    default: op
