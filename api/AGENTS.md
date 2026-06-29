@@ -1,6 +1,6 @@
 # GeoForge API
-**Generated:** 2026-06-28T16:01:49Z
-**Commit:** 38deaaf
+**Generated:** 2026-06-29T18:50:29Z
+**Commit:** 897c426
 **Branch:** main
 
 Adapter interface + version utilities bridging engine to Paper server.

@@ -1,6 +1,6 @@
 # GeoForge v1_21_x Adapter
-**Generated:** 2026-06-28T16:01:49Z
-**Commit:** 38deaaf
+**Generated:** 2026-06-29T18:50:29Z
+**Commit:** 897c426
 **Branch:** main
 
 Paper 1.21.x version adapter. Java 21, RegistryAccess-based biome lookup.

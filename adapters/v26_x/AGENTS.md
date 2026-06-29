@@ -1,6 +1,6 @@
 # GeoForge v26_x Adapter
-**Generated:** 2026-06-28T16:01:49Z
-**Commit:** 38deaaf
+**Generated:** 2026-06-29T18:50:29Z
+**Commit:** 897c426
 **Branch:** main
 
 Paper 26.x version adapter. Java 25, constructor injection for testability.

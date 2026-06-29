@@ -1,6 +1,6 @@
 # GeoForge Knowledge Base
-**Generated:** 2026-06-28T16:01:49Z
-**Commit:** 38deaaf
+**Generated:** 2026-06-29T18:50:29Z
+**Commit:** 897c426
 **Branch:** main
 
 **Stack:** Java 21/25 + Gradle 9.6 + Paper API (1.21.x / 26.x)
@@ -21,12 +21,12 @@ geoforge/
 
 | Module | Main Srcs | Tests | Java | Role |
 |--------|-----------|-------|------|------|
-| engine | 38 | 33 | 21 | 3D density engine, zero Bukkit |
+|| engine | 63 | 54 | 21 | 3D density engine, zero Bukkit |
 | api | 5 | 3 | 21 | Adapter interface + AbstractPaperAdapter + ServerVersion + FoliaDetector |
 | v1_21_x | 1 | 1 | 21 | Paper 1.21.x adapter |
 | v26_x | 1 | 1 | 25 | Paper 26.x adapter (constructor injection for testability) |
 | plugin | 4 | 4 | 25 | Plugin + ShadowJAR + GeoForgePluginTest |
-|||| **Total** | **49** | **42** | — | **~2,126 tests, 0 failures** |
+||||| **Total** | **74** | **63** | — | **~2,126 tests, 0 failures** |
 
 ## 3D Density Architecture
 
@@ -41,7 +41,7 @@ Positive density = solid, negative density = air
 - Rivers: 3-profile system with RiverProfile enum (VSHAPED/CANYON/FLOODPLAIN) via RiverCarver interface
 - Biomes: 3D continuous noise (temperature × humidity × continentalness)
 - Multi-noise terrain: ridge/FBM/flat blended by continentalness + erosion
-- Features: 6-tree-type placer (incl. ACACIA) + vegetation placer in generateSurface()
+- Features: TreePlacer with 6-type tree system (incl. ACACIA) + 9 canopy profiles × 6 trunk profiles + vegetation placer in generateSurface()
 - Erosion: 2D hydraulic erosion on extracted heightmap (for future 3D adaptation)
 
 ## Where To Look
@@ -55,6 +55,7 @@ Positive density = solid, negative density = air
 | Paper integration | `plugin/src/main/java/com/geoforge/plugin/GeoForgeGenerator.java` |
 | Biome assignment | `plugin/src/main/java/com/geoforge/plugin/GeoForgeBiomeProvider.java` |
 | Server version parsing | `api/src/main/java/com/geoforge/api/version/ServerVersion.java` |
+|| Tree system registry | `engine/src/main/java/com/geoforge/engine/feature/tree/TreeRegistry.java` |
 
 ## CODE MAP
 
@@ -70,8 +71,8 @@ Positive density = solid, negative density = air
 | `GeoForgeEngine` | core | engine | 3 | Density = heightFunc - y + caveNoise*ampl, surface via binary search |
 | `GeoForgeConfig` | record | engine | 2 | 48 immutable terrain params |
 | `DensityFunctionTree` | @FunctionalInterface | engine | 9 | sample(x,y,z)→double; composable tree (Add/Clamp/Constant/Multiply/PlateContinentalness) |
-| `SimplexNoise` | noise | engine | 5 | 2D/3D simplex noise, deterministic from long seed |
-| `FractalNoise` | noise | engine | 2 | Multi-octave fractal noise (sum octaves with lacunarity/persistence) |
+| `NoiseSource` | @FunctionalInterface | engine | 33 | sample2D/sample3D — SimplexNoise or FastNoiseLiteSource via config switch |
+| `FastNoiseLiteSource` | noise | engine | 1 | FastNoiseLite adapter implementing NoiseSource interface |
 | `BiomeLookupTable` | lookup | engine | 2 | 8x8 temp×humidity grid → 38 biome IDs |
 | `TectonicPlateMapper` | geology | engine | 1 | 12 plates with Voronoi centres + coastline modulation |
 | `HydraulicErosion` | geology | engine | 1 | 2D droplet-based heightmap erosion |
@@ -80,6 +81,13 @@ Positive density = solid, negative density = air
 | `StructurePlateauModifier` | util | engine | 0 | Terrain flattening with feathered border (wired in erodeColumn when plateauSize > 0) |
 | `ServerVersion` | record | api | 2 | Regex-parsed major.minor.patch version |
 | `FoliaDetector` | util | api | 2 | Class.forName("io.papermc.paper.threadedregions.RegionizedServer") |
+| `TreeRegistry` | registry | engine | 1 | Default biome→TreeType map + config lookup via biomeTreeMap() |
+| `TreePlacer` | placer | engine | 1 | 6-type tree placement (OAK/BIRCH/SPRUCE/JUNGLE/ACACIA/DARK_OAK) in generateSurface() |
+| `TreeType` | enum | engine | 1 | OAK/BIRCH/SPRUCE/JUNGLE/ACACIA/DARK_OAK — maps to 9 canopies × 6 trunks |
+| `CanopyProfile` | enum | engine | 1 | 9 canopy shapes (Round/Oval/Domed/Conical/Layered/Spreading/FlatHat/Sparse/NoCanopy) |
+| `TrunkProfile` | enum | engine | 1 | 6 trunk profiles (Straight/Bent/Leaning/Twisted/MultiStem/Fallen) |
+| `EnhancedCaveSystem` | cave | engine | 1 | 3-type cave system: SPAGHETTI/CHEESE/NOODLE with Y-envelope gating |
+| `RiverProfile` | enum | engine | 1 | VSHAPED/CANYON/FLOODPLAIN river profiles via RiverCarver interface |
 
 ## Conventions
 

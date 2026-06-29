@@ -1,6 +1,6 @@
 # GeoForge Engine
-**Generated:** 2026-06-28T16:01:49Z
-**Commit:** 38deaaf
+**Generated:** 2026-06-29T18:50:29Z
+**Commit:** 897c426
 **Branch:** main
 
 Zero-Bukkit math engine for terrain generation. All classes pure Java 21 with no server dependencies.
@@ -21,7 +21,9 @@ engine/src/main/java/com/geoforge/engine/
 ├── biome/        BiomeLookupTable.java, BiomeTerrainConfig.java
 ├── plateau/      StructurePlateauModifier.java (terrain flattening, wired in erodeColumn when plateauSize > 0)
 ├── feature/      BlockSetter.java, GeoForgeFeature.java, TreePlacer.java,
-│                VegetationPlacer.java
+│                VegetationPlacer.java, tree/ (TreeType, TreeRegistry, CanopyProfile,
+│                TrunkProfile, TreeVariant, TreeVariantSelector, BiomeTreeConfig,
+│                TrunkResult + 11 canopy impls in canopy/ + 6 trunk impls in trunk/)
 ├── util/         DensityGuard.java, ThreadLocalBuffers.java
 └── GeoForgeEngine.java (3D density: heightFunc - y + caveNoise)
 
@@ -36,7 +38,7 @@ engine/src/main/java/com/geoforge/engine/
 | Modify biome palette | `engine/src/main/java/com/geoforge/engine/biome/BiomeLookupTable.java` |
 | 3D density / cave system | `engine/src/main/java/com/geoforge/engine/GeoForgeEngine.java#getDensity()` |
 | River carving interface | `engine/src/main/java/com/geoforge/engine/density/RiverCarver.java` |
-| Adjust erosion parameters | `engine/src/main/java/com/geoforge/engine/geology/HydraulicErosion.java` |
+| Add tree type / canopy / trunk | `engine/src/main/java/com/geoforge/engine/feature/tree/` |
 
 ## Conventions
 
@@ -69,8 +71,8 @@ engine/src/main/java/com/geoforge/engine/
 | `geology` | 2 | 2 | Tectonic plate mapper, hydraulic erosion simulation |
 | `biome` | 2 | 2 | BiomeLookupTable, BiomeTerrainConfig |
 | `plateau` | 1 | 1 | Terrain flattening utility (wired in erodeColumn when plateauSize > 0) |
-| `feature` | 4 | 2 | GeoForgeFeature, BlockSetter, TreePlacer, VegetationPlacer |
-| `util` | 2 | 2 | DensityGuard, ThreadLocalBuffers |
+|| `feature` | 28 | 21 | GeoForgeFeature, BlockSetter, TreePlacer, VegetationPlacer + tree/ (8) + canopy/ (11) + trunk/ (6) |
+|| `util` | 2 | 2 | DensityGuard, ThreadLocalBuffers |
 | root | 1 | 5 | GeoForgeEngine + Density3D, Integration, Snapshot, ThreadSafety |
 
 
