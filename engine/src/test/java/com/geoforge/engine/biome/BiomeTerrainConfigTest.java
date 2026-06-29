@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 @Tag("unit")
 @DisplayName("BiomeTerrainConfig tests")
+@SuppressWarnings("deprecation")
 class BiomeTerrainConfigTest {
 
     @DisplayName("defaults() returns non-null config")

@@ -21,8 +21,9 @@ jobs:
     steps:
       # actions/checkout@v7
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      # gradle/actions/wrapper-validation@v3
       - name: Verify Gradle wrapper
-        run: java -jar gradle/wrapper/gradle-wrapper.jar --version 2>&1 | head -3
+        uses: gradle/actions/wrapper-validation@6cfc8b8e8bb586cc164bef1c478c1eea3a4d6a19
 
   build:
     name: "JDK ${{ matrix.java }} - compile + test"

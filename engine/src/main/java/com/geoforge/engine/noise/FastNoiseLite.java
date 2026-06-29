@@ -54,6 +54,7 @@ package com.geoforge.engine.noise;
 // /*FNLfloat*/ float
 // /*FNLfloat*/ double
 
+@SuppressWarnings("cast")
 public class FastNoiseLite
 {
     public enum NoiseType

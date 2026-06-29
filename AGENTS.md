@@ -1,6 +1,6 @@
 # GeoForge Knowledge Base
-**Generated:** 2026-06-29T18:50:29Z
-**Commit:** 897c426
+**Generated:** 2026-06-30T02:15:00Z
+**Commit:** 1e61eb8
 **Branch:** main
 
 **Stack:** Java 21/25 + Gradle 9.6 + Paper API (1.21.x / 26.x)
@@ -41,7 +41,7 @@ Positive density = solid, negative density = air
 - Rivers: 3-profile system with RiverProfile enum (VSHAPED/CANYON/FLOODPLAIN) via RiverCarver interface
 - Biomes: 3D continuous noise (temperature × humidity × continentalness)
 - Multi-noise terrain: ridge/FBM/flat blended by continentalness + erosion
-- Features: TreePlacer with 6-type tree system (incl. ACACIA) + 9 canopy profiles × 6 trunk profiles + vegetation placer in generateSurface()
+- Features: TreePlacer with 9-type tree system (OAK/BIRCH/SPRUCE/JUNGLE/ACACIA/DARK_OAK/PALE_OAK/CHERRY/MANGROVE) + 11 canopy profiles × 6 trunk profiles + vegetation placer in generateSurface()
 - Erosion: 2D hydraulic erosion on extracted heightmap (for future 3D adaptation)
 
 ## Where To Look
@@ -73,7 +73,9 @@ Positive density = solid, negative density = air
 | `DensityFunctionTree` | @FunctionalInterface | engine | 9 | sample(x,y,z)→double; composable tree (Add/Clamp/Constant/Multiply/PlateContinentalness) |
 | `NoiseSource` | @FunctionalInterface | engine | 33 | sample2D/sample3D — SimplexNoise or FastNoiseLiteSource via config switch |
 | `FastNoiseLiteSource` | noise | engine | 1 | FastNoiseLite adapter implementing NoiseSource interface |
-| `BiomeLookupTable` | lookup | engine | 2 | 8x8 temp×humidity grid → 38 biome IDs |
+| `BiomeConfigLoader` | loader | engine | 1 | YAML-driven biome definition loader (terrain, trees, vegetation) — replaces BiomeLookupTable |
+| `BiomeRegistry` | registry | engine | 1 | Runtime registry of loaded config-driven biome definitions |
+| `ClimateResolver` | resolver | engine | 1 | Climate-based biome resolution from temperature×humidity×continentalness |
 | `TectonicPlateMapper` | geology | engine | 1 | 12 plates with Voronoi centres + coastline modulation |
 | `HydraulicErosion` | geology | engine | 1 | 2D droplet-based heightmap erosion |
 | `RiverCarver` | @FunctionalInterface | engine | 1 | Pluggable 3D river carving (current: SimplexRiverCarver) |
@@ -82,10 +84,10 @@ Positive density = solid, negative density = air
 | `ServerVersion` | record | api | 2 | Regex-parsed major.minor.patch version |
 | `FoliaDetector` | util | api | 2 | Class.forName("io.papermc.paper.threadedregions.RegionizedServer") |
 | `TreeRegistry` | registry | engine | 1 | Default biome→TreeType map + config lookup via biomeTreeMap() |
-| `TreePlacer` | placer | engine | 1 | 6-type tree placement (OAK/BIRCH/SPRUCE/JUNGLE/ACACIA/DARK_OAK) in generateSurface() |
-| `TreeType` | enum | engine | 1 | OAK/BIRCH/SPRUCE/JUNGLE/ACACIA/DARK_OAK — maps to 9 canopies × 6 trunks |
-| `CanopyProfile` | enum | engine | 1 | 9 canopy shapes (Round/Oval/Domed/Conical/Layered/Spreading/FlatHat/Sparse/NoCanopy) |
-| `TrunkProfile` | enum | engine | 1 | 6 trunk profiles (Straight/Bent/Leaning/Twisted/MultiStem/Fallen) |
+| `TreePlacer` | placer | engine | 1 | 9-type tree placement in generateSurface() |
+| `TreeType` | enum | engine | 1 | OAK/BIRCH/SPRUCE/JUNGLE/ACACIA/DARK_OAK/PALE_OAK/CHERRY/MANGROVE — maps to 11 canopies × 6 trunks |
+| `CanopyProfile` | @FunctionalInterface | engine | 1 | 9 canopy shapes (Round/Oval/Domed/Conical/Layered/Spreading/FlatHat/Sparse/NoCanopy) — 11 implementations |
+| `TrunkProfile` | @FunctionalInterface | engine | 1 | 6 trunk profiles (Straight/Bent/Leaning/Twisted/MultiStem/Fallen) — 6 implementations |
 | `EnhancedCaveSystem` | cave | engine | 1 | 3-type cave system: SPAGHETTI/CHEESE/NOODLE with Y-envelope gating |
 | `RiverProfile` | enum | engine | 1 | VSHAPED/CANYON/FLOODPLAIN river profiles via RiverCarver interface |
 
@@ -120,6 +122,23 @@ Positive density = solid, negative density = air
 - `StructurePlateauModifier` wired in `GeoForgeEngine.erodeColumn()` when `plateauSize > 0` for structure terrain flattening
 - `ScaledNoise` + `ScaledNoise2D` implement `DensityFunctionTree` but unused in production — available for future density tree composition
 
+## Test Conventions
+
+- **Framework**: JUnit 5 (Jupiter 6.1.0) + AssertJ (3.27.7) + MockBukkit (4.110.0) + Mockito (5.23.0) + ArchUnit (1.4.2) + JMH (1.37)
+- **Tagging**: @Tag("unit") (47 files), @Tag("integration") (7), @Tag("architecture"), @Tag("threading"), @Tag("smoke"), @Tag("validation")
+- **DisplayName**: EVERY test class and method uses @DisplayName — 494 total across 62 test files
+- **Method naming**: methodName_scenario_expectedBehavior (e.g. getDensity_atSurface_isNearZero)
+- **Organization**: One test class per production class; *IntegrationTest suffix for pipeline tests
+- **Mockito**: Always programmatic (mock()), no @ExtendWith/@Mock/@MockitoSettings
+- **Dual assertion**: Both JUnit 5 (assertEquals/assertThrows) AND AssertJ (assertThat().isBetween())
+- **Determinism**: Every noise/cave/feature method has a seed-driven determinism test
+- **RecordingSetter**: Inner class pattern capturing block placement for canopy/trunk verification
+- **Snapshot tests**: SHA-256 golden checksums for heightmap/density regression detection
+- **Parameterized**: @MethodSource for grid patterns + @ValueSource for simple int sets
+- **Performance budget**: assertTimeout(Duration.ofMillis(...)) on hotspot operations
+- **JaCoCo thresholds**: 60% line / 50% branch minimum across all modules
+- **MockBukkit**: JDK 21 modules only; v26_x + plugin use Mockito-only, runtime tested on real Paper 26.x
+
 ## CI/CD
 
 | Pipeline | Triggers | JDK | Key Steps |
@@ -134,19 +153,16 @@ Positive density = solid, negative density = air
 ./gradlew :adapters:v26_x:test :plugin:test              # JDK 25 modules
 ./gradlew classes                                          # Compile all toolchains
 ./gradlew :engine:spotbugsMain :api:spotbugsMain :adapters:v1_21_x:spotbugsMain :adapters:v26_x:spotbugsMain :plugin:spotbugsMain
+./gradlew :engine:checkstyleMain :api:checkstyleMain :adapters:v1_21_x:checkstyleMain :adapters:v26_x:checkstyleMain :plugin:checkstyleMain
+./gradlew bannedApiScan                                    # Banned API regex scan
+./gradlew :engine:jmh                                      # JMH microbenchmarks
 ./gradlew :plugin:shadowJar                                # Build deployable artifact
 ```
 
-**Banned API scan** (CI enforces): `Registry.BIOME`, `Biome.valueOf`, `Material.valueOf`, `Bukkit.getScheduler()`, `chunkData.setBiome()`, `net.minecraft.*`, `craftbukkit.*`
+**Banned API scan** (CI enforces): `Registry.BIOME`, `Biome.valueOf`, `Biome.values()`, `Material.valueOf`, `Material.getMaterial`, `Material.matchMaterial`, `Bukkit.getScheduler()`, `chunkData.setBiome()`, `net.minecraft.*`, `craftbukkit.*`, `ReentrantLock`, `synchronized`, `Class.forName` (except `FoliaDetector.java`)
 
-**Dependabot**: configured in `.github/dependabot.yml`
+**Dependabot**: configured in `.github/dependabot.yml` (weekly, grouped by test-deps/gradle-plugins, `automerge` label)
 
-## Commands
-
-```bash
-./gradlew :engine:test :api:test :adapters:v1_21_x:test :adapters:v26_x:test :plugin:test
-./gradlew :plugin:shadowJar
-```
 
 ## Commit Messages
 

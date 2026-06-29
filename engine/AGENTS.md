@@ -1,6 +1,6 @@
 # GeoForge Engine
-**Generated:** 2026-06-29T18:50:29Z
-**Commit:** 897c426
+**Generated:** 2026-06-30T02:15:00Z
+**Commit:** 1e61eb8
 **Branch:** main
 
 Zero-Bukkit math engine for terrain generation. All classes pure Java 21 with no server dependencies.
@@ -18,7 +18,8 @@ engine/src/main/java/com/geoforge/engine/
 │                NoopRiverCarver, PlateContinentalness, RiverCarver, ScaledNoise,
 │                ScaledNoise2D, SimplexRiverCarver)
 ├── geology/      TectonicPlateMapper.java, HydraulicErosion.java
-├── biome/        BiomeLookupTable.java, BiomeTerrainConfig.java
+├── biome/        BiomeTerrainConfig.java (deprecated — replaced by config-driven definitions)
+├── config/biome/  BiomeConfigLoader.java, BiomeDefinition.java, BiomeRegistry.java, ClimateResolver.java
 ├── plateau/      StructurePlateauModifier.java (terrain flattening, wired in erodeColumn when plateauSize > 0)
 ├── feature/      BlockSetter.java, GeoForgeFeature.java, TreePlacer.java,
 │                VegetationPlacer.java, tree/ (TreeType, TreeRegistry, CanopyProfile,
@@ -35,7 +36,7 @@ engine/src/main/java/com/geoforge/engine/
 |------|------|
 | Add new noise type | `engine/src/main/java/com/geoforge/engine/noise/` |
 | Compose terrain density | `engine/src/main/java/com/geoforge/engine/density/DensityFunctionTree.java` |
-| Modify biome palette | `engine/src/main/java/com/geoforge/engine/biome/BiomeLookupTable.java` |
+| Modify biome palette | `engine/src/main/java/com/geoforge/engine/config/biome/BiomeConfigLoader.java` |
 | 3D density / cave system | `engine/src/main/java/com/geoforge/engine/GeoForgeEngine.java#getDensity()` |
 | River carving interface | `engine/src/main/java/com/geoforge/engine/density/RiverCarver.java` |
 | Add tree type / canopy / trunk | `engine/src/main/java/com/geoforge/engine/feature/tree/` |
