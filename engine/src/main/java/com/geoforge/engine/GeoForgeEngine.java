@@ -140,6 +140,7 @@ public final class GeoForgeEngine {
         // Noodle cave noise source (seed-decorrelated from spaghetti cave noise)
         this.noodleNoise = createNoiseSource(seed ^ 0x56789ABCDEF0123L);
 
+
         // Initialize per-biome terrain configs with defaults for all known biomes
         // These can be overridden via config for biome-specific terrain modifiers
         var biomeDefaults = BiomeTerrainConfig.defaults();
@@ -456,4 +457,5 @@ public final class GeoForgeEngine {
     public Map<String, BiomeTerrainConfig> getBiomeConfigs() {
         return biomeConfigs;
     }
+
 }

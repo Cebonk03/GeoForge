@@ -34,7 +34,7 @@ public final class BiomeLookupTable {
         {"meadow",             "forest",            "birch_forest",      "dark_forest",
          "plains",             "ocean",             "deep_ocean",        "lukewarm_ocean"},
         // mild/dry → mild/wet
-        {"meadow",             "forest",            "old_growth_birch_forest", "dark_forest",
+        {"meadow",             "pale_garden",            "old_growth_birch_forest", "dark_forest",
          "cherry_grove",       "stony_shore",        "plains",            "deep_lukewarm_ocean"},
         // warm/dry → warm/wet
         {"savanna",            "savanna",           "windswept_savanna", "jungle",

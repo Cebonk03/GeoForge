@@ -34,6 +34,7 @@ package com.geoforge.engine.config;
  *       {@code continentalnessBlendSharpness} — multi-octave blending for varied terrain shapes.
  *   <dt>Decorations</dt>
  *   <dd>{@code treeDensity}, {@code vegetationDensity}, {@code featureSeedOffset},
+ *       {@code maxTreeHeight}, {@code minTreeHeight}, {@code treeDensityFrequency} — control surface decoration placement.
  *       {@code maxTreeHeight} — control surface decoration placement.
  *   <dt>Erosion</dt>
  *   <dd>{@code erosionMaxDropletSteps}, {@code erosionIterations} — bound the hydraulic erosion
@@ -95,6 +96,8 @@ package com.geoforge.engine.config;
  * @param plateauSize                Side length of flattened plateau region in blocks (0 = disabled). Must be {@code >= 0}.
  * @param plateauTargetHeight        Target height for plateau flattening in blocks. Must be within {@code [minHeight, maxHeight]}.
  * @param domainWarpAmplitude        Amplitude of domain-warping noise distortion.
+ * @param minTreeHeight           Minimum tree height in blocks. Must be {@code >= 4}.
+ * @param treeDensityFrequency    Frequency of tree density noise for placement. Must be {@code > 0}.
  * @param configVersion              Configuration version for migration support.
  */
 public record GeoForgeConfig(
@@ -153,6 +156,9 @@ public record GeoForgeConfig(
         int plateauTargetHeight,
         // --- Domain warping ---
         double domainWarpAmplitude,
+        // --- Tree config ---
+        int minTreeHeight,
+        double treeDensityFrequency,
         // --- Config version ---
         int configVersion) {
 
@@ -332,6 +338,17 @@ public record GeoForgeConfig(
                     "domainWarpAmplitude must be >= 0, got %s"
                             .formatted(domainWarpAmplitude));
         }
+
+        // Tree config validation
+        if (minTreeHeight < 4) {
+            throw new IllegalArgumentException(
+                    "minTreeHeight must be >= 4, got %d".formatted(minTreeHeight));
+        }
+        if (treeDensityFrequency <= 0) {
+            throw new IllegalArgumentException(
+                    "treeDensityFrequency must be > 0, got %s"
+                            .formatted(treeDensityFrequency));
+        }
         // Config version validation
         if (configVersion < 0) {
             throw new IllegalArgumentException(
@@ -386,6 +403,15 @@ public record GeoForgeConfig(
         if (domainWarpAmplitude > maxHeight - minHeight) {
             warnings.add("domainWarpAmplitude (" + domainWarpAmplitude
                     + ") exceeds world height — terrain will be severely distorted");
+        }
+        if (minTreeHeight >= maxTreeHeight) {
+            warnings.add("minTreeHeight (" + minTreeHeight
+                    + ") >= maxTreeHeight (" + maxTreeHeight
+                    + ") — trees will not generate (zero height range)");
+        }
+        if (treeDensityFrequency > 0.1) {
+            warnings.add("treeDensityFrequency (" + treeDensityFrequency
+                    + ") very high — tree placement may be too concentrated");
         }
         return warnings;
     }
@@ -451,8 +477,10 @@ public record GeoForgeConfig(
                 64,    // plateauTargetHeight
                 // Domain warping
                 1.5,   // domainWarpAmplitude
+                4,     // minTreeHeight
+                0.02,  // treeDensityFrequency
                 // Config version
-                2      // configVersion
+                3      // configVersion
         );
     }
 
@@ -528,8 +556,11 @@ public record GeoForgeConfig(
         private int plateauTargetHeight = 64;
         // Domain warping
         private double domainWarpAmplitude = 1.5;
+        // Tree config
+        private int minTreeHeight = 4;
+        private double treeDensityFrequency = 0.02;
         // Config version
-        private int configVersion = 2;
+        private int configVersion = 3;
 
         private Builder() {}
 
@@ -588,6 +619,9 @@ public record GeoForgeConfig(
         public Builder plateauTargetHeight(int plateauTargetHeight) { this.plateauTargetHeight = plateauTargetHeight; return this; }
         // Domain warping
         public Builder domainWarpAmplitude(double domainWarpAmplitude) { this.domainWarpAmplitude = domainWarpAmplitude; return this; }
+        // Tree config
+        public Builder minTreeHeight(int minTreeHeight) { this.minTreeHeight = minTreeHeight; return this; }
+        public Builder treeDensityFrequency(double treeDensityFrequency) { this.treeDensityFrequency = treeDensityFrequency; return this; }
         // Config version
         public Builder configVersion(int configVersion) { this.configVersion = configVersion; return this; }
 
@@ -628,6 +662,9 @@ public record GeoForgeConfig(
                     plateauSize, plateauTargetHeight,
                     // Domain warping
                     domainWarpAmplitude,
+                    // Tree config
+                    minTreeHeight,
+                    treeDensityFrequency,
                     // Config version
                     configVersion);
         }

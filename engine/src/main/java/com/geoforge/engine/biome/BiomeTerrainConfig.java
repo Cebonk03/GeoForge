@@ -16,6 +16,9 @@ package com.geoforge.engine.biome;
  * @param subSurfaceBlock       Sub-surface block material ID (empty string = use global).
  * @param allowFloatingPlants   Whether floating plants are permitted in this biome.
  * @param surfaceHardness       Surface block hardness factor in [0, 1]. 0.5 = default.
+ * @param treeDensity           Tree density modifier (-1.0 = use global default).
+ * @param minTreeHeight         Minimum tree height in blocks (0 = use global default).
+ * @param maxTreeHeight         Maximum tree height in blocks (0 = use global default).
  */
 public record BiomeTerrainConfig(
         double heightOffset,
@@ -25,8 +28,10 @@ public record BiomeTerrainConfig(
         String surfaceBlock,
         String subSurfaceBlock,
         boolean allowFloatingPlants,
-        double surfaceHardness) {
-
+        double surfaceHardness,
+        double treeDensity,
+        int minTreeHeight,
+        int maxTreeHeight) {
     /**
      * Returns a default configuration with all neutral/identity values.
      *
@@ -34,14 +39,16 @@ public record BiomeTerrainConfig(
      */
     public static BiomeTerrainConfig defaults() {
         return new BiomeTerrainConfig(
-                0.0,   // heightOffset
-                1.0,   // amplitudeMultiplier
-                1.0,   // caveAmplitudeModifier
-                "",    // treeType
-                "",    // surfaceBlock
-                "",    // subSurfaceBlock
-                false, // allowFloatingPlants
-                0.5    // surfaceHardness
-        );
+                0.0,     // heightOffset
+                1.0,     // amplitudeMultiplier
+                1.0,     // caveAmplitudeModifier
+                "",      // treeType
+                "",      // surfaceBlock
+                "",      // subSurfaceBlock
+                false,   // allowFloatingPlants
+                0.5,     // surfaceHardness
+                -1.0,    // treeDensity
+                0,       // minTreeHeight
+                0);      // maxTreeHeight
     }
 }

@@ -1,21 +1,36 @@
 package com.geoforge.engine.feature;
 
+import com.geoforge.engine.biome.BiomeTerrainConfig;
+import com.geoforge.engine.feature.tree.TreeType;
+import com.geoforge.engine.feature.tree.TreeVariant;
+import com.geoforge.engine.feature.tree.TreeVariantSelector;
+import com.geoforge.engine.feature.tree.TreeRegistry;
+import com.geoforge.engine.feature.tree.trunk.StraightTrunk;
+import com.geoforge.engine.feature.tree.trunk.MultiStemTrunk;
+import com.geoforge.engine.feature.tree.trunk.FallenTrunk;
+import com.geoforge.engine.feature.tree.canopy.RoundCanopy;
+import com.geoforge.engine.feature.tree.canopy.SpreadingCanopy;
+import com.geoforge.engine.feature.tree.canopy.ConicalCanopy;
+import com.geoforge.engine.feature.tree.canopy.SparseCanopy;
+import com.geoforge.engine.feature.tree.canopy.NoCanopy;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.random.RandomGenerator;
-import com.geoforge.engine.biome.BiomeTerrainConfig;
 import java.util.logging.Logger;
 
 /**
  * Surface feature placer for trees.
  *
- * <p>For each tree-eligible surface column, a roll against {@code treeDensity}
- * determines whether a tree spawns. The tree type is selected from the biome's
- * tree palette, and a suitable trunk-and-leaves shape is placed.
+ * <p>For each tree-eligible surface column, a roll against tree density determines
+ * whether a tree spawns. The tree type is selected from the biome's tree palette
+ * (via {@link TreeRegistry}), and a suitable trunk-and-leaves variant is chosen
+ * deterministically from position using {@link TreeVariantSelector}.
  *
- * <p>Supported tree types: oak, birch, dark_oak, jungle, spruce, acacia.
+ * <p>This class replaces the old hardcoded {@code buildBiomeTreeMap()} approach
+ * with a fully config-driven system. Deprecated constructors provide backward
+ * compatibility for existing callers.
  */
 public final class TreePlacer implements GeoForgeFeature {
 
@@ -23,28 +38,78 @@ public final class TreePlacer implements GeoForgeFeature {
 
     private final double treeDensity;
     private final int maxTreeHeight;
+    private final int minTreeHeight;
+    private final TreeVariantSelector variantSelector;
+    private final TreeRegistry treeRegistry;
     private final Map<String, BiomeTerrainConfig> biomeConfigs;
 
-    private static final Map<String, List<TreeType>> BIOME_TREES = buildBiomeTreeMap();
+    /** Default variants per TreeType — used when no external variant config is provided. */
+    static final Map<TreeType, List<TreeVariant>> DEFAULT_VARIANTS = buildDefaultVariants();
 
-    /**
-     * Creates a tree placer with the given density and height cap.
-     *
-     * @param treeDensity  probability in {@code [0, 1]} that any eligible column gets a tree
-     * @param maxTreeHeight maximum trunk height in blocks
-     */
-    public TreePlacer(double treeDensity, int maxTreeHeight) {
-        this(treeDensity, maxTreeHeight, Map.of());
+    private static Map<TreeType, List<TreeVariant>> buildDefaultVariants() {
+        Map<TreeType, List<TreeVariant>> map = new HashMap<>();
+        var flatHat = new com.geoforge.engine.feature.tree.canopy.FlatHatCanopy();
+        var straight = new StraightTrunk();
+        var multiStem = new MultiStemTrunk();
+        var fallen = new FallenTrunk();
+        var round = new RoundCanopy();
+        var spreading = new SpreadingCanopy();
+        var conical = new ConicalCanopy();
+        var sparse = new SparseCanopy();
+        var none = new NoCanopy();
+
+        map.put(TreeType.OAK, List.of(
+                new TreeVariant("oak_standard", straight, round, 4, 7, 1.0, 0.5),
+                new TreeVariant("oak_spreading", straight, spreading, 4, 6, 0.9, 0.3),
+                new TreeVariant("oak_fallen", fallen, sparse, 3, 5, 0.3, 0.2)));
+        map.put(TreeType.BIRCH, List.of(
+                new TreeVariant("birch_standard", straight, round, 5, 8, 0.9, 0.7),
+                new TreeVariant("birch_fallen", fallen, sparse, 3, 5, 0.3, 0.3)));
+        map.put(TreeType.SPRUCE, List.of(
+                new TreeVariant("spruce_standard", straight, conical, 5, 8, 1.0, 0.6),
+                new TreeVariant("spruce_tall", straight, conical, 7, 12, 0.9, 0.3),
+                new TreeVariant("spruce_fallen", fallen, none, 3, 5, 0.0, 0.1)));
+        map.put(TreeType.JUNGLE, List.of(
+                new TreeVariant("jungle_standard", straight, spreading, 6, 10, 1.0, 0.5),
+                new TreeVariant("jungle_tall", straight, spreading, 8, 16, 0.9, 0.3),
+                new TreeVariant("jungle_fallen", fallen, sparse, 4, 6, 0.3, 0.2)));
+        map.put(TreeType.ACACIA, List.of(
+                new TreeVariant("acacia_standard", straight, flatHat, 4, 7, 0.9, 0.7),
+                new TreeVariant("acacia_fallen", fallen, sparse, 3, 5, 0.3, 0.3)));
+        map.put(TreeType.DARK_OAK, List.of(
+                new TreeVariant("dark_oak_standard", multiStem, spreading, 6, 9, 1.0, 0.7),
+                new TreeVariant("dark_oak_fallen", fallen, sparse, 4, 6, 0.3, 0.3)));
+        map.put(TreeType.PALE_OAK, List.of(
+                new TreeVariant("pale_oak_standard", multiStem, round, 5, 9, 0.9, 0.5),
+                new TreeVariant("pale_oak_sparse", straight, sparse, 5, 9, 0.4, 0.3),
+                new TreeVariant("pale_oak_fallen", fallen, none, 3, 5, 0.0, 0.2)));
+        map.put(TreeType.CHERRY, List.of(
+                new TreeVariant("cherry_standard", straight, round, 4, 7, 1.0, 0.7),
+                new TreeVariant("cherry_fallen", fallen, sparse, 3, 5, 0.3, 0.3)));
+        map.put(TreeType.MANGROVE, List.of(
+                new TreeVariant("mangrove_standard", straight, spreading, 5, 9, 1.0, 0.6),
+                new TreeVariant("mangrove_tall", straight, spreading, 7, 13, 0.9, 0.2),
+                new TreeVariant("mangrove_fallen", fallen, sparse, 3, 5, 0.3, 0.2)));
+
+        return Collections.unmodifiableMap(map);
     }
 
+    // ──────────────────────────────────────────────
+    //  New constructors (preferred)
+    // ──────────────────────────────────────────────
+
     /**
-     * Creates a tree placer with the given density, height cap, and biome terrain configs.
+     * Creates a tree placer with the full variant-based system.
      *
-     * @param treeDensity   probability in {@code [0, 1]} that any eligible column gets a tree
-     * @param maxTreeHeight maximum trunk height in blocks
-     * @param biomeConfigs  per-biome terrain configs for tree type overrides
+     * @param treeDensity      global tree density [0,1]
+     * @param maxTreeHeight    maximum trunk height in blocks
+     * @param minTreeHeight    minimum trunk height in blocks
+     * @param variantSelector  noise-based variant selector
+     * @param treeRegistry     biome-to-species registry
+     * @param biomeConfigs     per-biome terrain configs (for density/height overrides)
      */
-    public TreePlacer(double treeDensity, int maxTreeHeight,
+    public TreePlacer(double treeDensity, int maxTreeHeight, int minTreeHeight,
+                      TreeVariantSelector variantSelector, TreeRegistry treeRegistry,
                       Map<String, BiomeTerrainConfig> biomeConfigs) {
         if (treeDensity < 0.0 || treeDensity > 1.0) {
             throw new IllegalArgumentException(
@@ -54,279 +119,180 @@ public final class TreePlacer implements GeoForgeFeature {
             throw new IllegalArgumentException(
                     "maxTreeHeight must be >= 4, got " + maxTreeHeight);
         }
+        if (minTreeHeight < 3) {
+            throw new IllegalArgumentException(
+                    "minTreeHeight must be >= 3, got " + minTreeHeight);
+        }
         this.treeDensity = treeDensity;
         this.maxTreeHeight = maxTreeHeight;
+        this.minTreeHeight = minTreeHeight;
+        this.variantSelector = variantSelector;
+        this.treeRegistry = treeRegistry;
         this.biomeConfigs = biomeConfigs != null ? Map.copyOf(biomeConfigs) : Map.of();
     }
 
-    public double treeDensity() {
-        return treeDensity;
+    // ──────────────────────────────────────────────
+    //  Deprecated constructors (backward compat)
+    // ──────────────────────────────────────────────
+
+    @Deprecated
+    public TreePlacer(double treeDensity, int maxTreeHeight) {
+        this(treeDensity, maxTreeHeight, 4,
+                new TreeVariantSelector(0L),
+                TreeRegistry.defaults(),
+                Map.of());
+        LOG.warning("Using deprecated TreePlacer constructor — tree variants will use seed=0");
     }
 
-    public int maxTreeHeight() {
-        return maxTreeHeight;
+    @Deprecated
+    public TreePlacer(double treeDensity, int maxTreeHeight,
+                      Map<String, BiomeTerrainConfig> biomeConfigs) {
+        this(treeDensity, maxTreeHeight, 4,
+                new TreeVariantSelector(0L),
+                TreeRegistry.defaults(),
+                biomeConfigs);
+        LOG.warning("Using deprecated TreePlacer constructor — tree variants will use seed=0");
     }
 
-    /**
-     * Returns an unmodifiable view of the biome-to-tree-type mapping.
-     */
-    public static Map<String, List<TreeType>> biomeTreeMap() {
-        return Collections.unmodifiableMap(BIOME_TREES);
+    // ──────────────────────────────────────────────
+    //  Accessors
+    // ──────────────────────────────────────────────
+
+    public double treeDensity() { return treeDensity; }
+    public int maxTreeHeight() { return maxTreeHeight; }
+    public int minTreeHeight() { return minTreeHeight; }
+
+    /** Returns unmodifiable biome-to-tree-type mapping from the registry. */
+    public Map<String, List<TreeType>> biomeTreeMap() {
+        return treeRegistry.biomeTreeMap();
     }
 
-    /**
-     * Supported vanilla tree types.
-     */
-    public enum TreeType {
-        OAK("oak_log", "oak_leaves"),
-        BIRCH("birch_log", "birch_leaves"),
-        DARK_OAK("dark_oak_log", "dark_oak_leaves"),
-        JUNGLE("jungle_log", "jungle_leaves"),
-        SPRUCE("spruce_log", "spruce_leaves"),
-        ACACIA("acacia_log", "acacia_leaves");
-
-        private final String logName;
-        private final String leavesName;
-
-        TreeType(String logName, String leavesName) {
-            this.logName = logName;
-            this.leavesName = leavesName;
-        }
-
-        public String logName() {
-            return logName;
-        }
-
-        public String leavesName() {
-            return leavesName;
-        }
-    }
+    // ──────────────────────────────────────────────
+    //  Tree placement
+    // ──────────────────────────────────────────────
 
     @Override
     public void place(BlockSetter setter, int blockX, int blockZ, int surfaceY,
                       String biomeId, RandomGenerator random) {
-        if (random.nextDouble() >= treeDensity) {
+        // Resolve effective density: per-biome override or global
+        double effectiveDensity = resolveDensity(biomeId);
+        if (random.nextDouble() >= effectiveDensity) {
             return;
         }
 
-        // Check biome config for explicit tree type override first
+        // Resolve tree type: biome config override → registry → none
+        TreeType type = resolveTreeType(biomeId, blockX, blockZ);
+        if (type == null) {
+            return;
+        }
+
+        // Resolve effective height range (with guard against min > max)
+        int effMinHeight = resolveMinHeight(biomeId);
+        int effMaxHeight = resolveMaxHeight(biomeId);
+        if (effMinHeight > effMaxHeight) {
+            int temp = effMinHeight;
+            effMinHeight = effMaxHeight;
+            effMaxHeight = temp;
+        }
+
+        // Place tree with variant selection
+        placeTreeWithVariant(setter, blockX, blockZ, surfaceY, type,
+                effMinHeight, effMaxHeight, biomeId, random);
+    }
+
+    private void placeTreeWithVariant(BlockSetter setter, int blockX, int blockZ,
+                                       int surfaceY, TreeType type,
+                                       int effMinHeight, int effMaxHeight,
+                                       String biomeId, RandomGenerator random) {
+        // Get variants for this species — from DEFAULT_VARIANTS, which is always populated
+        List<TreeVariant> variants = DEFAULT_VARIANTS.getOrDefault(type, List.of());
+        if (variants.isEmpty()) {
+            // Fallback: straight trunk + round canopy
+            int h = effMinHeight + random.nextInt(effMaxHeight - effMinHeight + 1);
+            var tr = new StraightTrunk().place(setter, blockX, surfaceY, blockZ,
+                    h, type.logName(), random);
+            new RoundCanopy().place(setter, tr.tipX(), tr.tipY(), tr.tipZ(),
+                    tr.placedHeight(), type.leavesName(), 1.0, random);
+            return;
+        }
+
+        // Select variant via noise (deterministic from position)
+        TreeVariant variant = variantSelector.select(variants, blockX, blockZ, biomeId);
+
+        // Compute height within variant range and effective caps
+        int vMin = Math.max(variant.minHeight(), effMinHeight);
+        int vMax = Math.min(variant.maxHeight(), effMaxHeight);
+        if (vMax < vMin) vMax = vMin;
+        int height = vMin + random.nextInt(vMax - vMin + 1);
+
+        // Place trunk
+        var trunkResult = variant.trunk().place(setter, blockX, surfaceY, blockZ,
+                height, type.logName(), random);
+
+        // Place canopy (skip for fallen trees with NoCanopy / placedHeight=0)
+        if (trunkResult.placedHeight() > 0 && variant.leafDensity() > 0.0) {
+            variant.canopy().place(setter, trunkResult.tipX(), trunkResult.tipY(),
+                    trunkResult.tipZ(), trunkResult.placedHeight(),
+                    type.leavesName(), variant.leafDensity(), random);
+        }
+    }
+
+    // ──────────────────────────────────────────────
+    //  Resolution helpers
+    // ──────────────────────────────────────────────
+
+    private double resolveDensity(String biomeId) {
+        BiomeTerrainConfig cfg = biomeConfigs.get(biomeId);
+        if (cfg != null && cfg.treeDensity() >= 0.0) {
+            return cfg.treeDensity();
+        }
+        return treeDensity;
+    }
+
+    private int resolveMinHeight(String biomeId) {
+        BiomeTerrainConfig cfg = biomeConfigs.get(biomeId);
+        if (cfg != null && cfg.minTreeHeight() > 0) {
+            return cfg.minTreeHeight();
+        }
+        return minTreeHeight;
+    }
+
+    private int resolveMaxHeight(String biomeId) {
+        BiomeTerrainConfig cfg = biomeConfigs.get(biomeId);
+        if (cfg != null && cfg.maxTreeHeight() > 0) {
+            return Math.min(cfg.maxTreeHeight(), maxTreeHeight);
+        }
+        return maxTreeHeight;
+    }
+
+    private TreeType resolveTreeType(String biomeId, int blockX, int blockZ) {
+        // Check biome config override first
         BiomeTerrainConfig cfg = biomeConfigs.get(biomeId);
         if (cfg != null && !cfg.treeType().isEmpty()) {
             try {
-                TreeType overrideType = TreeType.valueOf(cfg.treeType().toUpperCase());
-                placeTree(setter, blockX, blockZ, surfaceY, overrideType, random);
-                return;
+                return TreeType.valueOf(cfg.treeType().toUpperCase());
             } catch (IllegalArgumentException e) {
                 LOG.warning("Ignoring invalid tree type '" + cfg.treeType()
                         + "' for biome '" + biomeId + "': " + e.getMessage());
             }
         }
 
-        // Fall back to static BIOME_TREES map
-        List<TreeType> candidates = BIOME_TREES.get(biomeId);
-        if (candidates == null || candidates.isEmpty()) {
-            return;
-        }
-
-        TreeType type = candidates.get(random.nextInt(candidates.size()));
-        placeTree(setter, blockX, blockZ, surfaceY, type, random);
-    }
-
-    private void placeTree(BlockSetter setter, int blockX, int blockZ,
-                           int surfaceY, TreeType type, RandomGenerator random) {
-        switch (type) {
-            case OAK -> placeOak(setter, blockX, blockZ, surfaceY, random);
-            case BIRCH -> placeBirch(setter, blockX, blockZ, surfaceY, random);
-            case DARK_OAK -> placeDarkOak(setter, blockX, blockZ, surfaceY, random);
-            case JUNGLE -> placeJungle(setter, blockX, blockZ, surfaceY, random);
-            case SPRUCE -> placeSpruce(setter, blockX, blockZ, surfaceY, random);
-            case ACACIA -> placeAcacia(setter, blockX, blockZ, surfaceY, random);
-            default -> LOG.warning("Unknown tree type: " + type);
-        }
-    }
-
-    // ──────────────────────────────────────────────
-    //  Tree shape placers
-    // ──────────────────────────────────────────────
-
-    private void placeOak(BlockSetter setter, int bx, int bz,
-                          int sy, RandomGenerator random) {
-        int height = 4 + random.nextInt(Math.min(maxTreeHeight - 3, 3));
-        String log = TreeType.OAK.logName();
-        String leaf = TreeType.OAK.leavesName();
-
-        // Trunk
-        for (int dy = 1; dy <= height; dy++) {
-            setter.setBlock(bx, sy + dy, bz, log);
-        }
-
-        // Canopy: 2 layers of 3x3 leaves
-        fillLeavesFlat(setter, bx, sy + height, bz, 1, leaf);
-        fillLeavesFlat(setter, bx, sy + height + 1, bz, 1, leaf);
-    }
-
-    private void placeBirch(BlockSetter setter, int bx, int bz,
-                            int sy, RandomGenerator random) {
-        int height = 5 + random.nextInt(Math.min(maxTreeHeight - 4, 2));
-        String log = TreeType.BIRCH.logName();
-        String leaf = TreeType.BIRCH.leavesName();
-
-        // Trunk
-        for (int dy = 1; dy <= height; dy++) {
-            setter.setBlock(bx, sy + dy, bz, log);
-        }
-
-        // Canopy: 2 layers of 3x3 leaves
-        fillLeavesFlat(setter, bx, sy + height, bz, 1, leaf);
-        fillLeavesFlat(setter, bx, sy + height + 1, bz, 1, leaf);
-    }
-
-    private void placeSpruce(BlockSetter setter, int bx, int bz,
-                             int sy, RandomGenerator random) {
-        int height = 5 + random.nextInt(Math.min(maxTreeHeight - 4, 3));
-        String log = TreeType.SPRUCE.logName();
-        String leaf = TreeType.SPRUCE.leavesName();
-
-        // Trunk
-        for (int dy = 1; dy <= height; dy++) {
-            setter.setBlock(bx, sy + dy, bz, log);
-        }
-
-        // Conical canopy: wider at bottom, narrower at top
-        int leafStart = sy + height - 2;
-        int leafLayers = Math.min(height - 1, 4);
-
-        for (int layer = 0; layer < leafLayers; layer++) {
-            int ly = leafStart + layer;
-            // Radius decreases toward the top
-            int radius = (leafLayers - layer + 1) / 2;
-            if (radius < 1) radius = 1;
-            fillLeavesFlat(setter, bx, ly, bz, radius, leaf);
-        }
-        // Top cap
-        setter.setBlock(bx, sy + height + 1, bz, leaf);
-    }
-
-    private void placeJungle(BlockSetter setter, int bx, int bz,
-                             int sy, RandomGenerator random) {
-        int height = 5 + random.nextInt(Math.min(maxTreeHeight - 4, 3));
-        String log = TreeType.JUNGLE.logName();
-        String leaf = TreeType.JUNGLE.leavesName();
-
-        // Trunk
-        for (int dy = 1; dy <= height; dy++) {
-            setter.setBlock(bx, sy + dy, bz, log);
-        }
-
-        // Wide canopy: 3 layers, the bottom two are 5x5, top is 3x3
-        fillLeavesFlat(setter, bx, sy + height - 1, bz, 2, leaf);
-        fillLeavesFlat(setter, bx, sy + height, bz, 2, leaf);
-        fillLeavesFlat(setter, bx, sy + height + 1, bz, 1, leaf);
-    }
-
-    private void placeDarkOak(BlockSetter setter, int bx, int bz,
-                              int sy, RandomGenerator random) {
-        int height = 6 + random.nextInt(Math.min(maxTreeHeight - 5, 2));
-        String log = TreeType.DARK_OAK.logName();
-        String leaf = TreeType.DARK_OAK.leavesName();
-
-        // 2×2 trunk
-        for (int dy = 1; dy <= height; dy++) {
-            setter.setBlock(bx, sy + dy, bz, log);
-            setter.setBlock(bx + 1, sy + dy, bz, log);
-            setter.setBlock(bx, sy + dy, bz + 1, log);
-            setter.setBlock(bx + 1, sy + dy, bz + 1, log);
-        }
-
-        // Wide canopy: 3 layers of 5×5 leaves
-        for (int layer = 0; layer < 3; layer++) {
-            fillLeavesFlat(setter, bx, sy + height - 1 + layer, bz, 2, leaf);
-        }
-        // Extra top leaves
-        fillLeavesFlat(setter, bx, sy + height + 2, bz, 1, leaf);
-    }
-
-    private void placeAcacia(BlockSetter setter, int bx, int bz,
-                            int sy, RandomGenerator random) {
-        int height = 4 + random.nextInt(Math.min(maxTreeHeight - 3, 2));
-        String log = TreeType.ACACIA.logName();
-        String leaf = TreeType.ACACIA.leavesName();
-
-        // 1x1 straight trunk
-        for (int dy = 1; dy <= height; dy++) {
-            setter.setBlock(bx, sy + dy, bz, log);
-        }
-
-        // Flat hat canopy: 5x5 brim, 3x3 crown, 1 top cap
-        fillLeavesFlat(setter, bx, sy + height, bz, 2, leaf);
-        fillLeavesFlat(setter, bx, sy + height + 1, bz, 1, leaf);
-        setter.setBlock(bx, sy + height + 2, bz, leaf);
-    }
-
-    // ──────────────────────────────────────────────
-    //  Utility
-    // ──────────────────────────────────────────────
-
-    /**
-     * Fills a flat (single y-level) square of leaves centered at (cx, cz).
-     * The square spans {@code [cx - radius, cx + radius]} × {@code [cz - radius, cz + radius]}.
-     */
-    private static void fillLeavesFlat(BlockSetter setter, int cx, int cy,
-                                       int cz, int radius, String leafMat) {
-        for (int dx = -radius; dx <= radius; dx++) {
-            for (int dz = -radius; dz <= radius; dz++) {
-                setter.setBlock(cx + dx, cy, cz + dz, leafMat);
+        // Fall back to TreeRegistry — position-deterministic selection
+        List<TreeType> candidates = treeRegistry.speciesForBiome(biomeId);
+        if (candidates.isEmpty()) {
+            if (cfg != null && !cfg.treeType().isEmpty()) {
+                LOG.warning("Biome '" + biomeId + "' has invalid treeType '" + cfg.treeType()
+                        + "' and no registry fallback — no trees placed");
             }
+            return null;
         }
-    }
-
-    // ──────────────────────────────────────────────
-    //  Biome → tree type mapping
-    // ──────────────────────────────────────────────
-
-    private static Map<String, List<TreeType>> buildBiomeTreeMap() {
-        Map<String, List<TreeType>> map = new HashMap<>(30);
-
-        // Forest biomes — oak and birch
-        map.put("forest", List.of(TreeType.OAK, TreeType.BIRCH));
-        map.put("flower_forest", List.of(TreeType.OAK, TreeType.BIRCH));
-        map.put("windswept_forest", List.of(TreeType.OAK, TreeType.SPRUCE));
-        map.put("old_growth_birch_forest", List.of(TreeType.BIRCH));
-
-        // Pure birch
-        map.put("birch_forest", List.of(TreeType.BIRCH));
-
-        // Dark forest
-        map.put("dark_forest", List.of(TreeType.DARK_OAK, TreeType.OAK));
-
-        // Taiga / cold — spruce
-        map.put("taiga", List.of(TreeType.SPRUCE));
-        map.put("snowy_taiga", List.of(TreeType.SPRUCE));
-        map.put("old_growth_pine_taiga", List.of(TreeType.SPRUCE));
-        map.put("old_growth_spruce_taiga", List.of(TreeType.SPRUCE));
-        map.put("grove", List.of(TreeType.SPRUCE));
-
-        // Jungle
-        map.put("jungle", List.of(TreeType.JUNGLE));
-        map.put("bamboo_jungle", List.of(TreeType.JUNGLE));
-        map.put("sparse_jungle", List.of(TreeType.JUNGLE));
-
-        // Open / grassy biomes — occasional oak
-        map.put("plains", List.of(TreeType.OAK));
-        map.put("sunflower_plains", List.of(TreeType.OAK));
-        map.put("meadow", List.of(TreeType.OAK));
-        map.put("cherry_grove", List.of(TreeType.OAK));
-
-        // Swamp
-        map.put("mangrove_swamp", List.of(TreeType.OAK));
-
-        // Windswept
-        map.put("windswept_hills", List.of(TreeType.OAK, TreeType.SPRUCE));
-
-        // Savanna — acacia
-        map.put("savanna", List.of(TreeType.ACACIA));
-        map.put("windswept_savanna", List.of(TreeType.ACACIA));
-
-        return map;
+        if (candidates.size() == 1) {
+            return candidates.get(0);
+        }
+        // Use position-based noise for deterministic species selection
+        // Simple hash of position into candidate index
+        long hash = (blockX * 1664525L + blockZ * 1013904223L) ^ 0xDEADBEEFL;
+        int idx = (int) ((hash & 0x7FFFFFFF) % candidates.size());
+        return candidates.get(idx);
     }
 }
