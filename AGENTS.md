@@ -152,12 +152,14 @@ Positive density = solid, negative density = air
 
 ### Gradle Workflow (Efficiency)
 - **Targeted tasks**: `./gradlew :engine:compileJava` instead of full build when only engine changes.
-- **Fast verification**: `./gradlew :module:compileJava --no-daemon -q` for one-shot error check.
+- **Fast verification**: `./gradlew :module:compileJava -q` (daemon warm = faster than no-daemon).
 - **Compile all**: `./gradlew classes` (all toolchains, main + test sources).
 - **Single test**: `./gradlew :engine:test --tests "*.ClassName.methodName"` — no full suite.
 - **Don't `clean`** unless build cache is stale — `build/` is already in `.gitignore`.
-- **Daemon is good**: use `--no-daemon` only in CI; local builds leverage warm daemon + incremental.
-- **Parallel test by module**: engine/api/v1_21_x are JDK 21; v26_x/plugin are JDK 25 — test separately.
+- **Daemon is good**: keep it running; use `--no-daemon` only in CI.
+- **ArchUnit isolation test**: `./gradlew :engine:test --tests "com.geoforge.engine.arch.*"`
+- **Build artifact**: `./gradlew :plugin:shadowJar` — output at `plugin/build/libs/GeoForge.jar`
+- **JMH benchmarks**: `./gradlew :engine:jmh`
 
 ## CI/CD
 
