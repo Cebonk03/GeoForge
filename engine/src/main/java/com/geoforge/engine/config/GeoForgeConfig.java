@@ -33,9 +33,7 @@ package com.geoforge.engine.config;
  *       {@code fbmFrequency}, {@code fbmOctaves}, {@code flatFrequency},
  *       {@code continentalnessBlendSharpness} — multi-octave blending for varied terrain shapes.
  *   <dt>Decorations</dt>
- *   <dd>{@code treeDensity}, {@code vegetationDensity}, {@code featureSeedOffset},
- *       {@code maxTreeHeight}, {@code minTreeHeight}, {@code treeDensityFrequency} — control surface decoration placement.
- *       {@code maxTreeHeight} — control surface decoration placement.
+ *   <dd>{@code featureSeedOffset}, {@code treeDensityFrequency} — control surface decoration placement.
  *   <dt>Erosion</dt>
  *   <dd>{@code erosionMaxDropletSteps}, {@code erosionIterations} — bound the hydraulic erosion
  *       simulation.</dd>
@@ -86,17 +84,13 @@ package com.geoforge.engine.config;
  * @param fbmOctaves                 Number of octaves for FBM noise. Must be {@code > 0}.
  * @param flatFrequency              Base frequency for flat-region noise.
  * @param continentalnessBlendSharpness     Sharpness of continentalness blending transition.
- * @param treeDensity                Density of tree decoration. Must be in {@code [0,1]}.
- * @param vegetationDensity          Density of vegetation decoration. Must be in {@code [0,1]}.
  * @param featureSeedOffset          Seed offset for feature placement.
- * @param maxTreeHeight              Maximum tree height in blocks.
  * @param erosionDropletCount        Number of erosion droplets per column.
  * @param erosionGravity             Gravity factor for erosion droplet simulation.
  * @param noiseBackend               Noise backend implementation ("simplex" or "fastnoise").
  * @param plateauSize                Side length of flattened plateau region in blocks (0 = disabled). Must be {@code >= 0}.
  * @param plateauTargetHeight        Target height for plateau flattening in blocks. Must be within {@code [minHeight, maxHeight]}.
  * @param domainWarpAmplitude        Amplitude of domain-warping noise distortion.
- * @param minTreeHeight           Minimum tree height in blocks. Must be {@code >= 4}.
  * @param treeDensityFrequency    Frequency of tree density noise for placement. Must be {@code > 0}.
  * @param configVersion              Configuration version for migration support.
  */
@@ -144,10 +138,7 @@ public record GeoForgeConfig(
         // --- Noise backend ---
         String noiseBackend,
         // --- Decorations ---
-        double treeDensity,
-        double vegetationDensity,
         long featureSeedOffset,
-        int maxTreeHeight,
         // --- Erosion ---
         int erosionDropletCount,
         float erosionGravity,
@@ -157,7 +148,6 @@ public record GeoForgeConfig(
         // --- Domain warping ---
         double domainWarpAmplitude,
         // --- Tree config ---
-        int minTreeHeight,
         double treeDensityFrequency,
         // --- Config version ---
         int configVersion) {
@@ -294,20 +284,6 @@ public record GeoForgeConfig(
                     "continentalnessBlendSharpness must be >= 0.1, got %s"
                             .formatted(continentalnessBlendSharpness));
         }
-        // Decorations validation
-        if (treeDensity < 0.0 || treeDensity > 1.0) {
-            throw new IllegalArgumentException(
-                    "treeDensity must be in [0,1], got %s".formatted(treeDensity));
-        }
-        if (vegetationDensity < 0.0 || vegetationDensity > 1.0) {
-            throw new IllegalArgumentException(
-                    "vegetationDensity must be in [0,1], got %s".formatted(vegetationDensity));
-        }
-        // Decorations validation (continued)
-        if (maxTreeHeight < 4) {
-            throw new IllegalArgumentException(
-                    "maxTreeHeight must be >= 4, got %d".formatted(maxTreeHeight));
-        }
         // Erosion validation
         if (erosionDropletCount < 0) {
             throw new IllegalArgumentException(
@@ -339,11 +315,6 @@ public record GeoForgeConfig(
                             .formatted(domainWarpAmplitude));
         }
 
-        // Tree config validation
-        if (minTreeHeight < 4) {
-            throw new IllegalArgumentException(
-                    "minTreeHeight must be >= 4, got %d".formatted(minTreeHeight));
-        }
         if (treeDensityFrequency <= 0) {
             throw new IllegalArgumentException(
                     "treeDensityFrequency must be > 0, got %s"
@@ -392,9 +363,6 @@ public record GeoForgeConfig(
             warnings.add("riverDepth (" + riverDepth + ") very large relative to caveAmplitude ("
                     + caveAmplitude + ") — rivers may cut through caves");
         }
-        if (treeDensity > 0.8) {
-            warnings.add("treeDensity (" + treeDensity + ") very high — chunks may be dense forests");
-        }
         if (plateauSize > 0 && configVersion < 2) {
             warnings.add("plateauSize=" + plateauSize
                     + " but configVersion=" + configVersion
@@ -403,11 +371,6 @@ public record GeoForgeConfig(
         if (domainWarpAmplitude > maxHeight - minHeight) {
             warnings.add("domainWarpAmplitude (" + domainWarpAmplitude
                     + ") exceeds world height — terrain will be severely distorted");
-        }
-        if (minTreeHeight >= maxTreeHeight) {
-            warnings.add("minTreeHeight (" + minTreeHeight
-                    + ") >= maxTreeHeight (" + maxTreeHeight
-                    + ") — trees will not generate (zero height range)");
         }
         if (treeDensityFrequency > 0.1) {
             warnings.add("treeDensityFrequency (" + treeDensityFrequency
@@ -465,10 +428,7 @@ public record GeoForgeConfig(
                 2.0,   // continentalnessBlendSharpness
                 "simplex", // noiseBackend
                 // Decorations
-                0.1,   // treeDensity
-                0.3,   // vegetationDensity
                 0xCAFEBABEL, // featureSeedOffset
-                12,    // maxTreeHeight
                 // Erosion
                 1024,  // erosionDropletCount
                 0.2f,  // erosionGravity
@@ -477,7 +437,6 @@ public record GeoForgeConfig(
                 64,    // plateauTargetHeight
                 // Domain warping
                 1.5,   // domainWarpAmplitude
-                4,     // minTreeHeight
                 0.02,  // treeDensityFrequency
                 // Config version
                 3      // configVersion
@@ -544,10 +503,7 @@ public record GeoForgeConfig(
         // Noise backend
         private String noiseBackend = "simplex";
         // Decorations
-        private double treeDensity = 0.1;
-        private double vegetationDensity = 0.3;
         private long featureSeedOffset = 0xCAFEBABEL;
-        private int maxTreeHeight = 12;
         // Erosion
         private int erosionDropletCount = 1024;
         private float erosionGravity = 0.2f;
@@ -557,7 +513,6 @@ public record GeoForgeConfig(
         // Domain warping
         private double domainWarpAmplitude = 1.5;
         // Tree config
-        private int minTreeHeight = 4;
         private double treeDensityFrequency = 0.02;
         // Config version
         private int configVersion = 3;
@@ -607,10 +562,7 @@ public record GeoForgeConfig(
         // Noise backend
         public Builder noiseBackend(String noiseBackend) { this.noiseBackend = noiseBackend; return this; }
         // Decorations
-        public Builder treeDensity(double treeDensity) { this.treeDensity = treeDensity; return this; }
-        public Builder vegetationDensity(double vegetationDensity) { this.vegetationDensity = vegetationDensity; return this; }
         public Builder featureSeedOffset(long featureSeedOffset) { this.featureSeedOffset = featureSeedOffset; return this; }
-        public Builder maxTreeHeight(int maxTreeHeight) { this.maxTreeHeight = maxTreeHeight; return this; }
         // Erosion
         public Builder erosionDropletCount(int erosionDropletCount) { this.erosionDropletCount = erosionDropletCount; return this; }
         public Builder erosionGravity(float erosionGravity) { this.erosionGravity = erosionGravity; return this; }
@@ -620,7 +572,6 @@ public record GeoForgeConfig(
         // Domain warping
         public Builder domainWarpAmplitude(double domainWarpAmplitude) { this.domainWarpAmplitude = domainWarpAmplitude; return this; }
         // Tree config
-        public Builder minTreeHeight(int minTreeHeight) { this.minTreeHeight = minTreeHeight; return this; }
         public Builder treeDensityFrequency(double treeDensityFrequency) { this.treeDensityFrequency = treeDensityFrequency; return this; }
         // Config version
         public Builder configVersion(int configVersion) { this.configVersion = configVersion; return this; }
@@ -654,16 +605,13 @@ public record GeoForgeConfig(
                     // Noise backend
                     noiseBackend,
                     // Decorations
-                    treeDensity, vegetationDensity, featureSeedOffset,
-                    maxTreeHeight,
+                    featureSeedOffset,
                     // Erosion
                     erosionDropletCount, erosionGravity,
                     // Plateau (structure flattening)
                     plateauSize, plateauTargetHeight,
                     // Domain warping
                     domainWarpAmplitude,
-                    // Tree config
-                    minTreeHeight,
                     treeDensityFrequency,
                     // Config version
                     configVersion);

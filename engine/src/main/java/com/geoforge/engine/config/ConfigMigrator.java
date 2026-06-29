@@ -76,10 +76,7 @@ public final class ConfigMigrator {
                     // Noise backend
                     .noiseBackend(oldConfig.noiseBackend())
                     // Decorations
-                    .treeDensity(oldConfig.treeDensity())
-                    .vegetationDensity(oldConfig.vegetationDensity())
                     .featureSeedOffset(oldConfig.featureSeedOffset())
-                    .maxTreeHeight(oldConfig.maxTreeHeight())
                     // Erosion
                     .erosionDropletCount(oldConfig.erosionDropletCount())
                     .erosionGravity(oldConfig.erosionGravity())
@@ -88,7 +85,7 @@ public final class ConfigMigrator {
                     .plateauTargetHeight(oldConfig.plateauTargetHeight())
                     // Domain warping
                     .domainWarpAmplitude(oldConfig.domainWarpAmplitude())
-                    // New v3 fields get builder defaults (minTreeHeight=4, treeDensityFrequency=0.02)
+                    // treeDensityFrequency gets builder default (0.02)
                     .configVersion(3)
                     .build();
         }

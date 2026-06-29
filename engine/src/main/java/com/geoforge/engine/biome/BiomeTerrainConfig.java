@@ -20,6 +20,7 @@ package com.geoforge.engine.biome;
  * @param minTreeHeight         Minimum tree height in blocks (0 = use global default).
  * @param maxTreeHeight         Maximum tree height in blocks (0 = use global default).
  */
+@Deprecated
 public record BiomeTerrainConfig(
         double heightOffset,
         double amplitudeMultiplier,

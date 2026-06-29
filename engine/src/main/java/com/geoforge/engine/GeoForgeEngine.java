@@ -3,8 +3,11 @@ package com.geoforge.engine;
 import com.geoforge.engine.noise.NoiseSource;
 
 import com.geoforge.engine.util.DensityGuard;
-import com.geoforge.engine.biome.BiomeLookupTable;
 import com.geoforge.engine.config.GeoForgeConfig;
+import com.geoforge.engine.config.biome.ClimateResolver;
+import com.geoforge.engine.config.biome.BiomeDefinition;
+import com.geoforge.engine.config.biome.BiomeLoadResult;
+import com.geoforge.engine.config.biome.BiomeRegistry;
 import com.geoforge.engine.density.AddDensity;
 import com.geoforge.engine.density.ClampDensity;
 import com.geoforge.engine.density.ConstantDensity;
@@ -27,9 +30,7 @@ import com.geoforge.engine.plateau.StructurePlateauModifier;
 import java.util.Set;
 import com.geoforge.engine.biome.BiomeTerrainConfig;
 import com.geoforge.engine.density.EnhancedCaveSystem;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Collections;
 import java.util.logging.Logger;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -54,12 +55,12 @@ public final class GeoForgeEngine {
     private final NoiseSource humidityNoise;
     private final TectonicPlateMapper plateMapper;
     private final DensityFunctionTree heightFunction;
-    private final Set<String> allBiomeIds;
+    private final ClimateResolver climateResolver;
     private final HydraulicErosion erosion;
     private final FractalNoise caveNoise;
     private final RiverCarver riverCarver;
     private final NoiseSource noodleNoise;
-    private final Map<String, BiomeTerrainConfig> biomeConfigs;
+    private volatile BiomeRegistry biomeRegistry;
     private final DensityFunctionTree domainWarpedHeight;
 
     // Per-column biome modifier cache: ThreadLocal avoids redundant getBiomeId() calls
@@ -95,6 +96,12 @@ public final class GeoForgeEngine {
         var flatNoise = createNoiseSource(seed ^ 0xC3456789ABCDEF12L);
         this.temperatureNoise = createNoiseSource(seed ^ 0x23456789ABCDEF1L);
         this.humidityNoise = createNoiseSource(seed ^ 0x3456789ABCDEF12L);
+
+        // Climate resolver for biome selection (mirrors BiomeLookupTable behavior)
+        this.climateResolver = new ClimateResolver(
+                ClimateResolver.ClimateConfig.defaults(),
+                ClimateResolver.exportFromLegacyTable(),
+                "ocean");
         // Build composite height function using multi-noise blending:
         // 1. MultiNoiseHeightFunction blends ridge/FBM/flat based on continentalness
         var multiNoise = new MultiNoiseHeightFunction(
@@ -127,7 +134,6 @@ public final class GeoForgeEngine {
                 this.heightFunction,
                 config.domainWarpAmplitude());
 
-        this.allBiomeIds = BiomeLookupTable.getAllBiomeIds();
         this.erosion = new HydraulicErosion(config.erosionMaxDropletSteps(), config.erosionGravity());
 
         // 3D cave noise: multi-octave fractal for underground carving
@@ -141,14 +147,7 @@ public final class GeoForgeEngine {
         this.noodleNoise = createNoiseSource(seed ^ 0x56789ABCDEF0123L);
 
 
-        // Initialize per-biome terrain configs with defaults for all known biomes
-        // These can be overridden via config for biome-specific terrain modifiers
-        var biomeDefaults = BiomeTerrainConfig.defaults();
-        Map<String, BiomeTerrainConfig> cfg = new HashMap<>((int) (allBiomeIds.size() / 0.75f) + 1);
-        for (String biomeId : this.allBiomeIds) {
-            cfg.put(biomeId, biomeDefaults);
-        }
-        this.biomeConfigs = Collections.unmodifiableMap(cfg);
+        this.biomeRegistry = new BiomeRegistry(BiomeLoadResult.empty(), this.climateResolver);
         if (config.riverDepth() == 0) {
             this.riverCarver = NoopRiverCarver.instance();
         } else {
@@ -171,6 +170,24 @@ public final class GeoForgeEngine {
             };
 
         }
+    }
+
+    /**
+     * Atomically replaces the biome registry (for hot reload).
+     *
+     * @param registry the new biome registry to use
+     */
+    public void replaceBiomeRegistry(BiomeRegistry registry) {
+        this.biomeRegistry = registry;
+    }
+
+    /**
+     * Returns the current biome registry.
+     *
+     * @return the biome registry instance
+     */
+    public BiomeRegistry getBiomeRegistry() {
+        return biomeRegistry;
     }
 
     /**
@@ -227,9 +244,8 @@ public final class GeoForgeEngine {
         // Per-biome modifiers with column cache
         BiomeModifierCache cache = biomeModifierCache.get();
         if (cache.lastX != blockX || cache.lastZ != blockZ) {
-            BiomeTerrainConfig cfg = biomeConfigs.getOrDefault(
-                    getBiomeId(blockX, blockY, blockZ),
-                    BiomeTerrainConfig.defaults());
+            BiomeTerrainConfig cfg = toTerrainConfig(
+                    biomeRegistry.forBiome(getBiomeId(blockX, blockY, blockZ)));
             cache.lastX = blockX;
             cache.lastZ = blockZ;
             cache.caveModifier = cfg.caveAmplitudeModifier();
@@ -331,7 +347,7 @@ public final class GeoForgeEngine {
                 blockX * config.humidityFrequency(),
                 blockZ * config.humidityFrequency()) + 1.0) * 0.5;
         float continentalness = plateMapper.getContinentalness(blockX, blockZ);
-        return BiomeLookupTable.lookup(temp, humidity, continentalness);
+        return this.biomeRegistry.climateResolver().resolve(temp, humidity, continentalness);
     }
 
     /**
@@ -387,9 +403,8 @@ public final class GeoForgeEngine {
                 for (int z = 0; z < size; z++) {
                     int idx = z * size + x;
                     int surfaceY = Math.round(orig[idx]);
-                    double h = biomeConfigs.getOrDefault(
-                        getBiomeId(blockX + x, surfaceY, blockZ + z),
-                        BiomeTerrainConfig.defaults()).surfaceHardness();
+                    double h = toTerrainConfig(
+                            biomeRegistry.forBiome(getBiomeId(blockX + x, surfaceY, blockZ + z))).surfaceHardness();
                     if (Math.abs(h - 0.5) > 1e-12) {
                         float blend = (float) Math.max(0.0, Math.min(2.0, (1.0 - h) / 0.5));
                         heightmap[idx] = orig[idx] + (heightmap[idx] - orig[idx]) * blend;
@@ -434,9 +449,8 @@ public final class GeoForgeEngine {
      *
      * @return an immutable set of biome ID strings
      */
-    @SuppressFBWarnings("EI_EXPOSE_REP")
     public Set<String> getAllBiomeIds() {
-        return allBiomeIds;
+        return biomeRegistry.getAllBiomeIds();
     }
 
     /**
@@ -446,7 +460,7 @@ public final class GeoForgeEngine {
      * @return the biome terrain config (never null, returns defaults if unknown)
      */
     public BiomeTerrainConfig getBiomeConfig(String biomeId) {
-        return biomeConfigs.getOrDefault(biomeId, BiomeTerrainConfig.defaults());
+        return toTerrainConfig(biomeRegistry.forBiome(biomeId));
     }
 
     /**
@@ -455,7 +469,45 @@ public final class GeoForgeEngine {
      * @return the map of biome ID to terrain config
      */
     public Map<String, BiomeTerrainConfig> getBiomeConfigs() {
-        return biomeConfigs;
+        var map = new java.util.HashMap<String, BiomeTerrainConfig>();
+        for (String id : biomeRegistry.getAllBiomeIds()) {
+            map.put(id, toTerrainConfig(biomeRegistry.forBiome(id)));
+        }
+        return java.util.Collections.unmodifiableMap(map);
     }
 
+    /**
+     * Returns the map of biome ID to vegetation block types.
+     *
+     * Vegetation types are sourced from the configured BiomeDefinition data
+     * loaded from YAML vegetation configs (vegetation.yml).
+     *
+     * @return an unmodifiable map of biome ID to list of vegetation block types;
+     *         biomes with no configured vegetation are omitted
+     */
+    public java.util.Map<String, java.util.List<String>> getBiomeVegetation() {
+        var map = new java.util.HashMap<String, java.util.List<String>>();
+        for (String id : biomeRegistry.getAllBiomeIds()) {
+            java.util.List<String> veg = biomeRegistry.forBiome(id).vegetationTypes();
+            if (veg != null && !veg.isEmpty()) {
+                map.put(id, veg);
+            }
+        }
+        return java.util.Collections.unmodifiableMap(map);
+    }
+
+    private static BiomeTerrainConfig toTerrainConfig(BiomeDefinition def) {
+        return new BiomeTerrainConfig(
+                def.heightOffset(),
+                def.amplitudeMultiplier(),
+                def.caveAmplitudeModifier(),
+                def.treeType(),
+                def.surfaceBlock(),
+                def.subSurfaceBlock(),
+                def.allowFloatingPlants(),
+                def.surfaceHardness(),
+                def.treeDensity(),
+                def.minTreeHeight(),
+                def.maxTreeHeight());
+    }
 }
