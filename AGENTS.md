@@ -139,6 +139,26 @@ Positive density = solid, negative density = air
 - **JaCoCo thresholds**: 60% line / 50% branch minimum across all modules
 - **MockBukkit**: JDK 21 modules only; v26_x + plugin use Mockito-only, runtime tested on real Paper 26.x
 
+## AI Agent Protocol
+
+### Ground-Truth First
+- **Never use training data** for Paper API, Bukkit, Gradle, or library-specific knowledge.
+  Always use `context7_resolve-library-id` / `context7_query-docs` or `websearch`:
+  - Paper API method signatures, registry keys, or behavior changes
+  - Gradle DSL syntax, plugin configuration, or version catalog format
+  - Any library version, API deprecation, or migration guide
+- **Codebase questions**: use `codegraph_explore` — never guess file paths or symbol names.
+- Cite external sources when answering API/library questions.
+
+### Gradle Workflow (Efficiency)
+- **Targeted tasks**: `./gradlew :engine:compileJava` instead of full build when only engine changes.
+- **Fast verification**: `./gradlew :module:compileJava --no-daemon -q` for one-shot error check.
+- **Compile all**: `./gradlew classes` (all toolchains, main + test sources).
+- **Single test**: `./gradlew :engine:test --tests "*.ClassName.methodName"` — no full suite.
+- **Don't `clean`** unless build cache is stale — `build/` is already in `.gitignore`.
+- **Daemon is good**: use `--no-daemon` only in CI; local builds leverage warm daemon + incremental.
+- **Parallel test by module**: engine/api/v1_21_x are JDK 21; v26_x/plugin are JDK 25 — test separately.
+
 ## CI/CD
 
 | Pipeline | Triggers | JDK | Key Steps |
