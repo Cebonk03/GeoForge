@@ -282,17 +282,12 @@ class GeoForgeConfigTest {
         assertEquals(0.008, cfg.flatFrequency());
         assertEquals(2.0, cfg.continentalnessBlendSharpness());
         // Decorations
-        assertEquals(0.1, cfg.treeDensity());
-        assertEquals(0.3, cfg.vegetationDensity());
         assertEquals(0xCAFEBABEL, cfg.featureSeedOffset());
-        assertEquals(12, cfg.maxTreeHeight());
         // Erosion
         assertEquals(1024, cfg.erosionDropletCount());
         assertEquals(0.2f, cfg.erosionGravity());
         // Domain warping
         assertEquals(1.5, cfg.domainWarpAmplitude());
-        // Tree config
-        assertEquals(4, cfg.minTreeHeight());
         assertEquals(0.02, cfg.treeDensityFrequency());
         // Config version
         assertEquals(3, cfg.configVersion());
@@ -342,21 +337,7 @@ class GeoForgeConfigTest {
         assertThrows(IllegalArgumentException.class, () -> GeoForgeConfig.builder().flatFrequency(-0.1).build());
     }
 
-    @Test
-    void validation_treeDensityMustBeInRange() {
-        assertThrows(IllegalArgumentException.class, () -> GeoForgeConfig.builder().treeDensity(-0.01).build());
-        assertThrows(IllegalArgumentException.class, () -> GeoForgeConfig.builder().treeDensity(1.01).build());
-        assertDoesNotThrow(() -> GeoForgeConfig.builder().treeDensity(0).build());
-        assertDoesNotThrow(() -> GeoForgeConfig.builder().treeDensity(1.0).build());
-    }
 
-    @Test
-    void validation_vegetationDensityMustBeInRange() {
-        assertThrows(IllegalArgumentException.class, () -> GeoForgeConfig.builder().vegetationDensity(-0.01).build());
-        assertThrows(IllegalArgumentException.class, () -> GeoForgeConfig.builder().vegetationDensity(1.01).build());
-        assertDoesNotThrow(() -> GeoForgeConfig.builder().vegetationDensity(0).build());
-        assertDoesNotThrow(() -> GeoForgeConfig.builder().vegetationDensity(1.0).build());
-    }
 
     // ========== Builder override tests for new fields ==========
 
@@ -417,17 +398,11 @@ class GeoForgeConfigTest {
     }
 
     @Test
-    void builder_overridesDecorations() {
+    void builder_overridesFeatureSeedOffset() {
         var cfg = GeoForgeConfig.builder()
-                .treeDensity(0.5)
-                .vegetationDensity(0.8)
-                .featureSeedOffset(12345L)
-                .maxTreeHeight(20)
-                .build();
-        assertEquals(0.5, cfg.treeDensity());
-        assertEquals(0.8, cfg.vegetationDensity());
+.featureSeedOffset(12345L)
+.build();
         assertEquals(12345L, cfg.featureSeedOffset());
-        assertEquals(20, cfg.maxTreeHeight());
     }
 
     @Test
@@ -461,7 +436,7 @@ class GeoForgeConfigTest {
         var builder = GeoForgeConfig.builder();
         assertSame(builder, builder.caveCenterY(-10));
         assertSame(builder, builder.ridgeFrequency(0.005));
-        assertSame(builder, builder.treeDensity(0.5));
+        assertSame(builder, builder.featureSeedOffset(12345L));
     }
 
     @Test

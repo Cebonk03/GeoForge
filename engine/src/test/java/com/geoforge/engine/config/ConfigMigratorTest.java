@@ -20,60 +20,54 @@ class ConfigMigratorTest {
      * so we can verify migration overwrites them with defaults.
      */
     private static GeoForgeConfig v1Config() {
-        return new GeoForgeConfig(
-                // V1 fields — set to values distinct from defaults
-                -60,    // minHeight (default: -64)
-                200,    // maxHeight (default: 180)
-                70,     // seaLevel (default: 63)
-                40.0,   // continentalBase (default: 50.0)
-                100.0,  // continentalHeightAmplitude (default: 120.0)
-                0.002,  // temperatureFrequency (default: 0.001)
-                0.01,   // temperatureYFrequency (default: 0.005)
-                0.002,  // humidityFrequency (default: 0.001)
-                0.04,   // caveFrequency (default: 0.03)
-                10.0,   // caveAmplitude (default: 8.0)
-                3,      // caveOctaves (default: 2)
-                3.0,    // caveLacunarity (default: 2.0)
-                0.6,    // cavePersistence (default: 0.5)
-                0.02,   // riverFrequency (default: 0.01)
-                6,      // riverDepth (default: 8)
-                4,      // riverWidth (default: 3)
-                15,     // erosionMaxDropletSteps (default: 10)
-                128,    // erosionIterations (default: 64)
-                // V2 fields — set to non-default values to detect overwrite
-                -10.0,  // caveCenterY (default: -20.0)
-                40.0,   // caveSpread (default: 48.0)
-                5.0,    // caveSurfaceCutoff (default: 8.0)
-                0.4,    // caveSpaghettiThreshold (default: 0.3)
-                0.6,    // caveCheeseThreshold (default: 0.5)
-                0.2,    // caveNoodleThreshold (default: 0.15)
-                0.06,   // caveNoodleFrequency (default: 0.05)
-                1,      // riverCanyonDepth (default: 0)
-                3,      // riverCanyonWidth (default: 2)
-                RiverProfile.FLOODPLAIN, // riverValleyProfile
-                10,     // riverFloodplainWidth (default: 5)
-                0.5,    // riverTableResponse (default: 0.0)
-                0.004,  // ridgeFrequency (default: 0.003)
-                4,      // ridgeOctaves (default: 3)
-                2.0,    // ridgeAmplitude (default: 1.0)
-                0.006,  // fbmFrequency (default: 0.005)
-                5,      // fbmOctaves (default: 4)
-                0.01,   // flatFrequency (default: 0.008)
-                3.0,    // continentalnessBlendSharpness (default: 2.0)
-                "fastnoise", // noiseBackend (default: "simplex")
-                0.2,    // treeDensity (default: 0.1)
-                0.5,    // vegetationDensity (default: 0.3)
-                0xBEEFL, // featureSeedOffset (default: 0xCAFEBABEL)
-                15,     // maxTreeHeight (default: 12)
-                2048,   // erosionDropletCount (default: 1024)
-                0.3f,   // erosionGravity (default: 0.2f)
-                5,      // plateauSize (default: 0)
-                120,    // plateauTargetHeight (default: 64)
-                1.0,    // domainWarpAmplitude (default: 1.5)
-                6,      // minTreeHeight — non-default (default: 4)
-                0.04,   // treeDensityFrequency — non-default (default: 0.02)
-                1       // configVersion = 1 (v1)
-        );
+        return GeoForgeConfig.builder()
+.minHeight(-60)
+.maxHeight(200)
+.seaLevel(70)
+.continentalBase(40.0)
+.continentalHeightAmplitude(100.0)
+.temperatureFrequency(0.002)
+.temperatureYFrequency(0.01)
+.humidityFrequency(0.002)
+.caveFrequency(0.04)
+.caveAmplitude(10.0)
+.caveOctaves(3)
+.caveLacunarity(3.0)
+.cavePersistence(0.6)
+.riverFrequency(0.02)
+.riverDepth(6)
+.riverWidth(4)
+.erosionMaxDropletSteps(15)
+.erosionIterations(128)
+.caveCenterY(-10.0)
+.caveSpread(40.0)
+.caveSurfaceCutoff(5.0)
+.caveSpaghettiThreshold(0.4)
+.caveCheeseThreshold(0.6)
+.caveNoodleThreshold(0.2)
+.caveNoodleFrequency(0.06)
+.riverCanyonDepth(1)
+.riverCanyonWidth(3)
+.riverValleyProfile(RiverProfile.FLOODPLAIN)
+.riverFloodplainWidth(10)
+.riverTableResponse(0.5)
+.ridgeFrequency(0.004)
+.ridgeOctaves(4)
+.ridgeAmplitude(2.0)
+.fbmFrequency(0.006)
+.fbmOctaves(5)
+.flatFrequency(0.01)
+.continentalnessBlendSharpness(3.0)
+.noiseBackend("fastnoise")
+.featureSeedOffset(0xBEEFL)
+.erosionDropletCount(2048)
+.erosionGravity(0.3f)
+.plateauSize(5)
+.plateauTargetHeight(120)
+.domainWarpAmplitude(1.0)
+.treeDensityFrequency(0.04)
+.configVersion(1)
+.build();
     }
 
     /**
@@ -120,17 +114,13 @@ class ConfigMigratorTest {
                 .flatFrequency(0.01)
                 .continentalnessBlendSharpness(3.0)
                 .noiseBackend("fastnoise")
-                .treeDensity(0.2)
-                .vegetationDensity(0.5)
                 .featureSeedOffset(0xBEEFL)
-                .maxTreeHeight(15)
                 .erosionDropletCount(2048)
                 .erosionGravity(0.3f)
                 .plateauSize(5)
                 .plateauTargetHeight(120)
                 .domainWarpAmplitude(1.0)
                 // v3 fields — non-default to verify overwrite
-                .minTreeHeight(6)
                 .treeDensityFrequency(0.04)
                 .configVersion(2)
                 .build();
@@ -197,10 +187,7 @@ class ConfigMigratorTest {
         assertEquals(defaults.continentalnessBlendSharpness(), result.continentalnessBlendSharpness());
 
         // Decorations defaults
-        assertEquals(defaults.treeDensity(), result.treeDensity());
-        assertEquals(defaults.vegetationDensity(), result.vegetationDensity());
         assertEquals(defaults.featureSeedOffset(), result.featureSeedOffset());
-        assertEquals(defaults.maxTreeHeight(), result.maxTreeHeight());
 
         // Erosion defaults
         assertEquals(1024, result.erosionDropletCount());
@@ -210,7 +197,6 @@ class ConfigMigratorTest {
         assertEquals(defaults.domainWarpAmplitude(), result.domainWarpAmplitude());
 
         // New v3 fields must get defaults
-        assertEquals(defaults.minTreeHeight(), result.minTreeHeight());
         assertEquals(defaults.treeDensityFrequency(), result.treeDensityFrequency());
     }
 
@@ -235,10 +221,8 @@ class ConfigMigratorTest {
         assertEquals(0.02, result.riverFrequency());
         assertEquals(RiverProfile.FLOODPLAIN, result.riverValleyProfile());
         assertEquals("fastnoise", result.noiseBackend());
-        assertEquals(0.2, result.treeDensity());
 
         // New v3 fields get builder defaults
-        assertEquals(defaults.minTreeHeight(), result.minTreeHeight());
         assertEquals(defaults.treeDensityFrequency(), result.treeDensityFrequency());
 
         // configVersion upgraded to 3
