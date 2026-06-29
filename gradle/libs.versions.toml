@@ -24,7 +24,7 @@ jacoco = "0.8.15"
 spotbugsTool = "4.10.2"
 checkstyleTool = "13.6.0"
 jmh = "1.37"
-snakeyaml = "2.3"
+snakeyaml = "2.6"
 
 [libraries]
 # Test libraries
