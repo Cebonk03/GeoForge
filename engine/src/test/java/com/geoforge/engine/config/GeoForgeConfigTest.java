@@ -291,8 +291,11 @@ class GeoForgeConfigTest {
         assertEquals(0.2f, cfg.erosionGravity());
         // Domain warping
         assertEquals(1.5, cfg.domainWarpAmplitude());
+        // Tree config
+        assertEquals(4, cfg.minTreeHeight());
+        assertEquals(0.02, cfg.treeDensityFrequency());
         // Config version
-        assertEquals(2, cfg.configVersion());
+        assertEquals(3, cfg.configVersion());
     }
 
     // ========== Validation tests for new fields ==========

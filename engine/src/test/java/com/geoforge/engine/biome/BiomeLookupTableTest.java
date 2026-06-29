@@ -28,6 +28,7 @@ class BiomeLookupTableTest {
                     "ocean", "deep_ocean", "cold_ocean", "deep_cold_ocean",
                     "lukewarm_ocean", "deep_lukewarm_ocean", "frozen_ocean", "deep_frozen_ocean",
                     "warm_ocean",
+                    "pale_garden",
                     "mangrove_swamp");
 
     @DisplayName("Mid temp, mid humidity lookup returns a known biome")

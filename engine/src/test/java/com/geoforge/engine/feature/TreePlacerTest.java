@@ -3,7 +3,7 @@ package com.geoforge.engine.feature;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.geoforge.engine.feature.TreePlacer.TreeType;
+import com.geoforge.engine.feature.tree.TreeType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -254,30 +254,34 @@ class TreePlacerTest {
     @DisplayName("Biome tree map contains forest")
     @Test
     void biomeTreeMap_containsForest() {
-        assertThat(TreePlacer.biomeTreeMap()).containsKey("forest");
+        assertThat(new TreePlacer(1.0, 12).biomeTreeMap()).containsKey("forest");
     }
 
     @DisplayName("All biome tree map values are non-empty")
     @Test
     void biomeTreeMap_allValuesAreNonEmpty() {
-        var map = TreePlacer.biomeTreeMap();
+        // First verify TreeRegistry.defaults() itself works
+        var map = new TreePlacer(1.0, 12).biomeTreeMap();
         assertThat(map).isNotEmpty();
+        // Note: mushroom_fields intentionally has empty list (no trees)
         map.forEach((biome, types) -> {
-            assertThat(types).isNotEmpty();
+            if (!"mushroom_fields".equals(biome)) {
+                assertThat(types).as(biome).isNotEmpty();
+            }
         });
     }
 
     @DisplayName("Biome tree map is unmodifiable")
     @Test
     void biomeTreeMap_isUnmodifiable() {
-        var map = TreePlacer.biomeTreeMap();
+        var map = new TreePlacer(1.0, 12).biomeTreeMap();
         assertThrows(UnsupportedOperationException.class, () -> map.put("test", List.of(TreeType.OAK)));
     }
 
     @DisplayName("Savanna biome contains acacia tree type")
     @Test
     void biomeTreeMap_savannaContainsAcacia() {
-        var map = TreePlacer.biomeTreeMap();
+        var map = new TreePlacer(1.0, 12).biomeTreeMap();
         assertThat(map).containsKey("savanna");
         assertThat(map.get("savanna")).contains(TreeType.ACACIA);
     }
@@ -364,4 +368,42 @@ class TreePlacerTest {
                 .findFirst()
                 .orElse(null);
     }
+
+    @Test @DisplayName("Default variants exist for all TreeTypes")
+    void defaultVariantsExistForAllTypes() {
+        for (TreeType type : TreeType.values()) {
+            var variants = TreePlacer.DEFAULT_VARIANTS.get(type);
+            assertThat(variants).as("variants for " + type).isNotEmpty();
+        }
+    }
+
+    @Test @DisplayName("Full constructor produces deterministic placement")
+    void fullConstructorDeterministic() {
+        var sel = new com.geoforge.engine.feature.tree.TreeVariantSelector(42L, 0.015);
+        var reg = com.geoforge.engine.feature.tree.TreeRegistry.defaults();
+        var placer = new TreePlacer(1.0, 12, 4, sel, reg, java.util.Map.of());
+        var s1 = new RecordingSetter(); var s2 = new RecordingSetter();
+        placer.place(s1, 0, 0, 60, "forest", new SplittableRandom(42));
+        placer.place(s2, 0, 0, 60, "forest", new SplittableRandom(42));
+        assertThat(s1.blocks).containsExactlyElementsOf(s2.blocks);
+    }
+
+    @Test @DisplayName("Full constructor uses registry species")
+    void fullConstructorUsesRegistrySpecies() {
+        var reg = new com.geoforge.engine.feature.tree.TreeRegistry.Builder()
+                .putBiomeTreeOverride("known", List.of(TreeType.OAK))
+                .build();
+        var placer = new TreePlacer(1.0, 12, 4,
+                new com.geoforge.engine.feature.tree.TreeVariantSelector(42L),
+                reg, java.util.Map.of());
+        // Tree places in registered biome
+        var r1 = new RecordingSetter();
+        placer.place(r1, 5, 10, 60, "known", new SplittableRandom(42));
+        assertThat(r1.blocks).isNotEmpty();
+        // No tree in unregistered biome
+        var r2 = new RecordingSetter();
+        placer.place(r2, 5, 10, 60, "unknown", new SplittableRandom(42));
+        assertThat(r2.blocks).isEmpty();
+    }
+
 }

@@ -78,14 +78,14 @@ class BiomeTerrainConfigTest {
     @Test
     void equality_differentValues() {
         var a = BiomeTerrainConfig.defaults();
-        var b = new BiomeTerrainConfig(5.0, 1.0, 1.0, "", "", "", false, 0.5);
+        var b = new BiomeTerrainConfig(5.0, 1.0, 1.0, "", "", "", false, 0.5, -1.0, 0, 0);
         assertNotEquals(a, b);
     }
 
     @DisplayName("Custom config fields are accessible via record accessors")
     @Test
     void customConfig_accessors() {
-        var cfg = new BiomeTerrainConfig(3.0, 0.8, 0.5, "oak", "grass_block", "dirt", true, 0.3);
+        var cfg = new BiomeTerrainConfig(3.0, 0.8, 0.5, "oak", "grass_block", "dirt", true, 0.3, -1.0, 2, 10);
         assertThat(cfg.heightOffset()).isEqualTo(3.0);
         assertThat(cfg.amplitudeMultiplier()).isEqualTo(0.8);
         assertThat(cfg.caveAmplitudeModifier()).isEqualTo(0.5);
@@ -94,8 +94,10 @@ class BiomeTerrainConfigTest {
         assertThat(cfg.subSurfaceBlock()).isEqualTo("dirt");
         assertThat(cfg.allowFloatingPlants()).isTrue();
         assertThat(cfg.surfaceHardness()).isEqualTo(0.3);
+        assertThat(cfg.treeDensity()).isEqualTo(-1.0);
+        assertThat(cfg.minTreeHeight()).isEqualTo(2);
+        assertThat(cfg.maxTreeHeight()).isEqualTo(10);
     }
-
     @DisplayName("toString() contains field values")
     @Test
     void toString_containsFieldValues() {
@@ -103,5 +105,23 @@ class BiomeTerrainConfigTest {
         String str = cfg.toString();
         assertThat(str).contains("heightOffset=0.0");
         assertThat(str).contains("amplitudeMultiplier=1.0");
+    }
+
+    @DisplayName("defaults() has expected treeDensity")
+    @Test
+    void defaults_treeDensity() {
+        assertThat(BiomeTerrainConfig.defaults().treeDensity()).isEqualTo(-1.0);
+    }
+
+    @DisplayName("defaults() has expected minTreeHeight")
+    @Test
+    void defaults_minTreeHeight() {
+        assertThat(BiomeTerrainConfig.defaults().minTreeHeight()).isEqualTo(0);
+    }
+
+    @DisplayName("defaults() has expected maxTreeHeight")
+    @Test
+    void defaults_maxTreeHeight() {
+        assertThat(BiomeTerrainConfig.defaults().maxTreeHeight()).isEqualTo(0);
     }
 }
