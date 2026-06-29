@@ -7,8 +7,15 @@ build/
 *.war
 
 # IDE
+# Eclipse Buildship (generated per-module)
+*.classpath
+.project
+.settings/
+bin/
+# IntelliJ IDEA
 .idea/
 *.iml
+# VS Code
 .vscode/
 
 # OS
@@ -21,6 +28,12 @@ Thumbs.db
 
 # Agent workspace
 .omo/
+.opencode/
 
-# Backup files
+# Backup & temp files
 *.bak
+*.orig
+*.rej
+*.swp
+*.swo
+*.tmp
