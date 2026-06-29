@@ -34,6 +34,7 @@ public final class GeoForgeGenerator extends ChunkGenerator {
     private final GeoForgeBiomeProvider biomeProvider;
     private final TreePlacer treePlacer;
     private final VegetationPlacer vegetationPlacer;
+    private final long worldSeed;
 
     /** ThreadLocal cache for eroded heights — thread-safe under Folia parallel chunk gen. */
     private final ThreadLocal<CachedErosion> erosionCache =
@@ -45,13 +46,29 @@ public final class GeoForgeGenerator extends ChunkGenerator {
         float[] erodedHeights;
     }
 
-    public GeoForgeGenerator(GeoForgeAdapter adapter, GeoForgeEngine engine) {
+    public GeoForgeGenerator(GeoForgeAdapter adapter, GeoForgeEngine engine, long worldSeed) {
         this.adapter = adapter;
         this.engine = engine;
+        this.worldSeed = worldSeed;
         this.biomeProvider = new GeoForgeBiomeProvider(adapter, engine);
+        // Build biome variant modifiers from TreeRegistry
+        var registry = com.geoforge.engine.feature.tree.TreeRegistry.defaults();
+        var biomeModifiers = new java.util.HashMap<String, java.util.Map<String, Double>>();
+        for (String biomeId : registry.biomeTreeMap().keySet()) {
+            var cfg = registry.configForBiome(biomeId);
+            if (cfg != null && !cfg.variantModifiers().isEmpty()) {
+                biomeModifiers.put(biomeId, cfg.variantModifiers());
+            }
+        }
+        var variantSelector = new com.geoforge.engine.feature.tree.TreeVariantSelector(
+                worldSeed, engine.config().treeDensityFrequency(),
+                java.util.Collections.unmodifiableMap(biomeModifiers));
         this.treePlacer = new TreePlacer(
                 engine.config().treeDensity(),
                 engine.config().maxTreeHeight(),
+                engine.config().minTreeHeight(),
+                variantSelector,
+                registry,
                 engine.getBiomeConfigs());
         this.vegetationPlacer = new VegetationPlacer(
                 engine.config().vegetationDensity(), engine.getBiomeConfigs());

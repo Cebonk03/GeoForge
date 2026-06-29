@@ -5,7 +5,7 @@
 seed: 0
 
 # Config version for migration support. Increment when structure changes.
-config-version: 2
+config-version: 3
 
 # Terrain height bounds (in block units)
 terrain:
@@ -71,6 +71,8 @@ decorations:
   vegetation-density: 0.3
   feature-seed-offset: 3405691582
   max-tree-height: 12
+  min-tree-height: 4
+  tree-density-frequency: 0.02
 
 # Structure terrain flattening (chunk-centered, for development use)
 plateau:

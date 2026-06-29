@@ -24,7 +24,7 @@ class GeoForgeGeneratorTest {
                 new com.geoforge.adapters.v1_21_x.Paper1_21_xAdapter(
                         MockBukkit.createMockPlugin());
         GeoForgeEngine engine = new GeoForgeEngine(42L, GeoForgeConfig.defaults());
-        generator = new GeoForgeGenerator(adapter, engine);
+        generator = new GeoForgeGenerator(adapter, engine, 42L);
     }
 
     @AfterEach

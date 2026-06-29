@@ -21,17 +21,18 @@ public final class GeoForgePlugin extends JavaPlugin {
 
     private GeoForgeAdapter adapter;
     private GeoForgeEngine engine;
+    private long worldSeed;
 
     @Override
     public void onEnable() {
         this.adapter = AdapterFactory.create(this);
         saveDefaultConfig();
         FileConfiguration cfg = getConfig();
-        long seed = cfg.getLong("seed", 0L);
+        this.worldSeed = cfg.getLong("seed", 0L);
 
         // Config version check for future migration support
-        int configVersion = cfg.getInt("config-version", 2);
-        int expectedVersion = 2;
+        int configVersion = cfg.getInt("config-version", 3);
+        int expectedVersion = 3;
         if (configVersion != expectedVersion) {
             getLogger().warning(
                     "Expected config-version=" + expectedVersion
@@ -80,7 +81,9 @@ public final class GeoForgePlugin extends JavaPlugin {
 .treeDensity(cfg.getDouble("decorations.tree-density", 0.1))
 .vegetationDensity(cfg.getDouble("decorations.vegetation-density", 0.3))
 .featureSeedOffset(cfg.getLong("decorations.feature-seed-offset", 0xCAFEBABEL))
-.maxTreeHeight(cfg.getInt("decorations.max-tree-height", 12))
+        .maxTreeHeight(cfg.getInt("decorations.max-tree-height", 12))
+        .minTreeHeight(cfg.getInt("decorations.min-tree-height", 4))
+        .treeDensityFrequency(cfg.getDouble("decorations.tree-density-frequency", 0.02))
 .erosionDropletCount(cfg.getInt("erosion.droplet-count", 1024))
 .erosionGravity((float) cfg.getDouble("erosion.gravity", 0.2))
 .noiseBackend(cfg.getString("noise.backend", "simplex"))
@@ -89,7 +92,7 @@ public final class GeoForgePlugin extends JavaPlugin {
             .plateauTargetHeight(cfg.getInt("plateau.target-height", 64))
 .configVersion(cfg.getInt("config-version", 2))
 .build();
-        this.engine = new GeoForgeEngine(seed, engineConfig);
+        this.engine = new GeoForgeEngine(worldSeed, engineConfig);
 
         // Log config sanity warnings
         var sanityWarnings = engineConfig.sanityCheck();
@@ -109,6 +112,6 @@ public final class GeoForgePlugin extends JavaPlugin {
     @Override
     public @Nullable ChunkGenerator getDefaultWorldGenerator(
             @NotNull String worldName, @Nullable String id) {
-        return new GeoForgeGenerator(adapter, engine);
+        return new GeoForgeGenerator(adapter, engine, worldSeed);
     }
 }
