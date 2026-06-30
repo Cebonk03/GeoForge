@@ -30,7 +30,7 @@ class GeoForgeConfigTest {
         assertEquals(0.001, cfg.humidityFrequency());
         assertEquals(0.03, cfg.caveFrequency());
         assertEquals(8.0, cfg.caveAmplitude());
-        assertEquals(2, cfg.caveOctaves());
+        assertEquals(3, cfg.caveOctaves());
         assertEquals(2.0, cfg.caveLacunarity());
         assertEquals(0.5, cfg.cavePersistence());
         assertEquals(0.01, cfg.riverFrequency());
@@ -280,7 +280,7 @@ class GeoForgeConfigTest {
         assertEquals(0.005, cfg.fbmFrequency());
         assertEquals(4, cfg.fbmOctaves());
         assertEquals(0.008, cfg.flatFrequency());
-        assertEquals(2.0, cfg.continentalnessBlendSharpness());
+        assertEquals(1.0, cfg.continentalnessBlendSharpness());
         // Decorations
         assertEquals(0xCAFEBABEL, cfg.featureSeedOffset());
         // Erosion
@@ -290,7 +290,7 @@ class GeoForgeConfigTest {
         assertEquals(1.5, cfg.domainWarpAmplitude());
         assertEquals(0.02, cfg.treeDensityFrequency());
         // Config version
-        assertEquals(3, cfg.configVersion());
+        assertEquals(4, cfg.configVersion());
     }
 
     // ========== Validation tests for new fields ==========
@@ -426,11 +426,10 @@ class GeoForgeConfigTest {
     @Test
     void builder_overridesConfigVersion() {
         var cfg = GeoForgeConfig.builder()
-                .configVersion(3)
-                .build();
-        assertEquals(3, cfg.configVersion());
+.configVersion(4)
+.build();
+        assertEquals(4, cfg.configVersion());
     }
-
     @Test
     void builder_chainingReturnsThis_newFields() {
         var builder = GeoForgeConfig.builder();

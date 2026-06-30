@@ -396,7 +396,7 @@ public record GeoForgeConfig(
                 0.001, // humidityFrequency
                 0.03,  // caveFrequency
                 8.0,   // caveAmplitude
-                2,     // caveOctaves
+                3,     // caveOctaves
                 2.0,   // caveLacunarity
                 0.5,   // cavePersistence
                 0.01,  // riverFrequency
@@ -425,7 +425,7 @@ public record GeoForgeConfig(
                 0.005, // fbmFrequency
                 4,     // fbmOctaves
                 0.008, // flatFrequency
-                2.0,   // continentalnessBlendSharpness
+                1.0,   // continentalnessBlendSharpness
                 "simplex", // noiseBackend
                 // Decorations
                 0xCAFEBABEL, // featureSeedOffset
@@ -438,8 +438,8 @@ public record GeoForgeConfig(
                 // Domain warping
                 1.5,   // domainWarpAmplitude
                 0.02,  // treeDensityFrequency
-                // Config version
-                3      // configVersion
+                // Config version — bumped to 4 for T2 (caveOctaves 2->3), T7 (biome borders widened)
+                4      // configVersion (was 3)
         );
     }
 
@@ -470,7 +470,7 @@ public record GeoForgeConfig(
         private double humidityFrequency = 0.001;
         private double caveFrequency = 0.03;
         private double caveAmplitude = 8.0;
-        private int caveOctaves = 2;
+        private int caveOctaves = 3;
         private double caveLacunarity = 2.0;
         private double cavePersistence = 0.5;
         private double riverFrequency = 0.01;
@@ -499,7 +499,7 @@ public record GeoForgeConfig(
         private double fbmFrequency = 0.005;
         private int fbmOctaves = 4;
         private double flatFrequency = 0.008;
-        private double continentalnessBlendSharpness = 2.0;
+        private double continentalnessBlendSharpness = 1.0;
         // Noise backend
         private String noiseBackend = "simplex";
         // Decorations
@@ -515,7 +515,7 @@ public record GeoForgeConfig(
         // Tree config
         private double treeDensityFrequency = 0.02;
         // Config version
-        private int configVersion = 3;
+        private int configVersion = 4;
 
         private Builder() {}
 

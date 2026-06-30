@@ -145,10 +145,10 @@ public final class ClimateResolver {
 
         // Continentalness tiers matching BiomeLookupTable
         double[][] contTiers = {
-            {0.0, 0.3},   // ocean
-            {0.3, 0.5},   // coast
-            {0.5, 0.7},   // inland
-            {0.7, 1.0}    // highland
+            {0.0, 0.45},   // ocean (was [0.0, 0.3])
+            {0.2, 0.6},    // coast (was [0.3, 0.5])
+            {0.4, 0.8},    // inland (was [0.5, 0.7])
+            {0.55, 1.0}    // highland (was [0.7, 1.0])
         };
         // Tier names for the lookup methods
         String[] tierNames = {"ocean", "coast", "inland", "highland"};
@@ -192,12 +192,18 @@ public final class ClimateResolver {
                 // Generate envelopes for each continentalness tier
                 for (int ct = 0; ct < 4; ct++) {
                     String biomeId = lookupLegacy(ti, hi, ct, grid);
+        /**
+         * Priority by continentalness tier: ocean biomes have lowest priority,
+         * highland biomes the highest. This ensures highland correctly overrides
+         * coast/ocean at overlapping climate boundaries after contTiers widening.
+         */
+        int[] tierPriorities = {5, 10, 15, 20};
                     result.add(new BiomeEnvelope(
                             biomeId,
                             tMin, tMax,
                             hMin, hMax,
                             contTiers[ct][0], contTiers[ct][1],
-                            10));
+                            tierPriorities[ct]));
                 }
             }
         }

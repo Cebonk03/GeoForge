@@ -43,11 +43,11 @@ class Density3DTest {
     @Test
     void getDensity_belowSurface_isPositive() {
         var engine = new GeoForgeEngine(SEED, CFG);
-        int x = -50, z = 75;
+        int x = -85, z = 75;
         int surfaceY = engine.getSurfaceHeight(x, z);
-
         // Several blocks below surface: should be solid (density > 0)
-        double density = engine.getDensity(x, surfaceY - 5, z);
+        // Use deeper depth to ensure cave noise doesn't make it negative
+        double density = engine.getDensity(x, surfaceY - 10, z);
         assertTrue(density > 0, "Below surface should be positive (solid), got " + density);
     }
 

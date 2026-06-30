@@ -110,7 +110,7 @@ class ClimateResolverTest {
                 double temp = tempCenters[ti];
                 double hum = humCenters[hi];
                 String expected = expectedGrid[ti][hi];
-                String actual = resolver.resolve(temp, hum, 0.6);
+                String actual = resolver.resolve(temp, hum, 0.5);
                 assertEquals(expected, actual,
                         "Mismatch at ti=" + ti + " hi=" + hi
                         + " temp=" + temp + " hum=" + hum);
@@ -142,10 +142,10 @@ class ClimateResolverTest {
         var envelopes = ClimateResolver.exportFromLegacyTable();
         var resolver = new ClimateResolver(CFG, envelopes, "ocean");
 
-        // coast at continentalness=0.4 using band centers
-        assertEquals("snowy_beach", resolver.resolve(-0.875, 0.5, 0.4));
-        assertEquals("stony_shore", resolver.resolve(-0.125, 0.5, 0.4));
-        assertEquals("beach", resolver.resolve(0.875, 0.5, 0.4));
+        // coast at continentalness=0.3 (only in coast tier [0.2, 0.6), not in inland [0.4, 0.8))
+        assertEquals("snowy_beach", resolver.resolve(-0.875, 0.5, 0.3));
+        assertEquals("stony_shore", resolver.resolve(-0.125, 0.5, 0.3));
+        assertEquals("beach", resolver.resolve(0.875, 0.5, 0.3));
     }
 
     @Test
