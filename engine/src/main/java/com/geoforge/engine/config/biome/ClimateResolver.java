@@ -251,4 +251,52 @@ public final class ClimateResolver {
         if (ti == 6) return hi < 4 ? "windswept_savanna" : "badlands";
         return "badlands";
     }
+
+    /**
+     * Exports a list of {@link BiomeEnvelope} values from biome definitions that have
+     * explicit climate ranges (not the default full-range values).
+     *
+     * <p>Biomes whose climate envelope fields are at their default values (all ranges
+     * are full: temp ∈ [-1,1], humidity ∈ [0,1], continentalness ∈ [0,1]) are considered
+     * unassigned — they will be omitted so the caller can fall back to the legacy table.
+     *
+     * <p>Biomes with IDs indicating Nether, End, cave, or void are excluded by default,
+     * matching the legacy table's overworld-only behavior.
+     *
+     * @param biomes the map of biome ID to definition, typically from {@code BiomeRegistry}
+     * @return list of biome envelopes for biomes with explicit climate ranges, or empty list
+     *         if no definitions have custom climate envelopes
+     */
+    public static List<BiomeEnvelope> exportFromBiomeDefinitions(
+            java.util.Map<String, BiomeDefinition> biomes) {
+        var result = new ArrayList<BiomeEnvelope>();
+        double epsilon = 1e-12;
+        for (var entry : biomes.entrySet()) {
+            String id = entry.getKey();
+            BiomeDefinition def = entry.getValue();
+            // Skip Nether, End, cave, and void biomes — not overworld-eligible
+            if (id.contains("nether") || id.contains("the_end") || id.contains("end_")
+                    || id.contains("deep_dark") || id.contains("dripstone")
+                    || id.contains("lush_caves") || id.contains("the_void")) {
+                continue;
+            }
+            // Check if this biome has a non-default climate envelope
+            boolean hasCustomClimate = Math.abs(def.tempMin() - (-1.0)) > epsilon
+                    || Math.abs(def.tempMax() - 1.0) > epsilon
+                    || Math.abs(def.humidityMin() - 0.0) > epsilon
+                    || Math.abs(def.humidityMax() - 1.0) > epsilon
+                    || Math.abs(def.continentalnessMin() - 0.0) > epsilon
+                    || Math.abs(def.continentalnessMax() - 1.0) > epsilon;
+            if (!hasCustomClimate) {
+                continue; // Fall through to legacy table
+            }
+            result.add(new BiomeEnvelope(id,
+                    def.tempMin(), def.tempMax(),
+                    def.humidityMin(), def.humidityMax(),
+                    def.continentalnessMin(), def.continentalnessMax(),
+                    def.priority()));
+        }
+        result.sort((a, b) -> Integer.compare(b.priority(), a.priority()));
+        return Collections.unmodifiableList(result);
+    }
 }

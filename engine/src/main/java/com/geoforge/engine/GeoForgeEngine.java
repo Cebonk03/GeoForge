@@ -50,10 +50,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
  */
 public final class GeoForgeEngine {
 
-    /** Boundary warp frequency for organic biome border transitions. */
-    private static final double BOUNDARY_WARP_FREQUENCY = 0.001;
-    /** Boundary warp amplitude — shifts continentalness by up to ~15% of range. */
-    private static final double BOUNDARY_WARP_AMPLITUDE = 0.15;
+    // Boundary warp params come from config.boundaryWarpFrequency/Amplitude
 
     private static final Logger LOG = Logger.getLogger(GeoForgeEngine.class.getName());
     private final GeoForgeConfig config;
@@ -108,9 +105,16 @@ public final class GeoForgeEngine {
         this.boundaryWarpNoise = createNoiseSource(seed ^ 0xFEEDFACE1234L);
 
         // Climate resolver for biome selection (mirrors BiomeLookupTable behavior)
+        // Climate resolver for biome selection: prefer biome-definition-driven envelopes,
+        // fall back to the legacy hardcoded table for biomes not yet assigned custom ranges
+        var biomeDefs = GeoForgeBiomeDefaults.createDefaults();
+        var climateEnvs = ClimateResolver.exportFromBiomeDefinitions(biomeDefs);
+        if (climateEnvs.isEmpty()) {
+            climateEnvs = ClimateResolver.exportFromLegacyTable();
+        }
         this.climateResolver = new ClimateResolver(
                 ClimateResolver.ClimateConfig.defaults(),
-                ClimateResolver.exportFromLegacyTable(),
+                climateEnvs,
                 "ocean");
         // 1. MultiNoiseHeightFunction blends ridge/FBM/flat based on continentalness with noise-warped boundaries
         var multiNoise = new MultiNoiseHeightFunction(
@@ -123,8 +127,8 @@ public final class GeoForgeEngine {
                 config.ridgeAmplitude(),
                 config.continentalnessBlendSharpness(),
                 this.boundaryWarpNoise,
-                BOUNDARY_WARP_FREQUENCY,
-                BOUNDARY_WARP_AMPLITUDE);
+                config.boundaryWarpFrequency(),
+                config.boundaryWarpAmplitude());
         // 2. Scale the blended detail to block height magnitude
         var scaledMulti = new MultiplyDensity(multiNoise,
                 new ConstantDensity(config.continentalHeightAmplitude() / 6.0));
@@ -394,8 +398,8 @@ public final class GeoForgeEngine {
                 blockZ * config.humidityFrequency()) + 1.0) * 0.5;
         float continentalness = plateMapper.getContinentalness(blockX, blockZ);
         double biomeWarp = boundaryWarpNoise.sample2D(
-                (double) blockX * BOUNDARY_WARP_FREQUENCY,
-                (double) blockZ * BOUNDARY_WARP_FREQUENCY) * BOUNDARY_WARP_AMPLITUDE;
+                (double) blockX * config.boundaryWarpFrequency(),
+                (double) blockZ * config.boundaryWarpFrequency()) * config.boundaryWarpAmplitude();
         continentalness = (float) Math.min(1.0, Math.max(0.0, continentalness + biomeWarp));
         return this.biomeRegistry.climateResolver().resolve(temp, humidity, continentalness);
     }
