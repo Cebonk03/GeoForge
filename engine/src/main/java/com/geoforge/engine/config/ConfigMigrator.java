@@ -5,10 +5,9 @@ package com.geoforge.engine.config;
  *
  * <p>Migration paths:
  * <ul>
- *   <li>v1 → v3: copies 22 original values, fills v2/v3 fields with builder defaults.
- *   <li>v2 → v3: copies all 48 v2 fields, fills v3 fields with builder defaults.
- *   <li>v3+: returned unchanged (idempotent).
- * </ul>
+ *   <li>v1 → v4: copies 22 original values, fills v2/v3/v4 fields with builder defaults.
+ *   <li>v2 → v4: copies all 48 v2 fields, fills v3/v4 fields with builder defaults.
+ *   <li>v4+: returned unchanged (idempotent).
  *
  * <p>This class is thread-safe and stateless.
  */
@@ -22,15 +21,15 @@ public final class ConfigMigrator {
      * Migrates a {@link GeoForgeConfig} to the latest version if needed.
      *
      * @param oldConfig the configuration to migrate; must not be null
-     * @return the migrated configuration with configVersion = 3, or the same instance
-     *         if it was already at v3 or higher
+     * @return the migrated configuration with configVersion = 4, or the same instance
+     *         if it was already at v4 or higher
      */
     public static GeoForgeConfig migrate(GeoForgeConfig oldConfig) {
-        if (oldConfig.configVersion() >= 3) {
+        if (oldConfig.configVersion() >= 4) {
             return oldConfig;
         }
 
-        // v2 → v3: copy all existing v2 fields; new v3 fields get builder defaults
+        // v2 → v4: copy all existing v2 fields; new v3/v4 fields get builder defaults
         if (oldConfig.configVersion() == 2) {
             return GeoForgeConfig.builder()
                     .minHeight(oldConfig.minHeight())
@@ -86,11 +85,11 @@ public final class ConfigMigrator {
                     // Domain warping
                     .domainWarpAmplitude(oldConfig.domainWarpAmplitude())
                     // treeDensityFrequency gets builder default (0.02)
-                    .configVersion(3)
+                    .configVersion(4)
                     .build();
         }
 
-        // v1 → v3: copy only the 22 original v1 fields; v2+v3 fields get builder defaults
+        // v1 → v4: copy only the 22 original v1 fields; v2+v3+v4 fields get builder defaults
         return GeoForgeConfig.builder()
                 .minHeight(oldConfig.minHeight())
                 .maxHeight(oldConfig.maxHeight())
@@ -111,6 +110,7 @@ public final class ConfigMigrator {
                 .erosionMaxDropletSteps(oldConfig.erosionMaxDropletSteps())
                 .erosionIterations(oldConfig.erosionIterations())
                 .erosionDropletCount(1024)
+                .configVersion(4)
                 .build();
     }
 }

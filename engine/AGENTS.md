@@ -1,6 +1,6 @@
 # GeoForge Engine
-**Generated:** 2026-06-30T02:15:00Z
-**Commit:** 1e61eb8
+**Generated:** 2026-06-30T19:07:00Z
+**Commit:** 771f378
 **Branch:** main
 
 Zero-Bukkit math engine for terrain generation. All classes pure Java 21 with no server dependencies.
@@ -10,8 +10,7 @@ Zero-Bukkit math engine for terrain generation. All classes pure Java 21 with no
 ```
 engine/src/main/java/com/geoforge/engine/
 ├── config/       GeoForgeConfig.java (48-field immutable record), ConfigMigrator.java, RiverProfile.java
-├── noise/        NoiseSource.java, SimplexNoise.java, FractalNoise.java,
-│                FastNoiseLite.java, FastNoiseLiteSource.java
+├── noise/        NoiseSource.java, GradientNoise.java, SimplexNoise.java, FractalNoise.java,
 ├── density/      DensityFunctionTree.java + 18 impls (Add, Clamp, CanyonRiverCarver,
 │                CaveType, CaveYEnvelope, Constant, DomainWarpDensity, EnhancedCaveSystem,
 │                FloodplainRiverCarver, MultiNoiseHeightFunction, Multiply,

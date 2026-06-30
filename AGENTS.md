@@ -1,6 +1,6 @@
 # GeoForge Knowledge Base
-**Generated:** 2026-06-30T02:15:00Z
-**Commit:** 1e61eb8
+**Generated:** 2026-06-30T19:07:00Z
+**Commit:** 771f378
 **Branch:** main
 
 **Stack:** Java 21/25 + Gradle 9.6 + Paper API (1.21.x / 26.x)
@@ -21,7 +21,7 @@ geoforge/
 
 | Module | Main Srcs | Tests | Java | Role |
 |--------|-----------|-------|------|------|
-||| engine | 66 | 56 | 21 | 3D density engine, zero Bukkit |
+||| engine | 68 | 56 | 21 | 3D density engine, zero Bukkit |
 | api | 5 | 3 | 21 | Adapter interface + AbstractPaperAdapter + ServerVersion + FoliaDetector |
 | v1_21_x | 1 | 1 | 21 | Paper 1.21.x adapter |
 | v26_x | 1 | 1 | 25 | Paper 26.x adapter (constructor injection for testability) |

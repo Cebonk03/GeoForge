@@ -7,6 +7,11 @@ import java.util.SplittableRandom;
  *
  * <p>Instances are configured with gravity and a maximum number of simulation steps per droplet.
  * The heightmap array is provided by the caller and modified in-place.
+ *
+ * <p><b>Limitation:</b> This implementation operates on a 2D heightmap extracted from the
+ * 3D density field. It cannot erode overhangs or cave interiors. For volumetric
+ * (3D) erosion, a future implementation would need to operate directly on the density
+ * field rather than a pre-extracted heightmap.
  */
 public final class HydraulicErosion {
 

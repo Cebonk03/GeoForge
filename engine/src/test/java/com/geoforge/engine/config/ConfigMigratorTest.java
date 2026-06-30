@@ -151,8 +151,8 @@ class ConfigMigratorTest {
         assertEquals(15, result.erosionMaxDropletSteps());
         assertEquals(128, result.erosionIterations());
 
-        // configVersion must be upgraded to 3
-        assertEquals(3, result.configVersion());
+        // configVersion must be upgraded to 4 (bumped for caveOctaves 3 + biome border widening)
+        assertEquals(4, result.configVersion());
     }
 
     @Test
@@ -225,8 +225,8 @@ class ConfigMigratorTest {
         // New v3 fields get builder defaults
         assertEquals(defaults.treeDensityFrequency(), result.treeDensityFrequency());
 
-        // configVersion upgraded to 3
-        assertEquals(3, result.configVersion());
+        // configVersion upgraded to 4
+        assertEquals(4, result.configVersion());
     }
 
     @Test

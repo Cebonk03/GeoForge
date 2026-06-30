@@ -92,7 +92,6 @@ public final class GeoForgePlugin extends JavaPlugin {
 .build();
         this.engine = new GeoForgeEngine(worldSeed, engineConfig);
 
-
         // Log config sanity warnings
         var sanityWarnings = engineConfig.sanityCheck();
         if (!sanityWarnings.isEmpty()) {
