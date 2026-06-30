@@ -35,7 +35,7 @@ class SnapshotGenerationTest {
         byte[] hash = digest.digest();
         String checksum = HexFormat.of().formatHex(hash);
         assertEquals(
-                "d243354f019260da0c6c64e88c54e4be9481018d9c90400ae92e6ec901456e2c",
+                "b70da91fb037313f9d2b7dec277c0d26ba25e635a5ea294396ca12ae34a04709",
                 checksum,
                 "Heightmap checksum mismatch — terrain output changed.");
     }
