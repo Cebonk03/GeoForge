@@ -6,6 +6,7 @@ import com.geoforge.engine.GeoForgeEngine;
 import com.geoforge.engine.feature.BlockSetter;
 import com.geoforge.engine.feature.TreePlacer;
 import com.geoforge.engine.feature.VegetationPlacer;
+import com.geoforge.engine.feature.ScenicFeatureDetector;
 import com.geoforge.engine.util.ThreadLocalBuffers;
 import com.geoforge.engine.biome.BiomeTerrainConfig;
 import org.bukkit.Material;
@@ -27,7 +28,6 @@ import java.util.SplittableRandom;
 @SuppressFBWarnings("EI_EXPOSE_REP")
 public final class GeoForgeGenerator extends ChunkGenerator {
 
-    private static final int SURFACE_DEPTH = 3;
     private static final int CHUNK_SIZE = 16;
     private static final int BEDROCK_LAYERS = 5;
 
@@ -189,23 +189,49 @@ public final class GeoForgeGenerator extends ChunkGenerator {
                 Material subBlock = !subSurfaceBlockStr.isEmpty()
                         ? adapter.mapBlock(subSurfaceBlockStr)
                         : adapter.mapBlock("dirt");
-
                 // Top block
                 chunkData.setBlock(x, heightY, z, topBlock);
 
-                // Sub-surface blocks
-                for (int dy = 1; dy <= SURFACE_DEPTH; dy++) {
+                // Sub-surface blocks — use per-biome surface depth
+                int surfaceDepth = biomeConfig != null ? biomeConfig.surfaceDepth() : 3;
+                for (int dy = 1; dy <= surfaceDepth; dy++) {
                     int y = heightY - dy;
                     if (y >= minY && y < maxY) {
                         chunkData.setBlock(x, y, z, subBlock);
                     }
                 }
 
-                // Surface features (trees and vegetation)
-                long fs = engine.config().featureSeedOffset();
-                var fr = fs != 0 ? new SplittableRandom(random.nextLong() ^ fs) : random;
-                treePlacer.place(blockSetter, blockX, blockZ, heightY, biomeId, fr);
-                vegetationPlacer.place(blockSetter, blockX, blockZ, heightY, biomeId, fr);
+            // Scenic feature detection for wow moments
+            if (heightY >= minY + 1 && heightY < maxY) {
+                var feature = engine.getScenicDetector().detect(engine, blockX, blockZ, heightY);
+                switch (feature.type()) {
+                    case EDGE_VISTA: {
+                        // Replace surface block with stone at cliff edge
+                        chunkData.setBlock(x, heightY, z, adapter.mapBlock("stone"));
+                        break;
+                    }
+                    case HIDDEN_VALLEY: {
+                        // Replace surface block with stone on the ridge crest
+                        chunkData.setBlock(x, heightY, z, adapter.mapBlock("stone"));
+                        break;
+                    }
+                    case EMERGENCE: {
+                        // Stone outcropping at potential cave exit
+                        chunkData.setBlock(x, heightY, z, adapter.mapBlock("stone"));
+                        if (heightY > minY + 2) {
+                            chunkData.setBlock(x, heightY - 1, z, adapter.mapBlock("stone"));
+                        }
+                        break;
+                    }
+                    default: {}
+                }
+            }
+
+            // Surface features (trees and vegetation)
+            long fs = engine.config().featureSeedOffset();
+            var fr = fs != 0 ? new SplittableRandom(random.nextLong() ^ fs) : random;
+            treePlacer.place(blockSetter, blockX, blockZ, heightY, biomeId, fr);
+            vegetationPlacer.place(blockSetter, blockX, blockZ, heightY, biomeId, fr);
             }
         }
     }
