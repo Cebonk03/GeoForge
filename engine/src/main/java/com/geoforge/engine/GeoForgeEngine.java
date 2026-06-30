@@ -6,7 +6,7 @@ import com.geoforge.engine.util.DensityGuard;
 import com.geoforge.engine.config.GeoForgeConfig;
 import com.geoforge.engine.config.biome.ClimateResolver;
 import com.geoforge.engine.config.biome.BiomeDefinition;
-import com.geoforge.engine.config.biome.BiomeLoadResult;
+import com.geoforge.engine.config.biome.GeoForgeBiomeDefaults;
 import com.geoforge.engine.config.biome.BiomeRegistry;
 import com.geoforge.engine.density.AddDensity;
 import com.geoforge.engine.density.ClampDensity;
@@ -147,7 +147,7 @@ public final class GeoForgeEngine {
         this.noodleNoise = createNoiseSource(seed ^ 0x56789ABCDEF0123L);
 
 
-        this.biomeRegistry = new BiomeRegistry(BiomeLoadResult.empty(), this.climateResolver);
+        this.biomeRegistry = new BiomeRegistry(GeoForgeBiomeDefaults.createDefaults(), this.climateResolver);
         if (config.riverDepth() == 0) {
             this.riverCarver = NoopRiverCarver.instance();
         } else {
@@ -331,7 +331,7 @@ public final class GeoForgeEngine {
      * altitude-aware biome transitions occur naturally when queried at the actual
      * terrain height. The continentalness from the {@link TectonicPlateMapper}
      * selects the environment tier (ocean, coast, inland, or highland) via
-     * {@link BiomeLookupTable#lookup(double, double, double)}.
+     * via the {@link ClimateResolver}.
      *
      * @param blockX the x-coordinate in block space
      * @param blockY the y-coordinate in block space (affects temperature)

@@ -13,7 +13,7 @@ import java.util.List;
  * values (temperature, humidity, continentalness) at a given position, then selects the
  * one with the highest priority. Ties are broken deterministically.
  *
- * <p>This replaces {@link com.geoforge.engine.biome.BiomeLookupTable} with a fully
+ * <p>This replaces the legacy BiomeLookupTable with a fully
  * config-driven approach.
  */
 @SuppressFBWarnings({"DLS_DEAD_LOCAL_STORE", "UC_USELESS_OBJECT"})
@@ -130,7 +130,7 @@ public final class ClimateResolver {
     }
 
     /**
-     * Exports the current hardcoded {@link com.geoforge.engine.biome.BiomeLookupTable}
+     * Exports the current hardcoded BiomeLookupTable
      * logic as a list of {@link BiomeEnvelope} values that replicate its behaviour.
      *
      * <p>The legacy BiomeLookupTable uses an 8×8 grid indexed by temperature and humidity,

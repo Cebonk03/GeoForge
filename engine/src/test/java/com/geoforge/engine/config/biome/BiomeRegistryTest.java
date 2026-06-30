@@ -2,7 +2,6 @@ package com.geoforge.engine.config.biome;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -18,9 +17,8 @@ class BiomeRegistryTest {
     @Test
     @DisplayName("empty registry returns defaults for unknown biome")
     void emptyRegistry_returnsDefaults() {
-        var resolver = new ClimateResolver(CFG, List.of(), "ocean");
-        var result = new BiomeLoadResult(Map.of(), List.of(), List.of());
-        var registry = new BiomeRegistry(result, resolver);
+        var resolver = new ClimateResolver(CFG, java.util.List.of(), "ocean");
+        var registry = new BiomeRegistry(Map.of(), resolver);
         assertTrue(registry.isEmpty());
         assertEquals(0, registry.size());
         var def = registry.forBiome("unknown");
@@ -31,10 +29,9 @@ class BiomeRegistryTest {
     @DisplayName("registry returns stored biome definition")
     void registry_returnsStoredBiome() {
         var plains = new BiomeDefinition("plains", 0, 1, "", "", 0.5, 1, "", -1, 0, 0,
-                Map.of(), List.of(), 0.3, false, -1, 1, 0, 1, 0, 1, 0);
-        var result = new BiomeLoadResult(Map.of("plains", plains), List.of(), List.of());
+                Map.of(), java.util.List.of(), 0.3, false, -1, 1, 0, 1, 0, 1, 0);
         var resolver = new ClimateResolver(CFG, ClimateResolver.exportFromLegacyTable(), "ocean");
-        var registry = new BiomeRegistry(result, resolver);
+        var registry = new BiomeRegistry(Map.of("plains", plains), resolver);
 
         assertFalse(registry.isEmpty());
         assertEquals(1, registry.size());
@@ -45,10 +42,9 @@ class BiomeRegistryTest {
     @DisplayName("getAllBiomeIds includes registry and climate biome IDs")
     void getAllBiomeIds_includesBoth() {
         var desert = new BiomeDefinition("desert", 0, 1, "", "", 0.5, 1, "", -1, 0, 0,
-                Map.of(), List.of(), 0.3, false, -1, 1, 0, 1, 0, 1, 0);
-        var result = new BiomeLoadResult(Map.of("desert", desert), List.of(), List.of());
+                Map.of(), java.util.List.of(), 0.3, false, -1, 1, 0, 1, 0, 1, 0);
         var resolver = new ClimateResolver(CFG, ClimateResolver.exportFromLegacyTable(), "ocean");
-        var registry = new BiomeRegistry(result, resolver);
+        var registry = new BiomeRegistry(Map.of("desert", desert), resolver);
 
         var allIds = registry.getAllBiomeIds();
         assertTrue(allIds.contains("desert"));
