@@ -1,6 +1,0 @@
-# Shared default vegetation parameters
-types:
-  - grass
-  - poppy
-  - dandelion
-vegetation-density: 0.3

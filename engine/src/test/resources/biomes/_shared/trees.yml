@@ -1,6 +1,0 @@
-# Shared default tree parameters
-types:
-  - oak
-density: 0.1
-min-height: 4
-max-height: 12
