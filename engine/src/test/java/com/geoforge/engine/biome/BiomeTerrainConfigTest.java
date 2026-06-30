@@ -79,14 +79,14 @@ class BiomeTerrainConfigTest {
     @Test
     void equality_differentValues() {
         var a = BiomeTerrainConfig.defaults();
-        var b = new BiomeTerrainConfig(5.0, 1.0, 1.0, "", "", "", false, 0.5, -1.0, 0, 0);
+        var b = new BiomeTerrainConfig(5.0, 1.0, 1.0, "", "", "", false, 0.5, -1.0, 0, 0, 3);
         assertNotEquals(a, b);
     }
 
     @DisplayName("Custom config fields are accessible via record accessors")
     @Test
     void customConfig_accessors() {
-        var cfg = new BiomeTerrainConfig(3.0, 0.8, 0.5, "oak", "grass_block", "dirt", true, 0.3, -1.0, 2, 10);
+        var cfg = new BiomeTerrainConfig(3.0, 0.8, 0.5, "oak", "grass_block", "dirt", true, 0.3, -1.0, 2, 10, 5);
         assertThat(cfg.heightOffset()).isEqualTo(3.0);
         assertThat(cfg.amplitudeMultiplier()).isEqualTo(0.8);
         assertThat(cfg.caveAmplitudeModifier()).isEqualTo(0.5);

@@ -19,6 +19,7 @@ package com.geoforge.engine.biome;
  * @param treeDensity           Tree density modifier (-1.0 = use global default).
  * @param minTreeHeight         Minimum tree height in blocks (0 = use global default).
  * @param maxTreeHeight         Maximum tree height in blocks (0 = use global default).
+ * @param surfaceDepth          Depth of surface blocks below the top block (3 = default).
  */
 @Deprecated
 public record BiomeTerrainConfig(
@@ -32,7 +33,8 @@ public record BiomeTerrainConfig(
         double surfaceHardness,
         double treeDensity,
         int minTreeHeight,
-        int maxTreeHeight) {
+        int maxTreeHeight,
+        int surfaceDepth) {
     /**
      * Returns a default configuration with all neutral/identity values.
      *
@@ -50,6 +52,7 @@ public record BiomeTerrainConfig(
                 0.5,     // surfaceHardness
                 -1.0,    // treeDensity
                 0,       // minTreeHeight
-                0);      // maxTreeHeight
+                0,       // maxTreeHeight
+                3);      // surfaceDepth
     }
 }

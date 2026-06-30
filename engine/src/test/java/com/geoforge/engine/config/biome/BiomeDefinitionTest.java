@@ -54,6 +54,7 @@ class BiomeDefinitionTest {
                 0.2,            // treeDensity
                 4,              // minTreeHeight
                 8,              // maxTreeHeight
+                5,              // surfaceDepth (override from default 3)
                 Map.of("tall", 2.0),  // treeVariantModifiers
                 List.of("grass"),      // vegetationTypes
                 0.5,            // vegetationDensity
@@ -76,6 +77,7 @@ class BiomeDefinitionTest {
         assertEquals(0.2, merged.treeDensity());
         assertEquals(4, merged.minTreeHeight());
         assertEquals(8, merged.maxTreeHeight());
+        assertEquals(5, merged.surfaceDepth());
         assertEquals(1, merged.treeVariantModifiers().size());
         assertTrue(merged.treeVariantModifiers().containsKey("tall"));
         assertEquals(1, merged.vegetationTypes().size());
@@ -96,7 +98,7 @@ class BiomeDefinitionTest {
     void merge_preservesDefaults_withSentinels() {
         var base = BiomeDefinition.defaults();
         var override = new BiomeDefinition(
-                "override", 0.0, 1.0, "", "", 0.5, 1.0, "", -1.0, 0, 0,
+                "override", 0.0, 1.0, "", "", 0.5, 1.0, "", -1.0, 0, 0, 0,
                 Map.of(), List.of(), 0.3, false,
                 -1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0);
 
@@ -115,7 +117,7 @@ class BiomeDefinitionTest {
     @DisplayName("merge() preserves base id when override id is empty")
     void merge_preservesBaseId_whenOverrideEmpty() {
         var base = new BiomeDefinition(
-                "base", 0.0, 1.0, "", "", 0.5, 1.0, "", -1.0, 0, 0,
+                "base", 0.0, 1.0, "", "", 0.5, 1.0, "", -1.0, 0, 0, 3,
                 Map.of(), List.of(), 0.3, false,
                 -1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 5);
         var override = BiomeDefinition.defaults();

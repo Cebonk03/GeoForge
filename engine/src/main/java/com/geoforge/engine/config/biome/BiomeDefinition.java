@@ -26,8 +26,9 @@ import java.util.Map;
  * @param treeDensity           tree density in [0, 1], or -1.0 to use global default
  * @param minTreeHeight         minimum tree height in blocks (0 = use global default)
  * @param maxTreeHeight         maximum tree height in blocks (0 = use global default)
+ * @param surfaceDepth          depth of surface blocks below the top block (3 = default).
+ *                              Controls how many layers of surfaceBlock/subSurfaceBlock are placed.
  * @param treeVariantModifiers  map of variant name to weight multiplier; empty = no overrides
- * @param vegetationTypes       list of vegetation block IDs to place in this biome
  * @param vegetationDensity     probability in [0, 1] that a column gets vegetation
  * @param allowFloatingPlants   whether floating plants are permitted in this biome
  * @param tempMin               minimum temperature envelope value (inclusive)
@@ -51,6 +52,7 @@ public record BiomeDefinition(
         double treeDensity,
         int minTreeHeight,
         int maxTreeHeight,
+        int surfaceDepth,
         Map<String, Double> treeVariantModifiers,
         List<String> vegetationTypes,
         double vegetationDensity,
@@ -81,6 +83,7 @@ public record BiomeDefinition(
                 -1.0,        // treeDensity
                 0,           // minTreeHeight
                 0,           // maxTreeHeight
+                3,           // surfaceDepth
                 Map.of(),    // treeVariantModifiers
                 List.of(),   // vegetationTypes
                 0.3,         // vegetationDensity
@@ -118,6 +121,7 @@ public record BiomeDefinition(
         double mergedTreeDensity = override.treeDensity() >= 0.0 ? override.treeDensity() : this.treeDensity();
         int mergedMinHeight = override.minTreeHeight() > 0 ? override.minTreeHeight() : this.minTreeHeight();
         int mergedMaxHeight = override.maxTreeHeight() > 0 ? override.maxTreeHeight() : this.maxTreeHeight();
+        int mergedSurfaceDepth = override.surfaceDepth() > 0 ? override.surfaceDepth() : this.surfaceDepth();
         Map<String, Double> mergedVariantMods = !override.treeVariantModifiers().isEmpty()
                 ? override.treeVariantModifiers() : this.treeVariantModifiers();
         List<String> mergedVeg = !override.vegetationTypes().isEmpty()
@@ -137,6 +141,7 @@ public record BiomeDefinition(
                 mergedSurface, mergedSubSurface, mergedSurfaceHardness,
                 mergedCaveAmp, mergedTreeType, mergedTreeDensity,
                 mergedMinHeight, mergedMaxHeight,
+                mergedSurfaceDepth,
                 Collections.unmodifiableMap(mergedVariantMods),
                 Collections.unmodifiableList(mergedVeg),
                 mergedVegDensity, mergedFloat,

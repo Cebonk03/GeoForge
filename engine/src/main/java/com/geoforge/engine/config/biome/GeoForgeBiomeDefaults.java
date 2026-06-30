@@ -81,10 +81,10 @@ public final class GeoForgeBiomeDefaults {
                 "grass_block", "dirt", 1.0, 0.02, List.of()));
 
         // ── Desert & Badlands ──
-        map.put("desert", custom("desert", 1.0, "sand", "sandstone", 1.5, 0.0,
-                List.of("dead_bush", "cactus")));
-        map.put("badlands", custom("badlands", 1.0, "red_sand", "red_sandstone", 1.3, 0.0,
-                List.of()));
+        map.put("desert", withDepth(custom("desert", 1.0, "sand", "sandstone", 1.5, 0.0,
+                List.of("dead_bush", "cactus")), 5));
+        map.put("badlands", withDepth(custom("badlands", 1.0, "red_sand", "red_sandstone", 1.3, 0.0,
+                List.of()), 4));
         map.put("eroded_badlands", custom("eroded_badlands", 1.0, "red_sand", "red_sandstone", 1.3, 0.0,
                 List.of()));
         map.put("wooded_badlands", custom("wooded_badlands", 1.0, "red_sand", "dirt", 1.0, 0.03,
@@ -96,21 +96,20 @@ public final class GeoForgeBiomeDefaults {
         map.put("mangrove_swamp", custom("mangrove_swamp", 1.0, "mud", "dirt", 1.0, 0.15,
                 List.of()));
 
-        // ── Mountains ──
-        map.put("windswept_hills", custom("windswept_hills", 1.6, "grass_block", "stone", 1.0, -1.0,
-                List.of()));
+        map.put("windswept_hills", withDepth(custom("windswept_hills", 1.6, "grass_block", "stone", 1.0, -1.0,
+                List.of()), 1));
         map.put("windswept_forest", custom("windswept_forest", 1.5, "grass_block", "dirt", 1.0, 0.06,
                 List.of()));
         map.put("windswept_gravelly_hills", custom("windswept_gravelly_hills", 1.6,
                 "grass_block", "stone", 1.0, -1.0, List.of()));
-        map.put("frozen_peaks", custom("frozen_peaks", 1.8, "stone", "stone", 1.0, -1.0,
-                List.of()));
-        map.put("jagged_peaks", custom("jagged_peaks", 2.0, "stone", "stone", 1.0, -1.0,
-                List.of()));
-        map.put("stony_peaks", custom("stony_peaks", 1.7, "stone", "stone", 1.0, -1.0,
-                List.of()));
-        map.put("snowy_slopes", custom("snowy_slopes", 1.5, "snow_block", "stone", 1.0, -1.0,
-                List.of()));
+        map.put("frozen_peaks", withDepth(custom("frozen_peaks", 1.8, "stone", "stone", 1.0, -1.0,
+                List.of()), 1));
+        map.put("jagged_peaks", withDepth(custom("jagged_peaks", 2.0, "stone", "stone", 1.0, -1.0,
+                List.of()), 1));
+        map.put("stony_peaks", withDepth(custom("stony_peaks", 1.7, "stone", "stone", 1.0, -1.0,
+                List.of()), 1));
+        map.put("snowy_slopes", withDepth(custom("snowy_slopes", 1.5, "snow_block", "stone", 1.0, -1.0,
+                List.of()), 1));
 
         // ── Snowy / Frozen ──
         map.put("snowy_plains", custom("snowy_plains", 1.0, "snow_block", "dirt", 1.0, 0.0,
@@ -118,25 +117,39 @@ public final class GeoForgeBiomeDefaults {
         map.put("ice_spikes", custom("ice_spikes", 1.0, "snow_block", "dirt", 1.0, 0.0,
                 List.of()));
 
-        // ── Ocean ──
-        map.put("ocean", custom("ocean", 1.0, "stone", "stone", 0.8, -1.0, List.of()));
-        map.put("deep_ocean", custom("deep_ocean", 1.0, "stone", "stone", 0.6, -1.0, List.of()));
-        map.put("cold_ocean", custom("cold_ocean", 1.0, "stone", "stone", 0.8, -1.0, List.of()));
-        map.put("deep_cold_ocean", custom("deep_cold_ocean", 1.0, "stone", "stone", 0.6, -1.0,
-                List.of()));
-        map.put("frozen_ocean", custom("frozen_ocean", 1.0, "ice", "stone", 0.8, -1.0, List.of()));
-        map.put("deep_frozen_ocean", custom("deep_frozen_ocean", 1.0, "ice", "stone", 0.6, -1.0,
-                List.of()));
-        map.put("lukewarm_ocean", custom("lukewarm_ocean", 1.0, "stone", "stone", 0.8, -1.0,
-                List.of()));
-        map.put("deep_lukewarm_ocean", custom("deep_lukewarm_ocean", 1.0, "stone", "stone", 0.6, -1.0,
-                List.of()));
-        map.put("warm_ocean", custom("warm_ocean", 1.0, "sand", "sand", 1.0, -1.0, List.of()));
-
+        // -- Ocean --
+        // Warm oceans: sand + seagrass + coral
+        map.put("warm_ocean", full("warm_ocean", 0.0, 1.0, "sand", "sand", 0.8, 1.0, "", -1.0, 0, 0, 2,
+                Map.of(), List.of("seagrass", "coral"), 0.2, false,
+                -1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0));
+        // Lukewarm oceans: sand + seagrass
+        map.put("lukewarm_ocean", full("lukewarm_ocean", 0.0, 1.0, "sand", "sandstone", 0.8, 1.0, "", -1.0, 0, 0, 2,
+                Map.of(), List.of("seagrass"), 0.15, false,
+                -1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0));
+        map.put("deep_lukewarm_ocean", full("deep_lukewarm_ocean", 0.0, 1.0, "sand", "sandstone", 0.6, 1.0, "", -1.0, 0, 0, 1,
+                Map.of(), List.of(), 0.0, false,
+                -1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0));
+        // Cold oceans: gravel
+        map.put("cold_ocean", full("cold_ocean", 0.0, 1.0, "gravel", "stone", 0.7, 1.0, "", -1.0, 0, 0, 2,
+                Map.of(), List.of(), 0.0, false,
+                -1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0));
+        map.put("deep_cold_ocean", full("deep_cold_ocean", 0.0, 1.0, "gravel", "stone", 0.5, 1.0, "", -1.0, 0, 0, 1,
+                Map.of(), List.of(), 0.0, false,
+                -1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0));
+        // Frozen oceans: ice
+        map.put("frozen_ocean", full("frozen_ocean", 0.0, 1.0, "ice", "stone", 0.8, 1.0, "", -1.0, 0, 0, 2,
+                Map.of(), List.of(), 0.0, false,
+                -1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0));
+        map.put("deep_frozen_ocean", full("deep_frozen_ocean", 0.0, 1.0, "ice", "stone", 0.5, 1.0, "", -1.0, 0, 0, 1,
+                Map.of(), List.of(), 0.0, false,
+                -1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0));
+        // Default/temperate oceans: stone
+        map.put("ocean", withDepth(custom("ocean", 1.0, "stone", "stone", 0.8, -1.0, List.of()), 2));
+        map.put("deep_ocean", withDepth(custom("deep_ocean", 1.0, "stone", "stone", 0.6, -1.0, List.of()), 1));
         // ── Beach & Shore ──
-        map.put("beach", custom("beach", 1.0, "sand", "sand", 1.0, -1.0, List.of()));
-        map.put("snowy_beach", custom("snowy_beach", 1.0, "snow_block", "sand", 1.0, -1.0,
-                List.of()));
+        map.put("beach", withDepth(custom("beach", 1.0, "sand", "sand", 1.0, -1.0, List.of()), 1));
+        map.put("snowy_beach", withDepth(custom("snowy_beach", 1.0, "snow_block", "sand", 1.0, -1.0,
+                List.of()), 1));
         map.put("stony_shore", custom("stony_shore", 1.0, "stone", "stone", 1.0, -1.0, List.of()));
 
         // ── Rivers ──
@@ -183,7 +196,7 @@ public final class GeoForgeBiomeDefaults {
      */
     private static BiomeDefinition neutral(String id) {
         return BiomeDefinition.defaults().merge(new BiomeDefinition(
-                id, 0.0, 1.0, "", "", 0.5, 1.0, "", -1.0, 0, 0,
+                id, 0.0, 1.0, "", "", 0.5, 1.0, "", -1.0, 0, 0, 3,
                 Map.of(), List.of(), 0.3, false,
                 -1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0));
     }
@@ -201,11 +214,92 @@ public final class GeoForgeBiomeDefaults {
      * @param veg        list of vegetation block IDs
      * @return a merged BiomeDefinition with the specified overrides applied
      */
+
+
+    /**
+     * Creates a biome definition with ALL fields explicitly specified, merged on top
+     * of defaults. Use this when the existing {@link #custom(String, double, String, String, double, double, List)}
+     * helper does not expose the fields you need (climate envelope, surface hardness,
+     * tree type, height offset, variant modifiers, vegetation density, floating plants, priority).
+     *
+     * <p>Non-default values override the corresponding field in the merged result;
+     * defaults are preserved for fields not being overridden. Null/empty collections
+     * are given safe defaults ({@link java.util.Map#of()} and {@link java.util.List#of()}).
+     *
+     * @param id         biome identifier
+     * @param heightOffset Y offset added to base terrain height (0 = no offset)
+     * @param amplitudeMultiplier multiplier for continental height amplitude (1.0 = no change)
+     * @param surface    surface block material ID (empty = use fallback)
+     * @param subSurface sub-surface block material ID (empty = use fallback)
+     * @param surfaceHardness surface hardness factor in [0, 1] (0.5 = default)
+     * @param caveAmp    cave amplitude modifier (1.0 = no change)
+     * @param treeType   tree type identifier (empty = use default)
+     * @param treeDensity tree density in [0, 1], or -1.0 to use global default
+     * @param minTreeH   minimum tree height in blocks (0 = use global default)
+     * @param maxTreeH   maximum tree height in blocks (0 = use global default)
+     * @param tvMods     map of variant name to weight multiplier (empty = no overrides)
+     * @param veg        list of vegetation block IDs (empty = none)
+     * @param vegDensity vegetation density probability in [0, 1]
+     * @param floatPlants whether floating plants are permitted in this biome
+     * @param tMin       minimum temperature envelope value (inclusive)
+     * @param tMax       maximum temperature envelope value (inclusive)
+     * @param hMin       minimum humidity envelope value (inclusive)
+     * @param hMax       maximum humidity envelope value (inclusive)
+     * @param cMin       minimum continentalness envelope value (inclusive)
+     * @param cMax       maximum continentalness envelope value (inclusive)
+     * @param priority   biome resolution priority (higher = wins when multiple envelopes match)
+     * @return a merged BiomeDefinition with the specified overrides applied
+     */
+    private static BiomeDefinition full(
+            String id,
+            double heightOffset,
+            double amplitudeMultiplier,
+            String surface,
+            String subSurface,
+            double surfaceHardness,
+            double caveAmp,
+            String treeType,
+            double treeDensity,
+            int minTreeH,
+            int maxTreeH,
+            int surfaceDepth,
+            java.util.Map<String, Double> tvMods,
+            java.util.List<String> veg,
+            double vegDensity,
+            boolean floatPlants,
+            double tMin, double tMax,
+            double hMin, double hMax,
+            double cMin, double cMax,
+            int priority) {
+        return BiomeDefinition.defaults().merge(new BiomeDefinition(
+                id, heightOffset, amplitudeMultiplier,
+                surface, subSurface, surfaceHardness,
+                caveAmp, treeType, treeDensity,
+                minTreeH, maxTreeH, surfaceDepth,
+                tvMods != null ? tvMods : java.util.Map.of(),
+                veg != null ? veg : java.util.List.of(),
+                vegDensity, floatPlants,
+                tMin, tMax, hMin, hMax, cMin, cMax, priority));
+    }
+
+    /**
+     * Overrides the surface depth on an existing BiomeDefinition via merge.
+     * @param def   the base biome definition
+     * @param depth the surface depth in blocks (> 0)
+     * @return a new BiomeDefinition with the surface depth overridden
+     */
+    private static BiomeDefinition withDepth(BiomeDefinition def, int depth) {
+        return def.merge(new BiomeDefinition(
+                "", 0, 1, "", "", 0.5, 1, "", -1.0, 0, 0, depth,
+                Map.of(), List.of(), 0.3, false,
+                -1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0));
+    }
+
     private static BiomeDefinition custom(String id, double amp, String surface,
                                            String subSurface, double caveAmp,
-                                           double treeDensity, List<String> veg) {
+                                           double treeDensity, java.util.List<String> veg) {
         return BiomeDefinition.defaults().merge(new BiomeDefinition(
-                id, 0.0, amp, surface, subSurface, 0.5, caveAmp, "", treeDensity, 0, 0,
+                id, 0.0, amp, surface, subSurface, 0.5, caveAmp, "", treeDensity, 0, 0, 3,
                 Map.of(), veg, 0.3, false,
                 -1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0));
     }
