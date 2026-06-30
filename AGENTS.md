@@ -21,12 +21,12 @@ geoforge/
 
 | Module | Main Srcs | Tests | Java | Role |
 |--------|-----------|-------|------|------|
-|| engine | 63 | 54 | 21 | 3D density engine, zero Bukkit |
+||| engine | 66 | 56 | 21 | 3D density engine, zero Bukkit |
 | api | 5 | 3 | 21 | Adapter interface + AbstractPaperAdapter + ServerVersion + FoliaDetector |
 | v1_21_x | 1 | 1 | 21 | Paper 1.21.x adapter |
 | v26_x | 1 | 1 | 25 | Paper 26.x adapter (constructor injection for testability) |
-| plugin | 4 | 4 | 25 | Plugin + ShadowJAR + GeoForgePluginTest |
-||||| **Total** | **74** | **63** | — | **~2,126 tests, 0 failures** |
+|| plugin | 5 | 4 | 25 | Plugin + ShadowJAR + GeoForgePluginTest |
+|||||| **Total** | **78** | **65** | — | **~2,126 tests, 0 failures** |
 
 ## 3D Density Architecture
 
@@ -56,6 +56,7 @@ Positive density = solid, negative density = air
 | Biome assignment | `plugin/src/main/java/com/geoforge/plugin/GeoForgeBiomeProvider.java` |
 | Server version parsing | `api/src/main/java/com/geoforge/api/version/ServerVersion.java` |
 || Tree system registry | `engine/src/main/java/com/geoforge/engine/feature/tree/TreeRegistry.java` |
+| Biome defaults config | `engine/src/main/java/com/geoforge/engine/config/biome/GeoForgeBiomeDefaults.java` |
 
 ## CODE MAP
 
@@ -73,8 +74,8 @@ Positive density = solid, negative density = air
 | `DensityFunctionTree` | @FunctionalInterface | engine | 9 | sample(x,y,z)→double; composable tree (Add/Clamp/Constant/Multiply/PlateContinentalness) |
 | `NoiseSource` | @FunctionalInterface | engine | 33 | sample2D/sample3D — SimplexNoise or FastNoiseLiteSource via config switch |
 | `FastNoiseLiteSource` | noise | engine | 1 | FastNoiseLite adapter implementing NoiseSource interface |
-| `BiomeConfigLoader` | loader | engine | 1 | YAML-driven biome definition loader (terrain, trees, vegetation) — replaces BiomeLookupTable |
-| `BiomeRegistry` | registry | engine | 1 | Runtime registry of loaded config-driven biome definitions |
+| `GeoForgeBiomeDefaults` | defaults | engine | 1 | Hardcoded BiomeDefinition map for all 60+ vanilla biomes — replaces YAML loader |
+| `BiomeRegistry` | registry | engine | 1 | Thread-safe runtime registry of biome definitions |
 | `ClimateResolver` | resolver | engine | 1 | Climate-based biome resolution from temperature×humidity×continentalness |
 | `TectonicPlateMapper` | geology | engine | 1 | 12 plates with Voronoi centres + coastline modulation |
 | `HydraulicErosion` | geology | engine | 1 | 2D droplet-based heightmap erosion |
@@ -149,17 +150,6 @@ Positive density = solid, negative density = air
   - Any library version, API deprecation, or migration guide
 - **Codebase questions**: use `codegraph_explore` — never guess file paths or symbol names.
 - Cite external sources when answering API/library questions.
-
-### Gradle Workflow (Efficiency)
-- **Targeted tasks**: `./gradlew :engine:compileJava` instead of full build when only engine changes.
-- **Fast verification**: `./gradlew :module:compileJava -q` (daemon warm = faster than no-daemon).
-- **Compile all**: `./gradlew classes` (all toolchains, main + test sources).
-- **Single test**: `./gradlew :engine:test --tests "*.ClassName.methodName"` — no full suite.
-- **Don't `clean`** unless build cache is stale — `build/` is already in `.gitignore`.
-- **Daemon is good**: keep it running; use `--no-daemon` only in CI.
-- **ArchUnit isolation test**: `./gradlew :engine:test --tests "com.geoforge.engine.arch.*"`
-- **Build artifact**: `./gradlew :plugin:shadowJar` — output at `plugin/build/libs/GeoForge.jar`
-- **JMH benchmarks**: `./gradlew :engine:jmh`
 
 ## CI/CD
 

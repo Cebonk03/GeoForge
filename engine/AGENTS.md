@@ -19,7 +19,7 @@ engine/src/main/java/com/geoforge/engine/
 │                ScaledNoise2D, SimplexRiverCarver)
 ├── geology/      TectonicPlateMapper.java, HydraulicErosion.java
 ├── biome/        BiomeTerrainConfig.java (deprecated — replaced by config-driven definitions)
-├── config/biome/  BiomeConfigLoader.java, BiomeDefinition.java, BiomeRegistry.java, ClimateResolver.java
+├── config/biome/  GeoForgeBiomeDefaults.java, BiomeDefinition.java, BiomeRegistry.java, ClimateResolver.java
 ├── plateau/      StructurePlateauModifier.java (terrain flattening, wired in erodeColumn when plateauSize > 0)
 ├── feature/      BlockSetter.java, GeoForgeFeature.java, TreePlacer.java,
 │                VegetationPlacer.java, tree/ (TreeType, TreeRegistry, CanopyProfile,
@@ -36,7 +36,7 @@ engine/src/main/java/com/geoforge/engine/
 |------|------|
 | Add new noise type | `engine/src/main/java/com/geoforge/engine/noise/` |
 | Compose terrain density | `engine/src/main/java/com/geoforge/engine/density/DensityFunctionTree.java` |
-| Modify biome palette | `engine/src/main/java/com/geoforge/engine/config/biome/BiomeConfigLoader.java` |
+| Modify biome defaults | `engine/src/main/java/com/geoforge/engine/config/biome/GeoForgeBiomeDefaults.java` |
 | 3D density / cave system | `engine/src/main/java/com/geoforge/engine/GeoForgeEngine.java#getDensity()` |
 | River carving interface | `engine/src/main/java/com/geoforge/engine/density/RiverCarver.java` |
 | Add tree type / canopy / trunk | `engine/src/main/java/com/geoforge/engine/feature/tree/` |
@@ -65,14 +65,14 @@ engine/src/main/java/com/geoforge/engine/
 
 | Package | Source | Tests | Role |
 |---------|--------|-------|------|
-| `arch` | 0 | 1 | ArchUnit — zero Bukkit dependency enforcement |
+|| `config` | 3 | 2 | GeoForgeConfig (48 params), ConfigMigrator, RiverProfile |
 | `config` | 3 | 2 | GeoForgeConfig (48 params), ConfigMigrator, RiverProfile |
 | `noise` | 5 | 3 | NoiseSource, SimplexNoise, FractalNoise, FastNoiseLite, FastNoiseLiteSource |
 | `density` | 18 | 10 | DensityFunctionTree + 18 implementations incl. CaveType, RiverCarvers, CaveSystem |
 | `geology` | 2 | 2 | Tectonic plate mapper, hydraulic erosion simulation |
-| `biome` | 2 | 2 | BiomeLookupTable, BiomeTerrainConfig |
-| `plateau` | 1 | 1 | Terrain flattening utility (wired in erodeColumn when plateauSize > 0) |
-|| `feature` | 28 | 21 | GeoForgeFeature, BlockSetter, TreePlacer, VegetationPlacer + tree/ (8) + canopy/ (11) + trunk/ (6) |
+||| `biome` | 1 | 1 | BiomeTerrainConfig (still active as value object) |
+| `config/biome` | 4 | 3 | BiomeDefinition, BiomeRegistry, ClimateResolver, GeoForgeBiomeDefaults |
+| `feature` | 29 | 23 | GeoForgeFeature, BlockSetter, TreePlacer, VegetationPlacer + tree/ (8) + canopy/ (11) + trunk/ (6) |
 || `util` | 2 | 2 | DensityGuard, ThreadLocalBuffers |
 | root | 1 | 5 | GeoForgeEngine + Density3D, Integration, Snapshot, ThreadSafety |
 
