@@ -1,7 +1,7 @@
 package com.geoforge.engine.feature.tree;
 
 import com.geoforge.engine.noise.NoiseSource;
-import com.geoforge.engine.noise.SimplexNoise;
+import com.geoforge.engine.noise.GradientNoise;
 import java.util.List;
 import java.util.Map;
 
@@ -56,7 +56,7 @@ public final class TreeVariantSelector {
      */
     public TreeVariantSelector(long seed, double frequency,
                                Map<String, Map<String, Double>> biomeVariantModifiers) {
-        this.noise = new SimplexNoise(seed ^ SEED_SALT);
+        this.noise = new GradientNoise(seed ^ SEED_SALT);
         this.frequency = frequency > 0 ? frequency : DEFAULT_FREQUENCY;
         // Deep-copy for true immutability
         if (biomeVariantModifiers == null) {

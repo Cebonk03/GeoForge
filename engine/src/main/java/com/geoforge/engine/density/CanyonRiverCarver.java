@@ -1,7 +1,7 @@
 package com.geoforge.engine.density;
 
 import com.geoforge.engine.noise.NoiseSource;
-import com.geoforge.engine.noise.SimplexNoise;
+import com.geoforge.engine.noise.GradientNoise;
 
 /**
  * River carver that carves steep-walled, flat-bottomed canyons using 2D
@@ -37,7 +37,7 @@ public final class CanyonRiverCarver implements RiverCarver {
     public CanyonRiverCarver(long seed, double frequency, int canyonDepth, int canyonWidth) {
         if (canyonWidth <= 0) throw new IllegalArgumentException(
                 "canyonWidth must be > 0, got " + canyonWidth);
-        this.noise = new SimplexNoise(seed ^ 0xFEEDBEEFL);
+        this.noise = new GradientNoise(seed ^ 0xFEEDBEEFL);
         this.frequency = frequency;
         this.canyonDepth = canyonDepth;
         this.canyonWidth = canyonWidth;

@@ -23,8 +23,9 @@ import com.geoforge.engine.density.DomainWarpDensity;
 import com.geoforge.engine.geology.HydraulicErosion;
 import com.geoforge.engine.geology.TectonicPlateMapper;
 import com.geoforge.engine.density.MultiNoiseHeightFunction;
+import com.geoforge.engine.feature.ScenicFeatureDetector;
 import com.geoforge.engine.noise.FractalNoise;
-import com.geoforge.engine.noise.SimplexNoise;
+import com.geoforge.engine.noise.GradientNoise;
 import com.geoforge.engine.noise.FastNoiseLiteSource;
 import com.geoforge.engine.plateau.StructurePlateauModifier;
 import java.util.Set;
@@ -49,11 +50,17 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
  */
 public final class GeoForgeEngine {
 
+    /** Boundary warp frequency for organic biome border transitions. */
+    private static final double BOUNDARY_WARP_FREQUENCY = 0.001;
+    /** Boundary warp amplitude — shifts continentalness by up to ~15% of range. */
+    private static final double BOUNDARY_WARP_AMPLITUDE = 0.15;
+
     private static final Logger LOG = Logger.getLogger(GeoForgeEngine.class.getName());
     private final GeoForgeConfig config;
     private final NoiseSource temperatureNoise;
     private final NoiseSource humidityNoise;
     private final TectonicPlateMapper plateMapper;
+    private final NoiseSource boundaryWarpNoise;
     private final DensityFunctionTree heightFunction;
     private final ClimateResolver climateResolver;
     private final HydraulicErosion erosion;
@@ -62,6 +69,7 @@ public final class GeoForgeEngine {
     private final NoiseSource noodleNoise;
     private volatile BiomeRegistry biomeRegistry;
     private final DensityFunctionTree domainWarpedHeight;
+    private final ScenicFeatureDetector scenicDetector;
 
     // Per-column biome modifier cache: ThreadLocal avoids redundant getBiomeId() calls
     // across different Y samples in the same column during chunk generation
@@ -74,6 +82,7 @@ public final class GeoForgeEngine {
         double caveModifier;
         double heightOffset;
         double amplitudeMultiplier;
+        double valleyFactor;
     }
 
     /**
@@ -96,14 +105,14 @@ public final class GeoForgeEngine {
         var flatNoise = createNoiseSource(seed ^ 0xC3456789ABCDEF12L);
         this.temperatureNoise = createNoiseSource(seed ^ 0x23456789ABCDEF1L);
         this.humidityNoise = createNoiseSource(seed ^ 0x3456789ABCDEF12L);
+        this.boundaryWarpNoise = createNoiseSource(seed ^ 0xFEEDFACE1234L);
 
         // Climate resolver for biome selection (mirrors BiomeLookupTable behavior)
         this.climateResolver = new ClimateResolver(
                 ClimateResolver.ClimateConfig.defaults(),
                 ClimateResolver.exportFromLegacyTable(),
                 "ocean");
-        // Build composite height function using multi-noise blending:
-        // 1. MultiNoiseHeightFunction blends ridge/FBM/flat based on continentalness
+        // 1. MultiNoiseHeightFunction blends ridge/FBM/flat based on continentalness with noise-warped boundaries
         var multiNoise = new MultiNoiseHeightFunction(
                 ridgeNoise, fbmNoise, flatNoise,
                 plateMapper,
@@ -112,7 +121,10 @@ public final class GeoForgeEngine {
                 config.fbmFrequency(),
                 config.flatFrequency(),
                 config.ridgeAmplitude(),
-                config.continentalnessBlendSharpness());
+                config.continentalnessBlendSharpness(),
+                this.boundaryWarpNoise,
+                BOUNDARY_WARP_FREQUENCY,
+                BOUNDARY_WARP_AMPLITUDE);
         // 2. Scale the blended detail to block height magnitude
         var scaledMulti = new MultiplyDensity(multiNoise,
                 new ConstantDensity(config.continentalHeightAmplitude() / 6.0));
@@ -170,6 +182,7 @@ public final class GeoForgeEngine {
             };
 
         }
+        this.scenicDetector = new ScenicFeatureDetector(seed);
     }
 
     /**
@@ -191,18 +204,27 @@ public final class GeoForgeEngine {
     }
 
     /**
+     * Returns the scenic feature detector for wow-moment detection.
+     *
+     * @return the scenic feature detector
+     */
+    public ScenicFeatureDetector getScenicDetector() {
+        return scenicDetector;
+    }
+
+    /**
      * Creates a noise source based on the configured noise backend.
      *
      * @param seed the seed for the noise source
-     * @return a new noise source (SimplexNoise or FastNoiseLiteSource)
+     * @return a new noise source (GradientNoise or FastNoiseLiteSource)
      */
     private NoiseSource createNoiseSource(long seed) {
         return switch (config.noiseBackend()) {
             case "fastnoise" -> new FastNoiseLiteSource(seed);
-            case "simplex" -> new SimplexNoise(seed);
+            case "simplex", "gradient" -> new GradientNoise(seed);
             default -> {
-                LOG.warning("Unknown noise backend '" + config.noiseBackend() + "', falling back to SimplexNoise");
-                yield new SimplexNoise(seed);
+                LOG.warning("Unknown noise backend '" + config.noiseBackend() + "', falling back to GradientNoise");
+                yield new GradientNoise(seed);
             }
         };
     }
@@ -222,6 +244,18 @@ public final class GeoForgeEngine {
      */
     public double getHeightAt(int blockX, int blockZ) {
         return heightFunction.sample(blockX, 0, blockZ);
+    }
+
+    /**
+     * Returns the domain-warped surface height at the given block coordinates.
+     * This matches the actual terrain surface used by {@link #getDensity}.
+     *
+     * @param blockX the x-coordinate in block space
+     * @param blockZ the z-coordinate in block space
+     * @return the domain-warped terrain height
+     */
+    public double getWarpedHeightAt(int blockX, int blockZ) {
+        return domainWarpedHeight.sample(blockX, 0, blockZ);
     }
 
     /**
@@ -251,6 +285,16 @@ public final class GeoForgeEngine {
             cache.caveModifier = cfg.caveAmplitudeModifier();
             cache.heightOffset = cfg.heightOffset();
             cache.amplitudeMultiplier = cfg.amplitudeMultiplier();
+            // Compute terrain gradient for topographic river carving
+            // Low gradient magnitude = valley bottom = rivers carve here
+            // High gradient magnitude = slope/ridge = rivers suppressed
+            double hDx = domainWarpedHeight.sample(blockX + 5, 0, blockZ);
+            double hDz = domainWarpedHeight.sample(blockX, 0, blockZ + 5);
+            double gradX = (hDx - targetHeight) / 5.0;
+            double gradZ = (hDz - targetHeight) / 5.0;
+            double gradientMag = Math.sqrt(gradX * gradX + gradZ * gradZ);
+            // valleyFactor: 1.0 in flat valley bottoms, ~0.0 on steep slopes
+            cache.valleyFactor = Math.max(0.0, Math.min(1.0, 1.0 - gradientMag * 2.0));
         }
 
         // Apply biome-specific terrain modifiers
@@ -285,8 +329,10 @@ public final class GeoForgeEngine {
                     density, cave, noodleA, noodleB,
                     blockY, targetHeight, config);
         }
-
-        return DensityGuard.clamp(riverCarver.carve(density, blockX, blockY, blockZ),
+        // Topographic river carving: weight by valley factor so rivers flow through valley bottoms
+        double carved = riverCarver.carve(density, blockX, blockY, blockZ);
+        double weightedDensity = density + (carved - density) * cache.valleyFactor;
+        return DensityGuard.clamp(weightedDensity,
                 config.minHeight(), config.maxHeight());
     }
 
@@ -347,6 +393,10 @@ public final class GeoForgeEngine {
                 blockX * config.humidityFrequency(),
                 blockZ * config.humidityFrequency()) + 1.0) * 0.5;
         float continentalness = plateMapper.getContinentalness(blockX, blockZ);
+        double biomeWarp = boundaryWarpNoise.sample2D(
+                (double) blockX * BOUNDARY_WARP_FREQUENCY,
+                (double) blockZ * BOUNDARY_WARP_FREQUENCY) * BOUNDARY_WARP_AMPLITUDE;
+        continentalness = (float) Math.min(1.0, Math.max(0.0, continentalness + biomeWarp));
         return this.biomeRegistry.climateResolver().resolve(temp, humidity, continentalness);
     }
 
@@ -508,6 +558,7 @@ public final class GeoForgeEngine {
                 def.surfaceHardness(),
                 def.treeDensity(),
                 def.minTreeHeight(),
-                def.maxTreeHeight());
+                def.maxTreeHeight(),
+                def.surfaceDepth());
     }
 }

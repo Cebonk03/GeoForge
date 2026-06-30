@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.geoforge.engine.noise.NoiseSource;
-import com.geoforge.engine.noise.SimplexNoise;
+import com.geoforge.engine.noise.GradientNoise;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Domain warp density tests")
 class DomainWarpDensityTest {
 
-    private static final NoiseSource NOISE = new SimplexNoise(42L);
+    private static final NoiseSource NOISE = new GradientNoise(42L);
     private static final DensityFunctionTree CONSTANT = (x, y, z) -> 42.0;
 
     @DisplayName("Zero amplitude delegates directly to inner function")

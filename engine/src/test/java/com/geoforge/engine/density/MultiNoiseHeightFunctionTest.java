@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.geoforge.engine.geology.TectonicPlateMapper;
 import com.geoforge.engine.noise.NoiseSource;
-import com.geoforge.engine.noise.SimplexNoise;
+import com.geoforge.engine.noise.GradientNoise;
 import java.util.Arrays;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
@@ -26,6 +26,8 @@ class MultiNoiseHeightFunctionTest {
     private static final double FLAT_FREQ = 0.008;
     private static final double RIDGE_AMP = 1.0;
     private static final double SHARPNESS = 2.0;
+    private static final double BOUNDARY_WARP_FREQ = 0.001;
+    private static final double BOUNDARY_WARP_AMP = 0.15;
 
     @DisplayName("Output is deterministic for the same inputs")
     @Test
@@ -72,13 +74,15 @@ class MultiNoiseHeightFunctionTest {
     void differentErosionSeeds_differentWeights() {
         var mapper = new TectonicPlateMapper(SEED);
         var mnhf1 = new MultiNoiseHeightFunction(
-                new SimplexNoise(1L), new SimplexNoise(2L), new SimplexNoise(3L),
+                new GradientNoise(1L), new GradientNoise(2L), new GradientNoise(3L),
                 mapper, 999L,
-                RIDGE_FREQ, FBM_FREQ, FLAT_FREQ, RIDGE_AMP, SHARPNESS);
+                RIDGE_FREQ, FBM_FREQ, FLAT_FREQ, RIDGE_AMP, SHARPNESS,
+                new GradientNoise(999L), BOUNDARY_WARP_FREQ, BOUNDARY_WARP_AMP);
         var mnhf2 = new MultiNoiseHeightFunction(
-                new SimplexNoise(1L), new SimplexNoise(2L), new SimplexNoise(3L),
+                new GradientNoise(1L), new GradientNoise(2L), new GradientNoise(3L),
                 mapper, 888L,
-                RIDGE_FREQ, FBM_FREQ, FLAT_FREQ, RIDGE_AMP, SHARPNESS);
+                RIDGE_FREQ, FBM_FREQ, FLAT_FREQ, RIDGE_AMP, SHARPNESS,
+                new GradientNoise(888L), BOUNDARY_WARP_FREQ, BOUNDARY_WARP_AMP);
         boolean anyDiff = false;
         outer:
         for (int x = -200; x <= 200; x += 5) {
@@ -203,13 +207,14 @@ class MultiNoiseHeightFunctionTest {
     @Test
     void columnCaching_noiseSamplesReducedByCaching() {
         var mapper = new TectonicPlateMapper(SEED);
-        var ridgeCounter = new CountingNoiseSource(new SimplexNoise(1L));
-        var fbmCounter = new CountingNoiseSource(new SimplexNoise(2L));
-        var flatCounter = new CountingNoiseSource(new SimplexNoise(3L));
+        var ridgeCounter = new CountingNoiseSource(new GradientNoise(1L));
+        var fbmCounter = new CountingNoiseSource(new GradientNoise(2L));
+        var flatCounter = new CountingNoiseSource(new GradientNoise(3L));
 
         var mnhf = new MultiNoiseHeightFunction(
                 ridgeCounter, fbmCounter, flatCounter, mapper, EROSION_SEED,
-                RIDGE_FREQ, FBM_FREQ, FLAT_FREQ, RIDGE_AMP, SHARPNESS);
+                RIDGE_FREQ, FBM_FREQ, FLAT_FREQ, RIDGE_AMP, SHARPNESS,
+                new GradientNoise(999L), BOUNDARY_WARP_FREQ, BOUNDARY_WARP_AMP);
 
         mnhf.sample(100, 50, 200);
         int ridgeAfterFirst = ridgeCounter.callCount2D;
@@ -238,12 +243,13 @@ class MultiNoiseHeightFunctionTest {
 
     private static MultiNoiseHeightFunction createDefault(TectonicPlateMapper mapper) {
         return new MultiNoiseHeightFunction(
-                new SimplexNoise(1L),
-                new SimplexNoise(2L),
-                new SimplexNoise(3L),
+                new GradientNoise(1L),
+                new GradientNoise(2L),
+                new GradientNoise(3L),
                 mapper,
                 EROSION_SEED,
-                RIDGE_FREQ, FBM_FREQ, FLAT_FREQ, RIDGE_AMP, SHARPNESS);
+                RIDGE_FREQ, FBM_FREQ, FLAT_FREQ, RIDGE_AMP, SHARPNESS,
+                new GradientNoise(999L), BOUNDARY_WARP_FREQ, BOUNDARY_WARP_AMP);
     }
 
     private static Stream<Arguments> weightGridPositions() {

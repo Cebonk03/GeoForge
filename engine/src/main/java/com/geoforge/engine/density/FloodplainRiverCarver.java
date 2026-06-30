@@ -1,7 +1,7 @@
 package com.geoforge.engine.density;
 
 import com.geoforge.engine.noise.NoiseSource;
-import com.geoforge.engine.noise.SimplexNoise;
+import com.geoforge.engine.noise.GradientNoise;
 
 /**
  * River carver that carves wide, shallow floodplains with gentle banks using
@@ -38,7 +38,7 @@ public final class FloodplainRiverCarver implements RiverCarver {
     public FloodplainRiverCarver(long seed, double frequency, int depth, int floodplainWidth) {
         if (floodplainWidth <= 0) throw new IllegalArgumentException(
                 "floodplainWidth must be > 0, got " + floodplainWidth);
-        this.noise = new SimplexNoise(seed ^ 0xFEEDBEEFL);
+        this.noise = new GradientNoise(seed ^ 0xFEEDBEEFL);
         this.frequency = frequency;
         this.depth = depth;
         this.floodplainWidth = floodplainWidth;

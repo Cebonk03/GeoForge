@@ -1,7 +1,7 @@
 package com.geoforge.engine.density;
 
 import com.geoforge.engine.noise.NoiseSource;
-import com.geoforge.engine.noise.SimplexNoise;
+import com.geoforge.engine.noise.GradientNoise;
 
 /**
  * River carver that uses 2D simplex noise to carve v-shaped river valleys
@@ -40,7 +40,7 @@ public final class SimplexRiverCarver implements RiverCarver {
     public SimplexRiverCarver(long seed, double frequency, int depth, int width) {
         if (width <= 0) throw new IllegalArgumentException(
                 "width must be > 0, got " + width);
-        this.noise = new SimplexNoise(seed ^ 0xFEEDBEEFL);
+        this.noise = new GradientNoise(seed ^ 0xFEEDBEEFL);
         this.frequency = frequency;
         this.depth = depth;
         this.width = width;

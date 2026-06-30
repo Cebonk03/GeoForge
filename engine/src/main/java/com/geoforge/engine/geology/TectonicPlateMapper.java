@@ -1,7 +1,7 @@
 package com.geoforge.engine.geology;
 
 import com.geoforge.engine.noise.NoiseSource;
-import com.geoforge.engine.noise.SimplexNoise;
+import com.geoforge.engine.noise.GradientNoise;
 import java.util.SplittableRandom;
 
 /**
@@ -39,8 +39,8 @@ public final class TectonicPlateMapper {
             plateZ[i] = (rng.nextFloat() - 0.5f) * 2.0f * spread;
         }
 
-        this.coastlineNoise = new SimplexNoise(seed ^ 0xDEADBEEFL);
-        this.modulateNoise = new SimplexNoise(seed ^ 0xCAFEBABEL);
+        this.coastlineNoise = new GradientNoise(seed ^ 0xDEADBEEFL);
+        this.modulateNoise = new GradientNoise(seed ^ 0xCAFEBABEL);
     }
 
     /**

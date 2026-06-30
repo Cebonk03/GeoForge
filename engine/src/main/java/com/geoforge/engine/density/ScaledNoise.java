@@ -3,7 +3,7 @@ package com.geoforge.engine.density;
 import com.geoforge.engine.noise.NoiseSource;
 
 /**
- * A density function that samples a SimplexNoise instance with configurable scale factors.
+ * A density function that samples a GradientNoise instance with configurable scale factors.
  *
  * @param noise   the noise source
  * @param xScale  scaling factor for the x-coordinate

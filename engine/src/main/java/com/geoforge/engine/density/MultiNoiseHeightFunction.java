@@ -2,27 +2,27 @@ package com.geoforge.engine.density;
 
 import com.geoforge.engine.geology.TectonicPlateMapper;
 import com.geoforge.engine.noise.NoiseSource;
-import com.geoforge.engine.noise.SimplexNoise;
 
 /**
  * A density function that blends three terrain types — ridge (mountains), FBM (hills),
- * and flat (plains/oceans) — based on tectonic plate continentalness and erosion.
+ * and flat (plains/oceans) — based on tectonic plate continentalness with noise-warped
+ * boundary transitions.
  *
  * <p>Blend weights are computed from continentalness as follows:
  *
  * <ul>
- *   <li>{@code c ∈ [0.0, 0.3]}: ocean — flat noise (seabed)
- *   <li>{@code c ∈ [0.3, 0.5]}: coast — blend flat → FBM
- *   <li>{@code c ∈ [0.5, 0.7]}: plains/hills — FBM dominant
- *   <li>{@code c ∈ [0.7, 1.0]}: highlands — blend FBM → ridge
+ *   <li>{@code c ∈ [0.0, 0.35]}: ocean — flat noise (seabed)
+ *   <li>{@code c ∈ [0.25, 0.55]}: coast — blend flat → FBM
+ *   <li>{@code c ∈ [0.45, 0.75]}: plains/hills — FBM dominant
+ *   <li>{@code c ∈ [0.65, 1.0]}: highlands — blend FBM → ridge
  * </ul>
  *
- * <p>Erosion (sampled from internal noise) modifies weights toward flat when &gt; 0.6.
+ * <p>Continentalness is modulated by noise-warping for organic, invisible biome boundaries.
+ * Zones overlap by 0.1 for smooth transitions.
  *
  * <p><b>Column weight caching:</b> Weights are computed ONCE per (x, z) column and
  * reused for all y samples via a {@link ThreadLocal} cache. This avoids redundant
- * continentalness queries and erosion noise samples when evaluating density across
- * many Y levels in the same column.
+ * continentalness queries when evaluating density across many Y levels in the same column.
  */
 public final class MultiNoiseHeightFunction implements DensityFunctionTree {
 
@@ -30,13 +30,14 @@ public final class MultiNoiseHeightFunction implements DensityFunctionTree {
     private final NoiseSource fbmNoise;
     private final NoiseSource flatNoise;
     private final TectonicPlateMapper plateMapper;
-    private final NoiseSource erosionNoise;
+    private final NoiseSource boundaryWarpNoise;
     private final double ridgeFrequency;
     private final double fbmFrequency;
     private final double flatFrequency;
     private final double ridgeAmplitude;
     private final double continentalnessBlendSharpness;
-    private final double erosionFrequency;
+    private final double boundaryWarpFrequency;
+    private final double boundaryWarpAmplitude;
 
     // Column weight cache: ThreadLocal so multiple chunk workers don't collide
     private final ThreadLocal<ColumnCache> columnCache =
@@ -57,12 +58,15 @@ public final class MultiNoiseHeightFunction implements DensityFunctionTree {
      * @param fbmNoise                     noise source for hill terrain
      * @param flatNoise                    noise source for flat/plains terrain
      * @param plateMapper                  tectonic plate mapper (provides continentalness)
-     * @param seed                         seed for internal erosion noise (deterministic)
+     * @param seed                         seed (reserved for future use)
      * @param ridgeFrequency               frequency for ridge noise sampling
      * @param fbmFrequency                 frequency for FBM noise sampling
      * @param flatFrequency                frequency for flat noise sampling
      * @param ridgeAmplitude               amplitude multiplier for ridge noise
      * @param continentalnessBlendSharpness sharpness of transition between continentalness zones
+     * @param boundaryWarpNoise            noise source for warping continentalness at biome boundaries
+     * @param boundaryWarpFrequency        frequency for boundary warp noise
+     * @param boundaryWarpAmplitude        amplitude for boundary warp noise
      */
     public MultiNoiseHeightFunction(
             NoiseSource ridgeNoise,
@@ -74,20 +78,22 @@ public final class MultiNoiseHeightFunction implements DensityFunctionTree {
             double fbmFrequency,
             double flatFrequency,
             double ridgeAmplitude,
-            double continentalnessBlendSharpness) {
+            double continentalnessBlendSharpness,
+            NoiseSource boundaryWarpNoise,
+            double boundaryWarpFrequency,
+            double boundaryWarpAmplitude) {
         this.ridgeNoise = ridgeNoise;
         this.fbmNoise = fbmNoise;
         this.flatNoise = flatNoise;
         this.plateMapper = plateMapper;
+        this.boundaryWarpNoise = boundaryWarpNoise;
         this.ridgeFrequency = ridgeFrequency;
         this.fbmFrequency = fbmFrequency;
         this.flatFrequency = flatFrequency;
         this.ridgeAmplitude = ridgeAmplitude;
         this.continentalnessBlendSharpness = continentalnessBlendSharpness;
-
-        // Internal erosion noise with decorrelated seed
-        this.erosionNoise = new SimplexNoise(seed ^ 0xE70DE5L);
-        this.erosionFrequency = 0.005;
+        this.boundaryWarpFrequency = boundaryWarpFrequency;
+        this.boundaryWarpAmplitude = boundaryWarpAmplitude;
     }
 
     /**
@@ -142,15 +148,17 @@ public final class MultiNoiseHeightFunction implements DensityFunctionTree {
     }
 
     /**
-     * Computes blend weights from continentalness and erosion.
+     * Computes blend weights from continentalness with noise-warped boundary transitions.
      */
     private void computeWeights(int blockX, int blockZ, ColumnCache cache) {
         float continentalnessF = plateMapper.getContinentalness(blockX, blockZ);
         double c = Math.min(1.0, Math.max(0.0, (double) continentalnessF));
 
-        // Erosion noise: sample 2D and map to [0, 1]
-        double e = (erosionNoise.sample2D(blockX * erosionFrequency, blockZ * erosionFrequency) + 1.0) * 0.5;
-        e = Math.min(1.0, Math.max(0.0, e));
+        // Apply noise warp to continentalness for organic boundary transitions
+        double warp = boundaryWarpNoise.sample2D(
+                (double) blockX * boundaryWarpFrequency,
+                (double) blockZ * boundaryWarpFrequency) * boundaryWarpAmplitude;
+        c = Math.min(1.0, Math.max(0.0, c + warp));
 
         double shp = Math.max(0.1, continentalnessBlendSharpness);
 
@@ -158,43 +166,35 @@ public final class MultiNoiseHeightFunction implements DensityFunctionTree {
         double fbmW;
         double flatW;
 
-        // Zone 1: Ocean (c ∈ [0, 0.3]) — flat dominates with transition to FBM
-        if (c <= 0.3) {
-            double t = c / 0.3; // 0..1 in this zone
+        // Zone 1: Ocean (c ∈ [0, 0.35]) — flat dominates with transition to FBM
+        if (c <= 0.35) {
+            double t = c / 0.35; // 0..1 in this zone
             double blend = smoothstep(t, shp);
             flatW = 1.0 - blend;
             fbmW = blend;
             ridgeW = 0.0;
         }
-        // Zone 2: Coast (c ∈ [0.3, 0.5]) — flat → FBM transition
-        else if (c <= 0.5) {
-            double t = (c - 0.3) / 0.2; // 0..1 in this zone
+        // Zone 2: Coast (c ∈ [0.25, 0.55]) — flat → FBM transition, overlaps with ocean by 0.1
+        else if (c <= 0.55) {
+            double t = (c - 0.25) / 0.3; // 0..1 in this zone
             double blend = smoothstep(t, shp);
             flatW = (1.0 - blend);
             fbmW = blend;
             ridgeW = 0.0;
         }
-        // Zone 3: Plains/hills (c ∈ [0.5, 0.7]) — FBM dominant
-        else if (c <= 0.7) {
+        // Zone 3: Plains/hills (c ∈ [0.45, 0.75]) — FBM dominant, overlaps with coast by 0.1
+        else if (c <= 0.75) {
             flatW = 0.0;
             fbmW = 1.0;
             ridgeW = 0.0;
         }
-        // Zone 4: Highlands (c ∈ [0.7, 1.0]) — FBM → ridge transition
+        // Zone 4: Highlands (c ∈ [0.65, 1.0]) — FBM → ridge transition, overlaps with plains by 0.1
         else {
-            double t = (c - 0.7) / 0.3; // 0..1 in this zone
+            double t = (c - 0.65) / 0.35; // 0..1 in this zone
             double blend = smoothstep(t, shp);
             fbmW = 1.0 - blend;
             ridgeW = blend;
             flatW = 0.0;
-        }
-
-        // Erosion modifier: when erosion > 0.6, push weights toward flat
-        if (e > 0.6) {
-            double eFactor = (e - 0.6) / 0.4; // 0..1 in erosion zone
-            ridgeW *= (1.0 - eFactor * 0.8);
-            fbmW *= (1.0 - eFactor * 0.5);
-            flatW += eFactor * 0.5;
         }
 
         // Normalize so weights sum to 1

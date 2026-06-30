@@ -6,7 +6,7 @@ package com.geoforge.engine.noise;
  *
  * <p>Uses OpenSimplex2 noise with FBM fractal by default. Produces values in [-1, 1]
  * and is deterministic for the same seed. Benchmark results indicate 2-4x throughput
- * improvement over {@link SimplexNoise} for 3D samples.
+ * improvement over {@link GradientNoise} for 3D samples.
  *
  * <p>Internally uses a FastNoiseLite instance configured with:
  * <ul>

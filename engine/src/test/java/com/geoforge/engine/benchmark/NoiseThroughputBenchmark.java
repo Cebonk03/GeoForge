@@ -2,7 +2,7 @@ package com.geoforge.engine.benchmark;
 
 import com.geoforge.engine.noise.FastNoiseLiteSource;
 import com.geoforge.engine.noise.NoiseSource;
-import com.geoforge.engine.noise.SimplexNoise;
+import com.geoforge.engine.noise.GradientNoise;
 
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * JMH microbenchmark measuring noise sampling throughput.
  *
- * <p>Compares {@link SimplexNoise} vs {@link FastNoiseLiteSource} in both 2D and 3D modes.
+ * <p>Compares {@link GradientNoise} vs {@link FastNoiseLiteSource} in both 2D and 3D modes.
  * Results are reported as samples per second. Higher is better.
  *
  * <p>Uses varying input coordinates to exercise the full noise pipeline
@@ -43,7 +43,7 @@ public class NoiseThroughputBenchmark {
      */
     @Setup
     public void setup() {
-        simplexNoise = new SimplexNoise(42L);
+        simplexNoise = new GradientNoise(42L);
         fastNoiseLite = new FastNoiseLiteSource(42L);
         coordIndex = 0;
     }

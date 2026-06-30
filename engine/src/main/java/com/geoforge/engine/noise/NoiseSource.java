@@ -5,12 +5,12 @@ package com.geoforge.engine.noise;
  *
  * <p>Implementations produce values in approximately [-1, 1] and are consistent
  * for the same {@code long} seed. This is the primary abstraction for all noise
- * generation in the engine. Both {@link SimplexNoise} and {@link FastNoiseLiteSource}
+ * generation in the engine. Both {@link GradientNoise} and {@link FastNoiseLiteSource}
  * implement this interface, allowing them to be swapped without changing consumers.
  *
  * <p>All implementations must be thread-safe and deterministic.
  *
- * @see SimplexNoise
+ * @see GradientNoise
  * @see FastNoiseLiteSource
  */
 public interface NoiseSource {
