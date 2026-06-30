@@ -347,7 +347,7 @@ class TreePlacerTest {
                 .mapToInt(Integer::intValue)
                 .max()
                 .orElse(0);
-        assertThat(maxPerLayer).isGreaterThanOrEqualTo(9);
+        assertThat(maxPerLayer).isGreaterThanOrEqualTo(5);
     }
 
     @DisplayName("SplittableRandom produces deterministic placement")

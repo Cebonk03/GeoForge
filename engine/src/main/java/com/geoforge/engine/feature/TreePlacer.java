@@ -6,12 +6,21 @@ import com.geoforge.engine.feature.tree.TreeVariant;
 import com.geoforge.engine.feature.tree.TreeVariantSelector;
 import com.geoforge.engine.feature.tree.TreeRegistry;
 import com.geoforge.engine.feature.tree.trunk.StraightTrunk;
+import com.geoforge.engine.feature.tree.trunk.BentTrunk;
+import com.geoforge.engine.feature.tree.trunk.LeaningTrunk;
+import com.geoforge.engine.feature.tree.trunk.TwistedTrunk;
 import com.geoforge.engine.feature.tree.trunk.MultiStemTrunk;
 import com.geoforge.engine.feature.tree.trunk.FallenTrunk;
 import com.geoforge.engine.feature.tree.canopy.RoundCanopy;
-import com.geoforge.engine.feature.tree.canopy.SpreadingCanopy;
+import com.geoforge.engine.feature.tree.canopy.OvalCanopy;
+import com.geoforge.engine.feature.tree.canopy.DomedCanopy;
 import com.geoforge.engine.feature.tree.canopy.ConicalCanopy;
+import com.geoforge.engine.feature.tree.canopy.LayeredCanopy;
+import com.geoforge.engine.feature.tree.canopy.SpreadingCanopy;
+import com.geoforge.engine.feature.tree.canopy.FlatHatCanopy;
 import com.geoforge.engine.feature.tree.canopy.SparseCanopy;
+import com.geoforge.engine.feature.tree.canopy.WeepingCanopy;
+import com.geoforge.engine.feature.tree.canopy.PlumeCanopy;
 import com.geoforge.engine.feature.tree.canopy.NoCanopy;
 import java.util.Collections;
 import java.util.HashMap;
@@ -48,47 +57,100 @@ public final class TreePlacer implements GeoForgeFeature {
 
     private static Map<TreeType, List<TreeVariant>> buildDefaultVariants() {
         Map<TreeType, List<TreeVariant>> map = new HashMap<>();
-        var flatHat = new com.geoforge.engine.feature.tree.canopy.FlatHatCanopy();
+        var bent = new BentTrunk();
+        var leaning = new LeaningTrunk();
+        var twisted = new TwistedTrunk();
         var straight = new StraightTrunk();
         var multiStem = new MultiStemTrunk();
         var fallen = new FallenTrunk();
         var round = new RoundCanopy();
-        var spreading = new SpreadingCanopy();
+        var oval = new OvalCanopy();
+        var domed = new DomedCanopy();
         var conical = new ConicalCanopy();
+        var layered = new LayeredCanopy();
+        var spreading = new SpreadingCanopy();
+        var flatHat = new FlatHatCanopy();
         var sparse = new SparseCanopy();
+        var weeping = new WeepingCanopy();
+        var plume = new PlumeCanopy();
         var none = new NoCanopy();
 
+        // OAK — 11 variants covering forest interior, edge, plains, clearings, fallen
         map.put(TreeType.OAK, List.of(
-                new TreeVariant("oak_standard", straight, round, 4, 7, 1.0, 0.5),
-                new TreeVariant("oak_spreading", straight, spreading, 4, 6, 0.9, 0.3),
-                new TreeVariant("oak_fallen", fallen, sparse, 3, 5, 0.3, 0.2)));
+                new TreeVariant("oak_forest_tall", straight, round, 6, 10, 1.0, 0.8),
+                new TreeVariant("oak_forest_standard", straight, round, 5, 7, 1.0, 0.6),
+                new TreeVariant("oak_forest_dense", straight, layered, 6, 9, 1.0, 0.7),
+                new TreeVariant("oak_forest_edge", bent, spreading, 4, 6, 0.8, 0.4),
+                new TreeVariant("oak_forest_light", straight, oval, 5, 8, 0.9, 0.5),
+                new TreeVariant("oak_plains_exposed", twisted, sparse, 3, 5, 0.5, 0.3),
+                new TreeVariant("oak_plains_lone", straight, spreading, 5, 8, 0.9, 0.4),
+                new TreeVariant("oak_plains_old", multiStem, domed, 4, 6, 0.8, 0.3),
+                new TreeVariant("oak_clearing", leaning, domed, 4, 7, 0.7, 0.4),
+                new TreeVariant("oak_sapling", straight, sparse, 3, 4, 1.0, 0.2),
+                new TreeVariant("oak_fallen", fallen, none, 3, 5, 0.0, 0.2)));
+        // BIRCH — 6 variants
         map.put(TreeType.BIRCH, List.of(
                 new TreeVariant("birch_standard", straight, round, 5, 8, 0.9, 0.7),
-                new TreeVariant("birch_fallen", fallen, sparse, 3, 5, 0.3, 0.3)));
+                new TreeVariant("birch_tall", straight, oval, 6, 10, 0.8, 0.4),
+                new TreeVariant("birch_old", straight, domed, 5, 7, 1.0, 0.3),
+                new TreeVariant("birch_bent", bent, sparse, 4, 6, 0.7, 0.3),
+                new TreeVariant("birch_fallen", fallen, sparse, 3, 5, 0.3, 0.3),
+                new TreeVariant("birch_sapling", straight, sparse, 3, 4, 0.8, 0.2)));
+        // SPRUCE — 6 variants
         map.put(TreeType.SPRUCE, List.of(
                 new TreeVariant("spruce_standard", straight, conical, 5, 8, 1.0, 0.6),
-                new TreeVariant("spruce_tall", straight, conical, 7, 12, 0.9, 0.3),
+                new TreeVariant("spruce_tall", straight, conical, 7, 14, 0.9, 0.3),
+                new TreeVariant("spruce_column", straight, plume, 8, 16, 0.8, 0.2),
+                new TreeVariant("spruce_short", straight, conical, 4, 6, 1.0, 0.4),
+                new TreeVariant("spruce_bent", bent, conical, 5, 7, 0.8, 0.3),
                 new TreeVariant("spruce_fallen", fallen, none, 3, 5, 0.0, 0.1)));
+        // JUNGLE — 6 variants
         map.put(TreeType.JUNGLE, List.of(
                 new TreeVariant("jungle_standard", straight, spreading, 6, 10, 1.0, 0.5),
-                new TreeVariant("jungle_tall", straight, spreading, 8, 16, 0.9, 0.3),
+                new TreeVariant("jungle_tall", straight, spreading, 8, 18, 0.9, 0.3),
+                new TreeVariant("jungle_weeping", straight, weeping, 7, 14, 0.8, 0.3),
+                new TreeVariant("jungle_multi", multiStem, spreading, 5, 8, 0.7, 0.3),
+                new TreeVariant("jungle_bent", bent, oval, 5, 8, 0.7, 0.3),
                 new TreeVariant("jungle_fallen", fallen, sparse, 4, 6, 0.3, 0.2)));
+        // ACACIA — 6 variants
         map.put(TreeType.ACACIA, List.of(
                 new TreeVariant("acacia_standard", straight, flatHat, 4, 7, 0.9, 0.7),
+                new TreeVariant("acacia_tall", straight, flatHat, 6, 10, 0.8, 0.3),
+                new TreeVariant("acacia_bent", bent, sparse, 3, 5, 0.6, 0.3),
+                new TreeVariant("acacia_spreading", straight, spreading, 4, 6, 0.7, 0.3),
+                new TreeVariant("acacia_twisted", twisted, flatHat, 4, 6, 0.7, 0.2),
                 new TreeVariant("acacia_fallen", fallen, sparse, 3, 5, 0.3, 0.3)));
+        // DARK_OAK — 6 variants
         map.put(TreeType.DARK_OAK, List.of(
                 new TreeVariant("dark_oak_standard", multiStem, spreading, 6, 9, 1.0, 0.7),
+                new TreeVariant("dark_oak_tall", multiStem, spreading, 7, 12, 0.9, 0.3),
+                new TreeVariant("dark_oak_round", straight, round, 5, 8, 0.8, 0.4),
+                new TreeVariant("dark_oak_domed", multiStem, domed, 6, 9, 0.9, 0.3),
+                new TreeVariant("dark_oak_bent", bent, round, 5, 7, 0.7, 0.3),
                 new TreeVariant("dark_oak_fallen", fallen, sparse, 4, 6, 0.3, 0.3)));
+        // PALE_OAK — 6 variants
         map.put(TreeType.PALE_OAK, List.of(
                 new TreeVariant("pale_oak_standard", multiStem, round, 5, 9, 0.9, 0.5),
+                new TreeVariant("pale_oak_tall", straight, round, 6, 11, 0.8, 0.3),
                 new TreeVariant("pale_oak_sparse", straight, sparse, 5, 9, 0.4, 0.3),
+                new TreeVariant("pale_oak_weeping", straight, weeping, 5, 8, 0.7, 0.3),
+                new TreeVariant("pale_oak_bent", bent, oval, 4, 7, 0.6, 0.3),
                 new TreeVariant("pale_oak_fallen", fallen, none, 3, 5, 0.0, 0.2)));
+        // CHERRY — 6 variants
         map.put(TreeType.CHERRY, List.of(
                 new TreeVariant("cherry_standard", straight, round, 4, 7, 1.0, 0.7),
+                new TreeVariant("cherry_tall", straight, round, 5, 9, 0.9, 0.3),
+                new TreeVariant("cherry_bent", bent, oval, 4, 6, 0.8, 0.4),
+                new TreeVariant("cherry_weeping", straight, weeping, 5, 8, 0.7, 0.3),
+                new TreeVariant("cherry_multi", multiStem, round, 4, 6, 0.8, 0.3),
                 new TreeVariant("cherry_fallen", fallen, sparse, 3, 5, 0.3, 0.3)));
+        // MANGROVE — 6 variants
         map.put(TreeType.MANGROVE, List.of(
                 new TreeVariant("mangrove_standard", straight, spreading, 5, 9, 1.0, 0.6),
-                new TreeVariant("mangrove_tall", straight, spreading, 7, 13, 0.9, 0.2),
+                new TreeVariant("mangrove_tall", straight, spreading, 7, 14, 0.9, 0.2),
+                new TreeVariant("mangrove_multi", multiStem, spreading, 5, 8, 0.8, 0.3),
+                new TreeVariant("mangrove_bent", bent, sparse, 4, 6, 0.6, 0.3),
+                new TreeVariant("mangrove_weeping", straight, weeping, 5, 9, 0.7, 0.2),
                 new TreeVariant("mangrove_fallen", fallen, sparse, 3, 5, 0.3, 0.2)));
 
         return Collections.unmodifiableMap(map);
