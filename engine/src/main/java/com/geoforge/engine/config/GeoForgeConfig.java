@@ -91,6 +91,11 @@ package com.geoforge.engine.config;
  * @param plateauSize                Side length of flattened plateau region in blocks (0 = disabled). Must be {@code >= 0}.
  * @param plateauTargetHeight        Target height for plateau flattening in blocks. Must be within {@code [minHeight, maxHeight]}.
  * @param domainWarpAmplitude        Amplitude of domain-warping noise distortion.
+ * @param boundaryWarpFrequency    Frequency of noise used to warp continentalness at biome boundaries.
+ *                                 Higher = more frequent boundary shifts. 0.001 = smooth, large-scale warps.
+ * @param boundaryWarpAmplitude    Amplitude of boundary warp in continentalness units (0-1 range).
+ *                                 0.15 shifts boundaries by ~15% of the continentalness range,
+ *                                 creating organic, non-detectable biome borders.
  * @param treeDensityFrequency    Frequency of tree density noise for placement. Must be {@code > 0}.
  * @param configVersion              Configuration version for migration support.
  */
@@ -147,6 +152,9 @@ public record GeoForgeConfig(
         int plateauTargetHeight,
         // --- Domain warping ---
         double domainWarpAmplitude,
+        // --- Boundary warp (biome border transitions) ---
+        double boundaryWarpFrequency,
+        double boundaryWarpAmplitude,
         // --- Tree config ---
         double treeDensityFrequency,
         // --- Config version ---
@@ -314,7 +322,16 @@ public record GeoForgeConfig(
                     "domainWarpAmplitude must be >= 0, got %s"
                             .formatted(domainWarpAmplitude));
         }
-
+        if (boundaryWarpFrequency <= 0) {
+            throw new IllegalArgumentException(
+                    "boundaryWarpFrequency must be > 0, got %s"
+                            .formatted(boundaryWarpFrequency));
+        }
+        if (boundaryWarpAmplitude < 0) {
+            throw new IllegalArgumentException(
+                    "boundaryWarpAmplitude must be >= 0, got %s"
+                            .formatted(boundaryWarpAmplitude));
+        }
         if (treeDensityFrequency <= 0) {
             throw new IllegalArgumentException(
                     "treeDensityFrequency must be > 0, got %s"
@@ -437,6 +454,10 @@ public record GeoForgeConfig(
                 64,    // plateauTargetHeight
                 // Domain warping
                 1.5,   // domainWarpAmplitude
+                // Boundary warp for organic biome border transitions
+                0.001, // boundaryWarpFrequency
+                0.15,  // boundaryWarpAmplitude
+                // Tree config
                 0.02,  // treeDensityFrequency
                 // Config version — bumped to 4 for T2 (caveOctaves 2->3), T7 (biome borders widened)
                 4      // configVersion (was 3)
@@ -512,6 +533,9 @@ public record GeoForgeConfig(
         private int plateauTargetHeight = 64;
         // Domain warping
         private double domainWarpAmplitude = 1.5;
+        // Boundary warp (biome border transitions)
+        private double boundaryWarpFrequency = 0.001;
+        private double boundaryWarpAmplitude = 0.15;
         // Tree config
         private double treeDensityFrequency = 0.02;
         // Config version
@@ -571,6 +595,8 @@ public record GeoForgeConfig(
         public Builder plateauTargetHeight(int plateauTargetHeight) { this.plateauTargetHeight = plateauTargetHeight; return this; }
         // Domain warping
         public Builder domainWarpAmplitude(double domainWarpAmplitude) { this.domainWarpAmplitude = domainWarpAmplitude; return this; }
+        public Builder boundaryWarpFrequency(double boundaryWarpFrequency) { this.boundaryWarpFrequency = boundaryWarpFrequency; return this; }
+        public Builder boundaryWarpAmplitude(double boundaryWarpAmplitude) { this.boundaryWarpAmplitude = boundaryWarpAmplitude; return this; }
         // Tree config
         public Builder treeDensityFrequency(double treeDensityFrequency) { this.treeDensityFrequency = treeDensityFrequency; return this; }
         // Config version
@@ -612,6 +638,8 @@ public record GeoForgeConfig(
                     plateauSize, plateauTargetHeight,
                     // Domain warping
                     domainWarpAmplitude,
+                    // Boundary warp
+                    boundaryWarpFrequency, boundaryWarpAmplitude,
                     treeDensityFrequency,
                     // Config version
                     configVersion);

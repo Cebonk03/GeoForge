@@ -5,7 +5,7 @@
 seed: 0
 
 # Config version for migration support. Increment when structure changes.
-config-version: 3
+config-version: 4
 
 # Terrain height bounds (in block units)
 terrain:
@@ -17,19 +17,19 @@ terrain:
 
 # Fractal noise tuning
 noise:
-  backend: simplex     # Noise backend: "simplex" or "fastnoise"
-  cave-frequency: 0.03       # 3D cave noise frequency (period ~33 blocks)
-  cave-amplitude: 8.0        # Cave carving strength (0 = no caves)
-  cave-octaves: 2            # Detail octaves for cave shape
-  cave-lacunarity: 2.0       # Frequency multiplier per cave octave
-  cave-persistence: 0.5      # Amplitude decay per cave octave
+  backend: simplex             # Noise backend: "simplex", "gradient", or "fastnoise"
+  cave-frequency: 0.03         # 3D cave noise frequency (period ~33 blocks)
+  cave-amplitude: 8.0          # Cave carving strength (0 = no caves)
+  cave-octaves: 3              # Detail octaves for cave shape (was 2)
+  cave-lacunarity: 2.0         # Frequency multiplier per cave octave
+  cave-persistence: 0.5        # Amplitude decay per cave octave
   ridge-frequency: 0.003
   ridge-octaves: 3
   ridge-amplitude: 1.0
   fbm-frequency: 0.005
   fbm-octaves: 4
   flat-frequency: 0.008
-  continentalness-blend-sharpness: 2.0
+  continentalness-blend-sharpness: 1.0
 
 # Climate noise frequencies
 climate:
@@ -67,11 +67,7 @@ erosion:
 
 # Surface decoration parameters
 decorations:
-  tree-density: 0.1
-  vegetation-density: 0.3
   feature-seed-offset: 3405691582
-  max-tree-height: 12
-  min-tree-height: 4
   tree-density-frequency: 0.02
 
 # Structure terrain flattening (chunk-centered, for development use)
@@ -82,3 +78,8 @@ plateau:
 # Domain warping -- terrain distortion amplitude
 domain-warp:
   amplitude: 1.5
+
+# Boundary warp -- noise-warped biome border transitions
+boundary-warp:
+  frequency: 0.001       # Warp frequency: higher = more frequent shifts
+  amplitude: 0.15        # Warp amplitude: shifts continentalness by ~15%

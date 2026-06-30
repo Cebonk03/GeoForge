@@ -33,8 +33,8 @@ public final class GeoForgePlugin extends JavaPlugin {
         this.worldSeed = cfg.getLong("seed", 0L);
 
         // Config version check for future migration support
-        int configVersion = cfg.getInt("config-version", 3);
-        int expectedVersion = 3;
+        int configVersion = cfg.getInt("config-version", 4);
+        int expectedVersion = 4;
         if (configVersion != expectedVersion) {
             getLogger().warning(
                     "Expected config-version=" + expectedVersion
@@ -86,9 +86,11 @@ public final class GeoForgePlugin extends JavaPlugin {
 .erosionGravity((float) cfg.getDouble("erosion.gravity", 0.2))
 .noiseBackend(cfg.getString("noise.backend", "simplex"))
             .domainWarpAmplitude(cfg.getDouble("domain-warp.amplitude", 1.5))
+            .boundaryWarpFrequency(cfg.getDouble("boundary-warp.frequency", 0.001))
+            .boundaryWarpAmplitude(cfg.getDouble("boundary-warp.amplitude", 0.15))
             .plateauSize(cfg.getInt("plateau.size", 0))
             .plateauTargetHeight(cfg.getInt("plateau.target-height", 64))
-.configVersion(cfg.getInt("config-version", 2))
+                .configVersion(cfg.getInt("config-version", 4))
 .build();
         this.engine = new GeoForgeEngine(worldSeed, engineConfig);
 
