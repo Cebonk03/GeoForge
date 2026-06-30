@@ -24,7 +24,6 @@ jacoco = "0.8.15"
 spotbugsTool = "4.10.2"
 checkstyleTool = "13.6.0"
 jmh = "1.37"
-snakeyaml = "2.6"
 
 [libraries]
 # Test libraries
@@ -47,7 +46,6 @@ spotbugsAnnotations = { module = "com.github.spotbugs:spotbugs-annotations", ver
 # JMH microbenchmarks
 jmhCore = { module = "org.openjdk.jmh:jmh-core", version.ref = "jmh" }
 jmhAnnotationProcessor = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "jmh" }
-snakeyaml = { module = "org.yaml:snakeyaml", version.ref = "snakeyaml" }
 [bundles]
 # Common test dependencies for all modules
 junitTesting = ["junitJupiter", "assertjCore", "junitPlatformLauncher"]
