@@ -1,18 +1,27 @@
 # GeoForge API
-**Generated:** 2026-06-30T02:15:00Z
-**Commit:** 1e61eb8
+**Generated:** 2026-07-01
+**Commit:** HEAD
 **Branch:** main
 
 Adapter interface + version utilities bridging engine to Paper server.
+
+## Structure
+
+```
+api/src/main/java/com/geoforge/api/
+├── adapter/       GeoForgeAdapter.java (interface), AbstractPaperAdapter.java, VanillaFallbackAdapter.java
+├── version/       ServerVersion.java (regex parser)
+└── util/          FoliaDetector.java (sanctioned Class.forName)
+```
 
 ## Where To Look
 
 | Task | File |
 |------|------|
-| Add new adapter method | `api/src/main/java/com/geoforge/api/adapter/GeoForgeAdapter.java` |
-| Modify version parsing | `api/src/main/java/com/geoforge/api/version/ServerVersion.java` |
-| Folia detection logic | `api/src/main/java/com/geoforge/api/util/FoliaDetector.java` |
-| Degraded fallback | `api/src/main/java/com/geoforge/api/adapter/VanillaFallbackAdapter.java` |
+| Add new adapter method | `api/.../adapter/GeoForgeAdapter.java` |
+| Modify version parsing | `api/.../version/ServerVersion.java` |
+| Folia detection logic | `api/.../util/FoliaDetector.java` |
+| Degraded fallback | `api/.../adapter/VanillaFallbackAdapter.java` |
 
 ## Conventions
 

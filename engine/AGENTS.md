@@ -1,6 +1,6 @@
 # GeoForge Engine
-**Generated:** 2026-06-30T19:07:00Z
-**Commit:** 771f378
+**Generated:** 2026-07-01
+**Commit:** HEAD
 **Branch:** main
 
 Zero-Bukkit math engine for terrain generation. All classes pure Java 21 with no server dependencies.
@@ -10,35 +10,35 @@ Zero-Bukkit math engine for terrain generation. All classes pure Java 21 with no
 ```
 engine/src/main/java/com/geoforge/engine/
 ├── config/       GeoForgeConfig.java (48-field immutable record), ConfigMigrator.java, RiverProfile.java
-├── noise/        NoiseSource.java, GradientNoise.java, SimplexNoise.java, FractalNoise.java,
+├── noise/        NoiseSource.java, GradientNoise.java, FractalNoise.java, FastNoiseLite.java,
+│                DomainWarpedNoiseSource.java, FastNoiseLiteSource.java
 ├── density/      DensityFunctionTree.java + 18 impls (Add, Clamp, CanyonRiverCarver,
 │                CaveType, CaveYEnvelope, Constant, DomainWarpDensity, EnhancedCaveSystem,
 │                FloodplainRiverCarver, MultiNoiseHeightFunction, Multiply,
 │                NoopRiverCarver, PlateContinentalness, RiverCarver, ScaledNoise,
 │                ScaledNoise2D, SimplexRiverCarver)
 ├── geology/      TectonicPlateMapper.java, HydraulicErosion.java
-├── biome/        BiomeTerrainConfig.java (deprecated — replaced by config-driven definitions)
+├── biome/        BiomeTerrainConfig.java
 ├── config/biome/  GeoForgeBiomeDefaults.java, BiomeDefinition.java, BiomeRegistry.java, ClimateResolver.java
-├── plateau/      StructurePlateauModifier.java (terrain flattening, wired in erodeColumn when plateauSize > 0)
+├── plateau/      StructurePlateauModifier.java (terrain flattening, wired in erodeColumn)
 ├── feature/      BlockSetter.java, GeoForgeFeature.java, TreePlacer.java,
 │                VegetationPlacer.java, tree/ (TreeType, TreeRegistry, CanopyProfile,
 │                TrunkProfile, TreeVariant, TreeVariantSelector, BiomeTreeConfig,
-│                TrunkResult + 11 canopy impls in canopy/ + 6 trunk impls in trunk/)
+│                TrunkResult + 11 canopy impls + 6 trunk impls), ScenicFeatureDetector.java
 ├── util/         DensityGuard.java, ThreadLocalBuffers.java
 └── GeoForgeEngine.java (3D density: heightFunc - y + caveNoise)
-
 ```
 
 ## Where To Look
 
 | Task | File |
 |------|------|
-| Add new noise type | `engine/src/main/java/com/geoforge/engine/noise/` |
-| Compose terrain density | `engine/src/main/java/com/geoforge/engine/density/DensityFunctionTree.java` |
-| Modify biome defaults | `engine/src/main/java/com/geoforge/engine/config/biome/GeoForgeBiomeDefaults.java` |
-| 3D density / cave system | `engine/src/main/java/com/geoforge/engine/GeoForgeEngine.java#getDensity()` |
-| River carving interface | `engine/src/main/java/com/geoforge/engine/density/RiverCarver.java` |
-| Add tree type / canopy / trunk | `engine/src/main/java/com/geoforge/engine/feature/tree/` |
+| Add new noise type | `engine/.../noise/` |
+| Compose terrain density | `engine/.../density/DensityFunctionTree.java` |
+| Modify biome defaults | `engine/.../config/biome/GeoForgeBiomeDefaults.java` |
+| 3D density / cave system | `engine/.../GeoForgeEngine.java#getDensity()` |
+| River carving interface | `engine/.../density/RiverCarver.java` |
+| Add tree type / canopy / trunk | `engine/.../feature/tree/` |
 
 ## Conventions
 
@@ -48,38 +48,23 @@ engine/src/main/java/com/geoforge/engine/
 - `RiverCarver` uses `@FunctionalInterface` for pluggable carving
 - `DensityFunctionTree` implementations compose via Add/Multiply/Clamp/Constant — immutable, no mutation
 - Surface height via binary search — `getSurfaceHeight()` is O(log n), not linear scan
-- Seed decorrelation: `seed ^ 0xCONSTANT` per noise layer (SimplexNoise/FractalNoise)
+- Seed decorrelation: `seed ^ 0xCONSTANT` per noise layer (GradientNoise/FractalNoise)
 
 ## Anti-Patterns
 
 - No `java.util.Random` — use `SplittableRandom`
 - No mutable shared state — use `ThreadLocal` for per-thread caches
 
-## Commit Messages
-
-- Format: `Feat:`, `Fix:`, `Chore:`, `Docs:` prefix with capital first letter
-- Message body explains the what/why, not boilerplate
-
 ## Module Stats
 
 | Package | Source | Tests | Role |
 |---------|--------|-------|------|
-|| `config` | 3 | 2 | GeoForgeConfig (48 params), ConfigMigrator, RiverProfile |
 | `config` | 3 | 2 | GeoForgeConfig (48 params), ConfigMigrator, RiverProfile |
-| `noise` | 5 | 3 | NoiseSource, SimplexNoise, FractalNoise, FastNoiseLite, FastNoiseLiteSource |
-| `density` | 18 | 10 | DensityFunctionTree + 18 implementations incl. CaveType, RiverCarvers, CaveSystem |
-| `geology` | 2 | 2 | Tectonic plate mapper, hydraulic erosion simulation |
-||| `biome` | 1 | 1 | BiomeTerrainConfig (still active as value object) |
-| `config/biome` | 4 | 3 | BiomeDefinition, BiomeRegistry, ClimateResolver, GeoForgeBiomeDefaults |
-| `feature` | 29 | 23 | GeoForgeFeature, BlockSetter, TreePlacer, VegetationPlacer + tree/ (8) + canopy/ (11) + trunk/ (6) |
-|| `util` | 2 | 2 | DensityGuard, ThreadLocalBuffers |
-| root | 1 | 5 | GeoForgeEngine + Density3D, Integration, Snapshot, ThreadSafety |
-
-
-## Available But Unused
-
-- **ScaledNoise** / **ScaledNoise2D** (`density/ScaledNoise.java`, `density/ScaledNoise2D.java`):
-  DensityFunctionTree implementations available for future biome-specific noise scaling.
-  ScaledNoise applies per-axis scaling on (x, y, z) inputs; ScaledNoise2D scales only (x, z).
-  These can be wired into GeoForgeEngine's density tree for specialized terrain features
-  (e.g., amplified mountains, compressed valleys).
+| `noise` | 6 | 4 | NoiseSource, GradientNoise, FractalNoise, FastNoiseLite, FastNoiseLiteSource, DomainWarpedNoiseSource |
+| `density` | 19 | 12 | DensityFunctionTree + 18 impls |
+| `geology` | 2 | 2 | TectonicPlateMapper, HydraulicErosion |
+| `biome` | 1 | 1 | BiomeTerrainConfig |
+| `config/biome` | 4 | 4 | BiomeDefinition, BiomeRegistry, ClimateResolver, GeoForgeBiomeDefaults |
+| `feature` | 30 | 24 | GeoForgeFeature, BlockSetter, TreePlacer, VegetationPlacer, ScenicFeatureDetector + tree/ + canopy/ + trunk/ |
+| `util` | 2 | 2 | DensityGuard, ThreadLocalBuffers |
+| root | 2 | 6 | GeoForgeEngine, ColumnContext + Density3D, Integration, Snapshot, ThreadSafety |

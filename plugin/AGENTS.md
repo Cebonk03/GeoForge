@@ -1,21 +1,24 @@
 # GeoForge Plugin
-**Generated:** 2026-06-30T02:15:00Z
-**Commit:** 1e61eb8
+**Generated:** 2026-07-01
+**Commit:** HEAD
 **Branch:** main
 
 Paper integration layer. ShadowJAR output — the deployable artifact.
 
-## Where To Look
+## Structure
 
-| Task | File |
-|------|------|
-| Plugin lifecycle | `plugin/src/main/java/com/geoforge/plugin/GeoForgePlugin.java` |
-| Chunk generation logic | `plugin/src/main/java/com/geoforge/plugin/GeoForgeGenerator.java` |
-| 3D density pipeline | `plugin/src/main/java/com/geoforge/plugin/GeoForgeGenerator.java#generateNoise()` |
-| Biome provider | `plugin/src/main/java/com/geoforge/plugin/GeoForgeBiomeProvider.java` |
-| Version adapter selection | `plugin/src/main/java/com/geoforge/plugin/AdapterFactory.java` |
-|| Plugin metadata | `plugin/src/main/resources/paper-plugin.yml` |
-| Seed configuration | `plugin/src/main/resources/config.yml` |
+```
+plugin/src/main/java/com/geoforge/plugin/
+├── GeoForgePlugin.java        Main plugin class — onEnable, getDefaultWorldGenerator
+├── GeoForgeGenerator.java     ChunkGenerator implementation (generateNoise, generateSurface)
+├── GeoForgeBiomeProvider.java BiomeProvider — delegates to engine climate resolver
+├── AdapterFactory.java        Selects adapter by major version (integer switch, no reflection)
+├── command/
+│   └── GeoForgeReloadCommand.java  Hot-reload biome definitions
+└── resources/
+    ├── paper-plugin.yml        Plugin metadata (folia-supported: true)
+    └── config.yml              Terrain parameters
+```
 
 ## Pass-Through Flags
 

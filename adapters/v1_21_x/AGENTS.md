@@ -1,6 +1,6 @@
 # GeoForge v1_21_x Adapter
-**Generated:** 2026-06-30T02:15:00Z
-**Commit:** 1e61eb8
+**Generated:** 2026-07-01
+**Commit:** HEAD
 **Branch:** main
 
 Paper 1.21.x version adapter. Java 21, RegistryAccess-based biome lookup.
@@ -9,8 +9,8 @@ Paper 1.21.x version adapter. Java 21, RegistryAccess-based biome lookup.
 
 | Task | File |
 |------|------|
-| Block/biome mapping | `src/main/java/com/geoforge/adapters/v1_21_x/Paper1_21_xAdapter.java` |
-| Adapter tests | `src/test/java/com/geoforge/adapters/v1_21_x/Paper1_21_xAdapterTest.java` |
+| Block/biome mapping | `src/main/java/.../Paper1_21_xAdapter.java` |
+| Adapter tests | `src/test/java/.../Paper1_21_xAdapterTest.java` |
 
 ## Conventions
 
