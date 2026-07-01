@@ -281,12 +281,13 @@ public final class ClimateResolver {
                 continue;
             }
             // Check if this biome has a non-default climate envelope
-            boolean hasCustomClimate = Math.abs(def.tempMin() - (-1.0)) > epsilon
-                    || Math.abs(def.tempMax() - 1.0) > epsilon
-                    || Math.abs(def.humidityMin() - 0.0) > epsilon
-                    || Math.abs(def.humidityMax() - 1.0) > epsilon
-                    || Math.abs(def.continentalnessMin() - 0.0) > epsilon
-                    || Math.abs(def.continentalnessMax() - 1.0) > epsilon;
+            // NaN = field not set (default), non-NaN = explicit override
+            boolean hasCustomClimate = !Double.isNaN(def.tempMin())
+                    || !Double.isNaN(def.tempMax())
+                    || !Double.isNaN(def.humidityMin())
+                    || !Double.isNaN(def.humidityMax())
+                    || !Double.isNaN(def.continentalnessMin())
+                    || !Double.isNaN(def.continentalnessMax());
             if (!hasCustomClimate) {
                 continue; // Fall through to legacy table
             }

@@ -121,28 +121,25 @@ public final class GeoForgeBiomeDefaults {
         // Warm oceans: sand + seagrass + coral
         map.put("warm_ocean", full("warm_ocean", 0.0, 1.0, "sand", "sand", 0.8, 1.0, "", -1.0, 0, 0, 2,
                 Map.of(), List.of("seagrass", "coral"), 0.2, false,
-                -1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0));
-        // Lukewarm oceans: sand + seagrass
+                Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, 0));
         map.put("lukewarm_ocean", full("lukewarm_ocean", 0.0, 1.0, "sand", "sandstone", 0.8, 1.0, "", -1.0, 0, 0, 2,
                 Map.of(), List.of("seagrass"), 0.15, false,
-                -1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0));
+                Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, 0));
         map.put("deep_lukewarm_ocean", full("deep_lukewarm_ocean", 0.0, 1.0, "sand", "sandstone", 0.6, 1.0, "", -1.0, 0, 0, 1,
                 Map.of(), List.of(), 0.0, false,
-                -1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0));
-        // Cold oceans: gravel
+                Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, 0));
         map.put("cold_ocean", full("cold_ocean", 0.0, 1.0, "gravel", "stone", 0.7, 1.0, "", -1.0, 0, 0, 2,
                 Map.of(), List.of(), 0.0, false,
-                -1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0));
+                Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, 0));
         map.put("deep_cold_ocean", full("deep_cold_ocean", 0.0, 1.0, "gravel", "stone", 0.5, 1.0, "", -1.0, 0, 0, 1,
                 Map.of(), List.of(), 0.0, false,
-                -1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0));
-        // Frozen oceans: ice
+                Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, 0));
         map.put("frozen_ocean", full("frozen_ocean", 0.0, 1.0, "ice", "stone", 0.8, 1.0, "", -1.0, 0, 0, 2,
                 Map.of(), List.of(), 0.0, false,
-                -1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0));
+                Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, 0));
         map.put("deep_frozen_ocean", full("deep_frozen_ocean", 0.0, 1.0, "ice", "stone", 0.5, 1.0, "", -1.0, 0, 0, 1,
                 Map.of(), List.of(), 0.0, false,
-                -1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0));
+                Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, 0));
         // Default/temperate oceans: stone
         map.put("ocean", withDepth(custom("ocean", 1.0, "stone", "stone", 0.8, -1.0, List.of()), 2));
         map.put("deep_ocean", withDepth(custom("deep_ocean", 1.0, "stone", "stone", 0.6, -1.0, List.of()), 1));
@@ -198,7 +195,7 @@ public final class GeoForgeBiomeDefaults {
         return BiomeDefinition.defaults().merge(new BiomeDefinition(
                 id, 0.0, 1.0, "", "", 0.5, 1.0, "", -1.0, 0, 0, 3,
                 Map.of(), List.of(), 0.3, false,
-                -1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0));
+                Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, 0));
     }
 
     /**
@@ -292,15 +289,15 @@ public final class GeoForgeBiomeDefaults {
         return def.merge(new BiomeDefinition(
                 "", 0, 1, "", "", 0.5, 1, "", -1.0, 0, 0, depth,
                 Map.of(), List.of(), 0.3, false,
-                -1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0));
+                Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, 0));
     }
 
     private static BiomeDefinition custom(String id, double amp, String surface,
-                                           String subSurface, double caveAmp,
-                                           double treeDensity, java.util.List<String> veg) {
+                                              String subSurface, double caveAmp,
+                                              double treeDensity, java.util.List<String> veg) {
         return BiomeDefinition.defaults().merge(new BiomeDefinition(
                 id, 0.0, amp, surface, subSurface, 0.5, caveAmp, "", treeDensity, 0, 0, 3,
                 Map.of(), veg, 0.3, false,
-                -1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0));
+                Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, 0));
     }
 }

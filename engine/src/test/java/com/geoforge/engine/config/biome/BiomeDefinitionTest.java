@@ -100,8 +100,7 @@ class BiomeDefinitionTest {
         var override = new BiomeDefinition(
                 "override", 0.0, 1.0, "", "", 0.5, 1.0, "", -1.0, 0, 0, 0,
                 Map.of(), List.of(), 0.3, false,
-                -1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0);
-
+                Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, 0);
         var merged = base.merge(override);
 
         // Should be "override" from the id (id merges differently)

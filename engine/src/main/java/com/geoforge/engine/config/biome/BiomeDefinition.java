@@ -88,9 +88,9 @@ public record BiomeDefinition(
                 List.of(),   // vegetationTypes
                 0.3,         // vegetationDensity
                 false,       // allowFloatingPlants
-                -1.0, 1.0,   // tempMin, tempMax
-                0.0, 1.0,    // humidityMin, humidityMax
-                0.0, 1.0,    // continentalnessMin, continentalnessMax
+                Double.NaN, Double.NaN,   // tempMin, tempMax
+                Double.NaN, Double.NaN,   // humidityMin, humidityMax
+                Double.NaN, Double.NaN,   // continentalnessMin, continentalnessMax
                 0);          // priority
     }
 
@@ -128,12 +128,12 @@ public record BiomeDefinition(
                 ? override.vegetationTypes() : this.vegetationTypes();
         double mergedVegDensity = Math.abs(override.vegetationDensity() - 0.3) > 1e-12 ? override.vegetationDensity() : this.vegetationDensity();
         boolean mergedFloat = override.allowFloatingPlants() || this.allowFloatingPlants();
-        double mergedTempMin = Math.abs(override.tempMin() - (-1.0)) > 1e-12 ? override.tempMin() : this.tempMin();
-        double mergedTempMax = Math.abs(override.tempMax() - 1.0) > 1e-12 ? override.tempMax() : this.tempMax();
-        double mergedHumidityMin = Math.abs(override.humidityMin() - 0.0) > 1e-12 ? override.humidityMin() : this.humidityMin();
-        double mergedHumidityMax = Math.abs(override.humidityMax() - 1.0) > 1e-12 ? override.humidityMax() : this.humidityMax();
-        double mergedContMin = Math.abs(override.continentalnessMin() - 0.0) > 1e-12 ? override.continentalnessMin() : this.continentalnessMin();
-        double mergedContMax = Math.abs(override.continentalnessMax() - 1.0) > 1e-12 ? override.continentalnessMax() : this.continentalnessMax();
+        double mergedTempMin = !Double.isNaN(override.tempMin()) ? override.tempMin() : this.tempMin();
+        double mergedTempMax = !Double.isNaN(override.tempMax()) ? override.tempMax() : this.tempMax();
+        double mergedHumidityMin = !Double.isNaN(override.humidityMin()) ? override.humidityMin() : this.humidityMin();
+        double mergedHumidityMax = !Double.isNaN(override.humidityMax()) ? override.humidityMax() : this.humidityMax();
+        double mergedContMin = !Double.isNaN(override.continentalnessMin()) ? override.continentalnessMin() : this.continentalnessMin();
+        double mergedContMax = !Double.isNaN(override.continentalnessMax()) ? override.continentalnessMax() : this.continentalnessMax();
         int mergedPriority = override.priority() != 0 ? override.priority() : this.priority();
 
         return new BiomeDefinition(
