@@ -151,6 +151,30 @@ Positive density = solid, negative density = air
 - **Codebase questions**: use `codegraph_explore` — never guess file paths or symbol names.
 - Cite external sources when answering API/library questions.
 
+### LSP Diagnostics — STRICT ENFORCEMENT
+
+LSP (jdtls via OMO MCP) is configured and running. LSP tools are available as MCP
+tools with aliases: `lsp_diagnostics`, `lsp_goto_definition`, `lsp_find_references`,
+`lsp_symbols`, `lsp_rename`.
+The agent MUST obey these rules WITHOUT EXCEPTION:
+> **FAILURE TO COMPLY = REJECTED WORK**
+
+1. **CALL `lsp_diagnostics` BEFORE EVERY GRADLE BUILD** — Before running any Gradle
+   `compileJava`, `test`, `build`, or `classes`, call `lsp_diagnostics` on ALL `.java`
+   files that were edited since the last build. If any errors exist, STOP. Fix them
+   first. Do NOT run Gradle with unresolved diagnostics.
+
+2. **RETRY IF DAEMON NOT READY** — On first use or after idle timeout, the LSP daemon
+   may not be started yet and `lsp_diagnostics` may return a timeout/unreachable error.
+   This is normal. Retry the call — the daemon auto-starts on demand.
+   On weak devices, the daemon may take a few seconds to boot; wait and retry.
+
+3. **ZERO TOLERANCE** — No `@SuppressWarnings`, no `@ts-ignore`, no skipping.
+   If jdtls reports it, the code is wrong. Fix it.
+
+4. **WAIT FOR IMPORT** — On first session or after build.gradle changes, jdtls needs time
+   to import the Gradle project. Diagnostics may be empty until import completes.
+   Call `lsp_diagnostics` and retry if empty.
 ## CI/CD
 
 | Pipeline | Triggers | JDK | Key Steps |
