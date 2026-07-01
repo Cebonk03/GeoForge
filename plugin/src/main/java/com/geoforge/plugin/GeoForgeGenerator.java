@@ -31,6 +31,7 @@ public final class GeoForgeGenerator extends ChunkGenerator {
     private static final int CHUNK_SIZE = 16;
     private static final int BEDROCK_LAYERS = 5;
 
+    private static final double SCENIC_INTENSITY_THRESHOLD = 0.5;
     private final GeoForgeAdapter adapter;
     private final GeoForgeEngine engine;
     private final GeoForgeBiomeProvider biomeProvider;
@@ -205,26 +206,28 @@ public final class GeoForgeGenerator extends ChunkGenerator {
             // Scenic feature detection for wow moments
             if (heightY >= minY + 1 && heightY < maxY) {
                 var feature = engine.getScenicDetector().detect(engine, blockX, blockZ, heightY);
-                switch (feature.type()) {
-                    case EDGE_VISTA: {
-                        // Replace surface block with stone at cliff edge
-                        chunkData.setBlock(x, heightY, z, adapter.mapBlock("stone"));
-                        break;
-                    }
-                    case HIDDEN_VALLEY: {
-                        // Replace surface block with stone on the ridge crest
-                        chunkData.setBlock(x, heightY, z, adapter.mapBlock("stone"));
-                        break;
-                    }
-                    case EMERGENCE: {
-                        // Stone outcropping at potential cave exit
-                        chunkData.setBlock(x, heightY, z, adapter.mapBlock("stone"));
-                        if (heightY > minY + 2) {
-                            chunkData.setBlock(x, heightY - 1, z, adapter.mapBlock("stone"));
+                if (feature.intensity() >= SCENIC_INTENSITY_THRESHOLD) {
+                    switch (feature.type()) {
+                        case EDGE_VISTA: {
+                            // Replace surface block with stone at cliff edge
+                            chunkData.setBlock(x, heightY, z, adapter.mapBlock("stone"));
+                            break;
                         }
-                        break;
+                        case HIDDEN_VALLEY: {
+                            // Replace surface block with stone on the ridge crest
+                            chunkData.setBlock(x, heightY, z, adapter.mapBlock("stone"));
+                            break;
+                        }
+                        case EMERGENCE: {
+                            // Stone outcropping at potential cave exit
+                            chunkData.setBlock(x, heightY, z, adapter.mapBlock("stone"));
+                            if (heightY > minY + 2) {
+                                chunkData.setBlock(x, heightY - 1, z, adapter.mapBlock("stone"));
+                            }
+                            break;
+                        }
+                        default: {}
                     }
-                    default: {}
                 }
             }
 
