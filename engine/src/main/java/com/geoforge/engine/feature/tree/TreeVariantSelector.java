@@ -9,7 +9,7 @@ import java.util.Map;
  * Deterministic, noise-based selector for tree variants.
  *
  * <p>Given a list of weighted {@link TreeVariant}s for a species, and a block
- * position {@code (blockX, blockZ)}, this selector uses 2D SimplexNoise to
+ * position {@code (blockX, blockZ)}, this selector uses 2D GradientNoise to
  * pick a variant deterministically. The same seed + position always yields the
  * same variant, and adjacent positions produce smoothly varying (spatially
  * coherent) variant choices.

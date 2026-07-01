@@ -87,7 +87,7 @@ package com.geoforge.engine.config;
  * @param featureSeedOffset          Seed offset for feature placement.
  * @param erosionDropletCount        Number of erosion droplets per column.
  * @param erosionGravity             Gravity factor for erosion droplet simulation.
- * @param noiseBackend               Noise backend implementation ("simplex" or "fastnoise").
+ * @param noiseBackend               Noise backend implementation ("gradient", "simplex" (deprecated), or "fastnoise").
  * @param plateauSize                Side length of flattened plateau region in blocks (0 = disabled). Must be {@code >= 0}.
  * @param plateauTargetHeight        Target height for plateau flattening in blocks. Must be within {@code [minHeight, maxHeight]}.
  * @param domainWarpAmplitude        Amplitude of domain-warping noise distortion.
@@ -322,9 +322,9 @@ public record GeoForgeConfig(
                             .formatted(plateauTargetHeight, minHeight, maxHeight));
         }
         // Noise backend validation
-        if (!"simplex".equals(noiseBackend) && !"fastnoise".equals(noiseBackend)) {
+        if (!"simplex".equals(noiseBackend) && !"gradient".equals(noiseBackend) && !"fastnoise".equals(noiseBackend)) {
             throw new IllegalArgumentException(
-                    "noiseBackend must be 'simplex' or 'fastnoise', got '" + noiseBackend + "'");
+                    "noiseBackend must be 'simplex', 'gradient', or 'fastnoise', got '" + noiseBackend + "'");
         }
         // Domain warping validation
         if (domainWarpAmplitude < 0) {
@@ -468,7 +468,7 @@ public record GeoForgeConfig(
                 4,     // fbmOctaves
                 0.008, // flatFrequency
                 1.0,   // continentalnessBlendSharpness
-                "simplex", // noiseBackend
+                "gradient", // noiseBackend
                 // Decorations
                 0xCAFEBABEL, // featureSeedOffset
                 // Erosion
@@ -551,7 +551,7 @@ public record GeoForgeConfig(
         private double flatFrequency = 0.008;
         private double continentalnessBlendSharpness = 1.0;
         // Noise backend
-        private String noiseBackend = "simplex";
+        private String noiseBackend = "gradient";
         // Decorations
         private long featureSeedOffset = 0xCAFEBABEL;
         // Erosion

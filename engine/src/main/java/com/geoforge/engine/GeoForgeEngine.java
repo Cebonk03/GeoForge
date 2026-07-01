@@ -239,7 +239,11 @@ public final class GeoForgeEngine {
     private NoiseSource createNoiseSource(long seed) {
         return switch (config.noiseBackend()) {
             case "fastnoise" -> new FastNoiseLiteSource(seed);
-            case "simplex", "gradient" -> new GradientNoise(seed);
+            case "simplex" -> {
+                LOG.warning("Noise backend 'simplex' is deprecated — use 'gradient' instead");
+                yield new GradientNoise(seed);
+            }
+            case "gradient" -> new GradientNoise(seed);
             default -> {
                 LOG.warning("Unknown noise backend '" + config.noiseBackend() + "', falling back to GradientNoise");
                 yield new GradientNoise(seed);

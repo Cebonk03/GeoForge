@@ -469,4 +469,25 @@ class GeoForgeConfigTest {
         assertThrows(IllegalArgumentException.class,
                 () -> GeoForgeConfig.builder().riverWarpAmplitude(-1).build());
     }
+
+    @Test
+    void validation_noiseBackendAcceptsGradient() {
+        assertDoesNotThrow(() -> GeoForgeConfig.builder().noiseBackend("gradient").build());
+    }
+
+    @Test
+    void validation_noiseBackendAcceptsFastnoise() {
+        assertDoesNotThrow(() -> GeoForgeConfig.builder().noiseBackend("fastnoise").build());
+    }
+
+    @Test
+    void validation_noiseBackendAcceptsSimplex_deprecated() {
+        assertDoesNotThrow(() -> GeoForgeConfig.builder().noiseBackend("simplex").build());
+    }
+
+    @Test
+    void validation_noiseBackendRejectsUnknown() {
+        assertThrows(IllegalArgumentException.class,
+                () -> GeoForgeConfig.builder().noiseBackend("perlin").build());
+    }
 }
