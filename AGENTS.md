@@ -1,6 +1,7 @@
 # GeoForge Knowledge Base
-**Generated:** 2026-06-30T19:07:00Z
-**Commit:** 771f378
+
+**Generated:** 2026-07-01
+**Commit:** HEAD
 **Branch:** main
 
 **Stack:** Java 21/25 + Gradle 9.6 + Paper API (1.21.x / 26.x)
@@ -17,100 +18,118 @@ geoforge/
 └── plugin/        # ShadowJAR — wires engine + adapters into ChunkGenerator/BiomeProvider
 ```
 
-## Module Stats
+## Module Stats (Verified)
 
 | Module | Main Srcs | Tests | Java | Role |
 |--------|-----------|-------|------|------|
-||| engine | 68 | 56 | 21 | 3D density engine, zero Bukkit |
+| engine | 70 | 61 | 21 | 3D density engine, zero Bukkit |
 | api | 5 | 3 | 21 | Adapter interface + AbstractPaperAdapter + ServerVersion + FoliaDetector |
-| v1_21_x | 1 | 1 | 21 | Paper 1.21.x adapter |
+| v1_21_x | 1 | 1 | 21 | Paper 1.21.x adapter (RegistryAccess-based) |
 | v26_x | 1 | 1 | 25 | Paper 26.x adapter (constructor injection for testability) |
-|| plugin | 5 | 4 | 25 | Plugin + ShadowJAR + GeoForgePluginTest |
-|||||| **Total** | **78** | **65** | — | **~2,126 tests, 0 failures** |
+| plugin | 5 | 4 | 25 | Plugin + ShadowJAR + GeoForgePluginTest |
+| **Total** | **82** | **70** | — | **~1,891 tests, 0 failures** |
 
 ## 3D Density Architecture
 
 ```
 density(x,y,z) = heightFunc(x,z) - y + caveNoise(x,y,z) * amplitude
-Positive density = solid, negative density = air
+Positive = solid, Negative = air
 ```
 
-- Engine: `GeoForgeEngine.getDensity()` + `getSurfaceHeight()` (binary search)
-- Generator: `GeoForgeGenerator.generateNoise()` uses per-block density sampling
-- Caves: Enhanced 3-type system with CaveType enum (SPAGHETTI/CHEESE/NOODLE) and Y-envelope gating
-- Rivers: 3-profile system with RiverProfile enum (VSHAPED/CANYON/FLOODPLAIN) via RiverCarver interface
-- Biomes: 3D continuous noise (temperature × humidity × continentalness)
-- Multi-noise terrain: ridge/FBM/flat blended by continentalness + erosion
-- Features: TreePlacer with 9-type tree system (OAK/BIRCH/SPRUCE/JUNGLE/ACACIA/DARK_OAK/PALE_OAK/CHERRY/MANGROVE) + 11 canopy profiles × 6 trunk profiles + vegetation placer in generateSurface()
-- Erosion: 2D hydraulic erosion on extracted heightmap (for future 3D adaptation)
+- `getDensity()` — 4-stage pipeline: computeBaseDensity → applyCaveNoise → applyEnhancedCaves → applyRiverCarving
+- `getSurfaceHeight()` — binary search O(log n) on density field
+- Caves: EnhancedCaveSystem with CaveType enum (SPAGHETTI/CHEESE/NOODLE) + Y-envelope gating
+- Rivers: RiverProfile enum (VSHAPED/CANYON/FLOODPLAIN) via RiverCarver interface
+- Biomes: 3D continuous noise (temperature × humidity × continentalness) via ClimateResolver
+- Multi-noise terrain: ridge/FBM/flat blended by continentalness + boundary noise warp
+- Features: 9 TreeType enum values × 11 CanopyProfile impls × 6 TrunkProfile impls + VegetationPlacer
+- Erosion: 2D hydraulic erosion on extracted heightmap
+- Wow moments: ScenicFeatureDetector (EDGE_VISTA/HIDDEN_VALLEY/EMERGENCE) with intensity gating (≥0.5)
 
 ## Where To Look
 
 | Task | Location |
 |------|----------|
-| 3D density engine | `engine/src/main/java/com/geoforge/engine/GeoForgeEngine.java` |
-| Cave noise config | `engine/src/main/java/com/geoforge/engine/config/GeoForgeConfig.java` (caveFrequency, caveAmplitude, etc.) |
-| Version adapter interface | `api/src/main/java/com/geoforge/api/adapter/GeoForgeAdapter.java` |
-| Version selection | `plugin/src/main/java/com/geoforge/plugin/AdapterFactory.java` |
-| Paper integration | `plugin/src/main/java/com/geoforge/plugin/GeoForgeGenerator.java` |
-| Biome assignment | `plugin/src/main/java/com/geoforge/plugin/GeoForgeBiomeProvider.java` |
-| Server version parsing | `api/src/main/java/com/geoforge/api/version/ServerVersion.java` |
-|| Tree system registry | `engine/src/main/java/com/geoforge/engine/feature/tree/TreeRegistry.java` |
-| Biome defaults config | `engine/src/main/java/com/geoforge/engine/config/biome/GeoForgeBiomeDefaults.java` |
+| 3D density engine | `engine/.../GeoForgeEngine.java` |
+| Cave noise config | `engine/.../config/GeoForgeConfig.java` |
+| Version adapter interface | `api/.../adapter/GeoForgeAdapter.java` |
+| Version selection | `plugin/.../AdapterFactory.java` |
+| Paper integration | `plugin/.../GeoForgeGenerator.java` |
+| Biome assignment | `plugin/.../GeoForgeBiomeProvider.java` |
+| Server version parsing | `api/.../version/ServerVersion.java` |
+| Tree system registry | `engine/.../feature/tree/TreeRegistry.java` |
+| Biome defaults | `engine/.../config/biome/GeoForgeBiomeDefaults.java` |
+| Wow-moment detection | `engine/.../feature/ScenicFeatureDetector.java` |
 
-## CODE MAP
+## CODE MAP (Verified)
 
-| Symbol | Kind | Module | Refs | Role |
-|--------|------|--------|------|------|
-| `GeoForgePlugin` | `JavaPlugin` | plugin | — | Entry point — adapter+engine init, getDefaultWorldGenerator |
-| `AdapterFactory` | factory | plugin | 1 | Selects Paper1_21_xAdapter / Paper26xAdapter / VanillaFallbackAdapter by major version |
-| `GeoForgeAdapter` | interface | api | 4 | mapBlock, mapBiome, scheduleTask, isFolia — version-bridging contract |
-| `AbstractPaperAdapter` | abstract class | api | 2 | Shared base for Paper adapters — injected lookup functions for testability |
-| `Paper1_21_xAdapter` | impl | v1_21_x | 1 | RegistryAccess-based biome lookup, Java 21 |
-| `Paper26xAdapter` | impl | v26_x | 1 | Function-injected lookups for testability, Java 25 |
-| `VanillaFallbackAdapter` | impl | api | 1 | Degraded fallback — always STONE + plains biome |
-| `GeoForgeEngine` | core | engine | 3 | Density = heightFunc - y + caveNoise*ampl, surface via binary search |
-| `GeoForgeConfig` | record | engine | 2 | 48 immutable terrain params |
-|| `ColumnContext` | record | engine | — | Per-column immutable context (targetHeight, valleyFactor, biomeId, modifiers) replacing ad-hoc BiomeModifierCache
-| `DensityFunctionTree` | @FunctionalInterface | engine | 9 | sample(x,y,z)→double; composable tree (Add/Clamp/Constant/Multiply/PlateContinentalness) |
-| `NoiseSource` | @FunctionalInterface | engine | 33 | sample2D/sample3D — SimplexNoise or FastNoiseLiteSource via config switch |
-| `FastNoiseLiteSource` | noise | engine | 1 | FastNoiseLite adapter implementing NoiseSource interface |
-|| `GradientNoise` | noise | engine | — | Renamed from SimplexNoise — Perlin-style gradient noise implementation
-|| `DomainWarpedNoiseSource` | noise | engine | — | NoiseSource domain-warping decorator with zero-overhead passthrough
-| `GeoForgeBiomeDefaults` | defaults | engine | 1 | Hardcoded BiomeDefinition map for all 60+ vanilla biomes — replaces YAML loader |
-| `BiomeRegistry` | registry | engine | 1 | Thread-safe runtime registry of biome definitions |
-| `ClimateResolver` | resolver | engine | 1 | Climate-based biome resolution from temperature×humidity×continentalness |
-| `TectonicPlateMapper` | geology | engine | 1 | 12 plates with Voronoi centres + coastline modulation |
-| `HydraulicErosion` | geology | engine | 1 | 2D droplet-based heightmap erosion |
-| `RiverCarver` | @FunctionalInterface | engine | 1 | Pluggable 3D river carving (current: SimplexRiverCarver) |
-|| `CanyonRiverCarver` | RiverCarver impl | engine | 1 | Steep-walled flat-bottom canyon carving
-|| `FloodplainRiverCarver` | RiverCarver impl | engine | 1 | Wide shallow floodplain carving
-|| `DomainWarpedRiverCarver` | RiverCarver impl | engine | — | RiverCarver domain-warping decorator
-|| `DomainWarpDensity` | DensityFunctionTree | engine | — | Domain-warping density function decorator
-| `SimplexRiverCarver` | RiverCarver impl | engine | 1 | 2D simplex noise river valley carving with configurable frequency/depth/width |
-| `StructurePlateauModifier` | util | engine | 0 | Terrain flattening with feathered border (wired in erodeColumn when plateauSize > 0) |
-| `ServerVersion` | record | api | 2 | Regex-parsed major.minor.patch version |
-| `FoliaDetector` | util | api | 2 | Class.forName("io.papermc.paper.threadedregions.RegionizedServer") |
-| `TreeRegistry` | registry | engine | 1 | Default biome→TreeType map + config lookup via biomeTreeMap() |
-| `TreePlacer` | placer | engine | 1 | 9-type tree placement in generateSurface() |
-|| `ScenicFeatureDetector` | feature | engine | — | Wow-moment detection (EDGE_VISTA/HIDDEN_VALLEY/EMERGENCE)
-| `TreeType` | enum | engine | 1 | OAK/BIRCH/SPRUCE/JUNGLE/ACACIA/DARK_OAK/PALE_OAK/CHERRY/MANGROVE — maps to 11 canopies × 6 trunks |
-| `CanopyProfile` | @FunctionalInterface | engine | 1 | 9 canopy shapes (Round/Oval/Domed/Conical/Layered/Spreading/FlatHat/Sparse/NoCanopy) — 11 implementations |
-| `TrunkProfile` | @FunctionalInterface | engine | 1 | 6 trunk profiles (Straight/Bent/Leaning/Twisted/MultiStem/Fallen) — 6 implementations |
-| `EnhancedCaveSystem` | cave | engine | 1 | 3-type cave system: SPAGHETTI/CHEESE/NOODLE with Y-envelope gating |
-| `RiverProfile` | enum | engine | 1 | VSHAPED/CANYON/FLOODPLAIN river profiles via RiverCarver interface |
+| Symbol | Kind | Module | Role |
+|--------|------|--------|------|
+| `GeoForgePlugin` | `JavaPlugin` | plugin | Entry point — adapter+engine init, getDefaultWorldGenerator |
+| `AdapterFactory` | factory | plugin | Selects adapter by major version |
+| `GeoForgeAdapter` | interface | api | mapBlock, mapBiome, scheduleTask, isFolia |
+| `AbstractPaperAdapter` | abstract class | api | Shared base — injected lookup functions |
+| `Paper1_21_xAdapter` | impl | v1_21_x | RegistryAccess biome lookup, Java 21 |
+| `Paper26xAdapter` | impl | v26_x | Constructor injection, Java 25 |
+| `VanillaFallbackAdapter` | impl | api | Degraded fallback (always STONE + plains) |
+| `GeoForgeEngine` | core | engine | Density = heightFunc - y + caveNoise*ampl, binary search surface |
+| `GeoForgeConfig` | record | engine | ~48 immutable terrain params |
+| `ColumnContext` | record | engine | Per-column context (targetHeight, valleyFactor, biomeId, modifiers) |
+| `DensityFunctionTree` | @FunctionalInterface | engine | sample(x,y,z)→double; composable tree |
+| `NoiseSource` | @FunctionalInterface | engine | sample2D/sample3D — GradientNoise or FastNoiseLiteSource |
+| `GradientNoise` | noise impl | engine | Perlin-style gradient noise |
+| `FastNoiseLiteSource` | noise impl | engine | FastNoiseLite adapter |
+| `DomainWarpedNoiseSource` | noise decorator | engine | NoiseSource domain-warping decorator |
+| `FractalNoise` | noise impl | engine | Multi-octave fractal noise |
+| `GeoForgeBiomeDefaults` | defaults | engine | Hardcoded BiomeDefinition map for 60+ vanilla biomes |
+| `BiomeRegistry` | registry | engine | Thread-safe runtime registry |
+| `ClimateResolver` | resolver | engine | Climate-based biome resolution |
+| `TectonicPlateMapper` | geology | engine | 12 plates with Voronoi centres |
+| `HydraulicErosion` | geology | engine | 2D droplet-based heightmap erosion |
+| `RiverCarver` | @FunctionalInterface | engine | Pluggable River carving |
+| `SimplexRiverCarver` | RiverCarver impl | engine | Simplex-based river valley carving |
+| `CanyonRiverCarver` | RiverCarver impl | engine | Steep-walled canyon |
+| `FloodplainRiverCarver` | RiverCarver impl | engine | Wide floodplain |
+| `DomainWarpedRiverCarver` | RiverCarver decorator | engine | Domain-warping decorator |
+| `EnhancedCaveSystem` | cave utility | engine | 3-type cave: SPAGHETTI/CHEESE/NOODLE |
+| `CaveType` | enum | engine | SPAGHETTI/CHEESE/NOODLE with Y-envelope gating |
+| `DomainWarpDensity` | DensityFunctionTree | engine | Domain-warping density decorator |
+| `MultiNoiseHeightFunction` | DensityFunctionTree | engine | Ridge/FBM/flat height blending |
+| `PlateContinentalness` | DensityFunctionTree | engine | Tectonic plate influence |
+| `StructurePlateauModifier` | utility | engine | Terrain flattening with feathered border |
+| `ServerVersion` | record | api | Regex-parsed major.minor.patch version |
+| `FoliaDetector` | utility | api | Class.forName check for Folia |
+| `TreeType` | enum | engine | 9 types: OAK/BIRCH/SPRUCE/JUNGLE/ACACIA/DARK_OAK/PALE_OAK/CHERRY/MANGROVE |
+| `TreeRegistry` | registry | engine | Default biome→TreeType map |
+| `TreePlacer` | placer | engine | 9-type + 11 canopy × 6 trunk variant tree placement |
+| `CanopyProfile` | @FunctionalInterface | engine | 11 implementations (Round, Oval, Domed, Conical, etc.) |
+| `TrunkProfile` | @FunctionalInterface | engine | 6 implementations (Straight, Bent, Leaning, Twisted, etc.) |
+| `TreeVariant` | record | engine | Named variant = trunk + canopy + height + weight |
+| `TreeVariantSelector` | selector | engine | Deterministic noise-based variant selection |
+| `BiomeTerrainConfig` | record | engine | Per-biome terrain modifiers (still active) |
+| `ScenicFeatureDetector` | feature | engine | Wow-moment detection with intensity scoring |
+| `RiverProfile` | enum | engine | VSHAPED/CANYON/FLOODPLAIN |
+| `CaveYEnvelope` | utility | engine | Gaussian Y-envelope cave distribution |
+| `DensityGuard` | utility | engine | Density clamping helper |
+| `ThreadLocalBuffers` | utility | engine | ThreadLocal reusable float/double arrays |
+| `BlockSetter` | @FunctionalInterface | engine | Block placement callback interface |
+| `ConfigMigrator` | utility | engine | Config version migration |
+| `VegetationPlacer` | placer | engine | Surface vegetation placement |
+| `GeoForgeBiomeProvider` | BiomeProvider | plugin | Delegates biome queries to engine |
+| `GeoForgeReloadCommand` | CommandExecutor | plugin | Hot reload biome definitions |
 
 ## Conventions
 
 - **Zero NMS/Spigot imports** — compile only against `io.papermc.paper:paper-api`
 - **RegistryAccess for biomes** — never `Registry.BIOME` (removed in 26.x)
-- **RegionScheduler** for task scheduling — single code path works on Paper and Folia
+- **RegionScheduler** for task scheduling — works on Paper and Folia
 - **ThreadLocal** for per-thread caches — no `static` mutable fields
-- **`AtomicInteger`/`AtomicLong`** only for concurrency — no `synchronized`/`ReentrantLock`
-- **`26.1.2.build.+`** for Paper 26.x API dependency (pinned to 26.1.2.x builds — Paper doesn't publish point releases for 26.x)
-- **`1.21.11-R0.1-SNAPSHOT`** for Paper 1.21.x API (matches MockBukkit 4.110.0)
-- **Constructor injection for testability** — Paper26xAdapter takes Function<String,Material> + Function<String,Biome> in pkg-private ctor
-- **Binary search for surface height** — getSurfaceHeight() uses O(log n) binary search, not linear scan
+- **AtomicInteger/AtomicLong** only for concurrency — no `synchronized`/`ReentrantLock`
+- **26.1.2.build.+** for Paper 26.x API dependency
+- **1.21.11-R0.1-SNAPSHOT** for Paper 1.21.x API
+- **Constructor injection** for testability (Paper26xAdapter)
+- **Binary search** for surface height — O(log n)
+- **ColumnContext** pre-computed per column for density queries
 
 ## Death Pills
 
@@ -125,90 +144,68 @@ Positive density = solid, negative density = air
 
 ## Anti-Patterns
 
-- (all dynamic version ranges removed; versions pinned in `gradle/libs.versions.toml`)
-- `26.1.2.build.+` is NOT a dynamic range — it resolves to the latest stable build of 26.1.2.x (Paper's versioning scheme)
-- `shouldGenerateBedrock()` deprecated but we handle bedrock in `generateNoise()` now
-- `StructurePlateauModifier` wired in `GeoForgeEngine.erodeColumn()` when `plateauSize > 0` for structure terrain flattening
-- `ScaledNoise` + `ScaledNoise2D` implement `DensityFunctionTree` but unused in production — available for future density tree composition
+- `shouldGenerateBedrock()` deprecated — bedrock handled in `generateNoise()`
+- `StructurePlateauModifier` wired in `erodeColumn()` when `plateauSize > 0`
+- `ScaledNoise` + `ScaledNoise2D` implement `DensityFunctionTree` but unused in production
+- Dynamic version ranges removed — all pinned in `gradle/libs.versions.toml`
 
-## Test Conventions
+## Test Conventions (Verified)
 
-- **Framework**: JUnit 5 (Jupiter 6.1.0) + AssertJ (3.27.7) + MockBukkit (4.110.0) + Mockito (5.23.0) + ArchUnit (1.4.2) + JMH (1.37)
-- **Tagging**: @Tag("unit") (47 files), @Tag("integration") (7), @Tag("architecture"), @Tag("threading"), @Tag("smoke"), @Tag("validation")
-- **DisplayName**: EVERY test class and method uses @DisplayName — 494 total across 62 test files
-- **Method naming**: methodName_scenario_expectedBehavior (e.g. getDensity_atSurface_isNearZero)
-- **Organization**: One test class per production class; *IntegrationTest suffix for pipeline tests
-- **Mockito**: Always programmatic (mock()), no @ExtendWith/@Mock/@MockitoSettings
-- **Dual assertion**: Both JUnit 5 (assertEquals/assertThrows) AND AssertJ (assertThat().isBetween())
+- **Framework**: JUnit 5 (Jupiter) + AssertJ + MockBukkit 4.110.0 + Mockito 5.23.0 + ArchUnit 1.4.2 + JMH 1.37
+- **Tagging**: @Tag("unit") (56 files), @Tag("integration") (5), @Tag("architecture"), @Tag("threading"), @Tag("smoke"), @Tag("validation")
+- **DisplayName**: EVERY test class and method — 526 @DisplayName annotations across source
+- **Method naming**: methodName_scenario_expectedBehavior
+- **Organization**: One test class per production class; `*IntegrationTest` suffix
+- **Mockito**: Always programmatic (`mock()`), no `@ExtendWith`/`@Mock`/`@MockitoSettings`
+- **Dual assertion**: JUnit 5 assertEquals + AssertJ assertThat
 - **Determinism**: Every noise/cave/feature method has a seed-driven determinism test
-- **RecordingSetter**: Inner class pattern capturing block placement for canopy/trunk verification
-- **Snapshot tests**: SHA-256 golden checksums for heightmap/density regression detection
+- **RecordingSetter**: Inner class pattern for canopy/trunk block placement verification
+- **Snapshot tests**: SHA-256 golden checksums for heightmap/density regression
 - **Parameterized**: @MethodSource for grid patterns + @ValueSource for simple int sets
 - **Performance budget**: assertTimeout(Duration.ofMillis(...)) on hotspot operations
 - **JaCoCo thresholds**: 60% line / 50% branch minimum across all modules
 - **MockBukkit**: JDK 21 modules only; v26_x + plugin use Mockito-only, runtime tested on real Paper 26.x
 
+## CI/CD
+
+| Pipeline | Triggers | JDK | Key Steps |
+|----------|----------|-----|-----------|
+| **Fast CI** | push/PR to main | 21+25 | Validate → Compile split → Unit tests (<3 min) |
+| **Full CI** | workflow_dispatch | 21+25 | Compile → Test → SpotBugs+Checkstyle+ArchUnit+banned-API-scan → JaCoCo → ShadowJAR → Paper runtime smoke test |
+| **Release** | tag v* / dispatch | 21+25 | Test → ShadowJAR → checksums → GitHub Release |
+
+```bash
+# Local CI-equivalent (verified)
+./gradlew :engine:test :api:test :adapters:v1_21_x:test  # JDK 21 modules
+./gradlew :adapters:v26_x:test :plugin:test              # JDK 25 modules
+./gradlew classes                                          # Compile all toolchains
+./gradlew bannedApiScan                                    # Banned API regex scan
+./gradlew :plugin:shadowJar                                # Build deployable artifact
+```
+
+**Banned API scan** enforces: `Registry.BIOME`, `Biome.valueOf/values()`, `Material.valueOf/getMaterial/matchMaterial`, `getScheduler().run`, `chunkData.setBiome()`, `net.minecraft.*`, `craftbukkit.*`, `ReentrantLock`, `synchronized`, `Class.forName` (except FoliaDetector.java)
+
+**Dependabot**: `.github/dependabot.yml` — weekly, grouped by test-deps/gradle-plugins, `automerge` label
+
 ## AI Agent Protocol
 
 ### Ground-Truth First
 - **Never use training data** for Paper API, Bukkit, Gradle, or library-specific knowledge.
-  Always use `context7_resolve-library-id` / `context7_query-docs` or `websearch`:
+  Use `context7_resolve-library-id` / `context7_query-docs` or `websearch`:
   - Paper API method signatures, registry keys, or behavior changes
   - Gradle DSL syntax, plugin configuration, or version catalog format
   - Any library version, API deprecation, or migration guide
 - **Codebase questions**: use `codegraph_explore` — never guess file paths or symbol names.
 - Cite external sources when answering API/library questions.
 
-### LSP Diagnostics — STRICT ENFORCEMENT
 
-LSP (jdtls via OMO MCP) is configured and running. LSP tools are available as MCP
-tools with aliases: `lsp_diagnostics`, `lsp_goto_definition`, `lsp_find_references`,
-`lsp_symbols`, `lsp_rename`.
-The agent MUST obey these rules WITHOUT EXCEPTION:
-> **FAILURE TO COMPLY = REJECTED WORK**
+### CI/CD (reference)
+See `.github/workflows/` for exact pipeline definitions.
 
-1. **CALL `lsp_diagnostics` BEFORE EVERY GRADLE BUILD** — Before running any Gradle
-   `compileJava`, `test`, `build`, or `classes`, call `lsp_diagnostics` on ALL `.java`
-   files that were edited since the last build. If any errors exist, STOP. Fix them
-   first. Do NOT run Gradle with unresolved diagnostics.
-
-2. **RETRY IF DAEMON NOT READY** — On first use or after idle timeout, the LSP daemon
-   may not be started yet and `lsp_diagnostics` may return a timeout/unreachable error.
-   This is normal. Retry the call — the daemon auto-starts on demand.
-   On weak devices, the daemon may take a few seconds to boot; wait and retry.
-
-3. **ZERO TOLERANCE** — No `@SuppressWarnings`, no `@ts-ignore`, no skipping.
-   If jdtls reports it, the code is wrong. Fix it.
-
-4. **WAIT FOR IMPORT** — On first session or after build.gradle changes, jdtls needs time
-   to import the Gradle project. Diagnostics may be empty until import completes.
-   Call `lsp_diagnostics` and retry if empty.
-## CI/CD
-
-| Pipeline | Triggers | JDK | Key Steps |
-|----------|----------|-----|-----------|
-| **Fast CI** | push/PR to main | 21+25 | Validate → Compile split → Unit tests (no SpotBugs/Checkstyle/coverage/ShadowJAR/runtime — <3 min) |
-| **Full CI** | workflow_dispatch | 21+25 | Compile → Unit tests → SpotBugs+Checkstyle+ArchUnit+banned-API-scan → JaCoCo coverage → ShadowJAR → Paper runtime smoke test |
-| **Release** | tag v* / dispatch | 21+25 | Test → ShadowJAR → checksums → GitHub Release with assets |
-
-```bash
-# Local CI-equivalent commands
-./gradlew :engine:test :api:test :adapters:v1_21_x:test  # JDK 21 modules
-./gradlew :adapters:v26_x:test :plugin:test              # JDK 25 modules
-./gradlew classes                                          # Compile all toolchains
-./gradlew :engine:spotbugsMain :api:spotbugsMain :adapters:v1_21_x:spotbugsMain :adapters:v26_x:spotbugsMain :plugin:spotbugsMain
-./gradlew :engine:checkstyleMain :api:checkstyleMain :adapters:v1_21_x:checkstyleMain :adapters:v26_x:checkstyleMain :plugin:checkstyleMain
-./gradlew bannedApiScan                                    # Banned API regex scan
-./gradlew :engine:jmh                                      # JMH microbenchmarks
-./gradlew :plugin:shadowJar                                # Build deployable artifact
-```
-
-**Banned API scan** (CI enforces): `Registry.BIOME`, `Biome.valueOf`, `Biome.values()`, `Material.valueOf`, `Material.getMaterial`, `Material.matchMaterial`, `Bukkit.getScheduler()`, `chunkData.setBiome()`, `net.minecraft.*`, `craftbukkit.*`, `ReentrantLock`, `synchronized`, `Class.forName` (except `FoliaDetector.java`)
-
-**Dependabot**: configured in `.github/dependabot.yml` (weekly, grouped by test-deps/gradle-plugins, `automerge` label)
-
+### Banned API Scan (reference)
+`build.gradle.kts` defines the `bannedApiScan` task with all banned patterns.
 
 ## Commit Messages
 
-- `Feat:` / `Fix:` / `Chore:` / `Docs:` / `CI:` prefix with capital
-- Message body: What changed and why, not boilerplate
+- `Feat:` / `Fix:` / `Chore:` / `Docs:` / `CI:` / `Test:` prefix with capital
+- Message body: What changed and why
