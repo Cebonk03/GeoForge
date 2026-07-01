@@ -140,21 +140,39 @@ public final class GeoForgeEngine {
         this.erosion = new HydraulicErosion(config.erosionMaxDropletSteps(), config.erosionGravity());
 
         // 3D cave noise: multi-octave fractal for underground carving
-        this.caveNoise = new FractalNoise(
-                createNoiseSource(seed ^ 0x456789ABCDEF123L),
+        NoiseSource rawCaveSource = createNoiseSource(seed ^ 0x456789ABCDEF123L);
+        if (config.caveWarpAmplitude() > 0.0) {
+            rawCaveSource = new com.geoforge.engine.noise.DomainWarpedNoiseSource(
+                    rawCaveSource,
+                    createNoiseSource(seed ^ 0xABCDEF01L),
+                    createNoiseSource(seed ^ 0xABCDEF02L),
+                    createNoiseSource(seed ^ 0xABCDEF03L),
+                    config.caveWarpAmplitude());
+        }
+        this.caveNoise = new FractalNoise(rawCaveSource,
                 config.caveOctaves(),
                 config.caveLacunarity(),
                 config.cavePersistence());
 
         // Noodle cave noise source (seed-decorrelated from spaghetti cave noise)
-        this.noodleNoise = createNoiseSource(seed ^ 0x56789ABCDEF0123L);
+        NoiseSource rawNoodleSource = createNoiseSource(seed ^ 0x56789ABCDEF0123L);
+        if (config.noodleWarpAmplitude() > 0.0) {
+            rawNoodleSource = new com.geoforge.engine.noise.DomainWarpedNoiseSource(
+                    rawNoodleSource,
+                    createNoiseSource(seed ^ 0xABCDEF04L),
+                    createNoiseSource(seed ^ 0xABCDEF05L),
+                    createNoiseSource(seed ^ 0xABCDEF06L),
+                    config.noodleWarpAmplitude());
+        }
+        this.noodleNoise = rawNoodleSource;
 
 
         this.biomeRegistry = new BiomeRegistry(GeoForgeBiomeDefaults.createDefaults(), this.climateResolver);
+        RiverCarver baseCarver;
         if (config.riverDepth() == 0) {
-            this.riverCarver = NoopRiverCarver.instance();
+            baseCarver = NoopRiverCarver.instance();
         } else {
-            this.riverCarver = switch (config.riverValleyProfile()) {
+            baseCarver = switch (config.riverValleyProfile()) {
                 case CANYON -> new CanyonRiverCarver(
                         seed ^ 0xFEEDBEEFL,
                         config.riverFrequency(),
@@ -171,7 +189,16 @@ public final class GeoForgeEngine {
                         config.riverDepth(),
                         config.riverWidth());
             };
-
+        }
+        // Apply domain warping to river noise if configured
+        if (config.riverWarpAmplitude() > 0.0 && !(baseCarver instanceof NoopRiverCarver)) {
+            this.riverCarver = new com.geoforge.engine.density.DomainWarpedRiverCarver(
+                    baseCarver,
+                    createNoiseSource(seed ^ 0xABCDEF07L),
+                    createNoiseSource(seed ^ 0xABCDEF08L),
+                    config.riverWarpAmplitude());
+        } else {
+            this.riverCarver = baseCarver;
         }
         this.scenicDetector = new ScenicFeatureDetector(seed);
     }

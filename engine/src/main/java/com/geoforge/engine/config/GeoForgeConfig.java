@@ -96,6 +96,12 @@ package com.geoforge.engine.config;
  * @param boundaryWarpAmplitude    Amplitude of boundary warp in continentalness units (0-1 range).
  *                                 0.15 shifts boundaries by ~15% of the continentalness range,
  *                                 creating organic, non-detectable biome borders.
+ * @param caveWarpAmplitude        Amplitude of coordinate warping for cave noise (0 = no warping).
+ *                                 Adds organic twisting to cave tunnels. Default: 0.
+ * @param noodleWarpAmplitude      Amplitude of coordinate warping for noodle cave noise (0 = no warping).
+ *                                 Default: 0.
+ * @param riverWarpAmplitude       Amplitude of coordinate warping for river noise (0 = no warping).
+ *                                 Creates natural river meanders. Default: 0.
  * @param treeDensityFrequency    Frequency of tree density noise for placement. Must be {@code > 0}.
  * @param configVersion              Configuration version for migration support.
  */
@@ -155,6 +161,10 @@ public record GeoForgeConfig(
         // --- Boundary warp (biome border transitions) ---
         double boundaryWarpFrequency,
         double boundaryWarpAmplitude,
+        // --- Domain warping amplitudes (noise decorators) ---
+        double caveWarpAmplitude,
+        double noodleWarpAmplitude,
+        double riverWarpAmplitude,
         // --- Tree config ---
         double treeDensityFrequency,
         // --- Config version ---
@@ -457,6 +467,10 @@ public record GeoForgeConfig(
                 // Boundary warp for organic biome border transitions
                 0.001, // boundaryWarpFrequency
                 0.15,  // boundaryWarpAmplitude
+                // Domain warping amplitudes (noise decorators): 0 = disabled
+                0.0,   // caveWarpAmplitude
+                0.0,   // noodleWarpAmplitude
+                0.0,   // riverWarpAmplitude
                 // Tree config
                 0.02,  // treeDensityFrequency
                 // Config version — bumped to 4 for T2 (caveOctaves 2->3), T7 (biome borders widened)
@@ -536,6 +550,10 @@ public record GeoForgeConfig(
         // Boundary warp (biome border transitions)
         private double boundaryWarpFrequency = 0.001;
         private double boundaryWarpAmplitude = 0.15;
+        // Domain warping amplitudes (noise decorators): 0 = disabled
+        private double caveWarpAmplitude = 0.0;
+        private double noodleWarpAmplitude = 0.0;
+        private double riverWarpAmplitude = 0.0;
         // Tree config
         private double treeDensityFrequency = 0.02;
         // Config version
@@ -597,6 +615,9 @@ public record GeoForgeConfig(
         public Builder domainWarpAmplitude(double domainWarpAmplitude) { this.domainWarpAmplitude = domainWarpAmplitude; return this; }
         public Builder boundaryWarpFrequency(double boundaryWarpFrequency) { this.boundaryWarpFrequency = boundaryWarpFrequency; return this; }
         public Builder boundaryWarpAmplitude(double boundaryWarpAmplitude) { this.boundaryWarpAmplitude = boundaryWarpAmplitude; return this; }
+        public Builder caveWarpAmplitude(double caveWarpAmplitude) { this.caveWarpAmplitude = caveWarpAmplitude; return this; }
+        public Builder noodleWarpAmplitude(double noodleWarpAmplitude) { this.noodleWarpAmplitude = noodleWarpAmplitude; return this; }
+        public Builder riverWarpAmplitude(double riverWarpAmplitude) { this.riverWarpAmplitude = riverWarpAmplitude; return this; }
         // Tree config
         public Builder treeDensityFrequency(double treeDensityFrequency) { this.treeDensityFrequency = treeDensityFrequency; return this; }
         // Config version
@@ -640,6 +661,8 @@ public record GeoForgeConfig(
                     domainWarpAmplitude,
                     // Boundary warp
                     boundaryWarpFrequency, boundaryWarpAmplitude,
+                    // Domain warping amplitudes
+                    caveWarpAmplitude, noodleWarpAmplitude, riverWarpAmplitude,
                     treeDensityFrequency,
                     // Config version
                     configVersion);
