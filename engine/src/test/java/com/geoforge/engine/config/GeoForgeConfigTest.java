@@ -451,4 +451,22 @@ class GeoForgeConfigTest {
         assertThrows(IllegalArgumentException.class,
                 () -> GeoForgeConfig.builder().riverValleyProfile(null).build());
     }
+
+    @Test
+    void validation_caveWarpAmplitudeMustBeNonNegative() {
+        assertThrows(IllegalArgumentException.class,
+                () -> GeoForgeConfig.builder().caveWarpAmplitude(-1).build());
+    }
+
+    @Test
+    void validation_noodleWarpAmplitudeMustBeNonNegative() {
+        assertThrows(IllegalArgumentException.class,
+                () -> GeoForgeConfig.builder().noodleWarpAmplitude(-1).build());
+    }
+
+    @Test
+    void validation_riverWarpAmplitudeMustBeNonNegative() {
+        assertThrows(IllegalArgumentException.class,
+                () -> GeoForgeConfig.builder().riverWarpAmplitude(-1).build());
+    }
 }
