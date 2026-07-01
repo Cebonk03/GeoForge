@@ -31,13 +31,6 @@ public record ColumnContext(
     private static final double EPSILON = 1e-12;
 
     /**
-     * ThreadLocal cache for auto-computing context in the 3-arg
-     * {@link GeoForgeEngine#getDensity} convenience method. Each engine thread
-     * (Folia region) gets its own cache.
-     */
-    static final ThreadLocal<ColumnContext> CACHE = ThreadLocal.withInitial(() -> null);
-
-    /**
      * Computes the column context for the given block coordinates.
      *
      * <p>Samples biome at the surface height determined by the engine's
