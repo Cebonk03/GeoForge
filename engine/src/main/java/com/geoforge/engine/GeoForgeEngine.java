@@ -311,40 +311,65 @@ public final class GeoForgeEngine {
                 blockY * config.caveFrequency(),
                 blockZ * config.caveFrequency());
 
-        double heightComponent = ctx.targetHeight() - blockY;
-        double caveComponent = cave * config.caveAmplitude();
+        double density = computeBaseDensity(ctx.targetHeight(), blockY, ctx);
+        density = applyCaveNoise(density, cave, ctx);
+        density = applyEnhancedCaves(density, blockX, blockY, blockZ, cave, ctx);
+        density = applyRiverCarving(density, blockX, blockY, blockZ, ctx);
+        return DensityGuard.clamp(density,
+                config.minHeight(), config.maxHeight());
+    }
+
+    /**
+     * Computes the base density component from surface height and biome modifiers.
+     * {@code density = (targetHeight - y) * amplitudeMultiplier + heightOffset}.
+     */
+    private double computeBaseDensity(double targetHeight, int blockY, ColumnContext ctx) {
+        double h = targetHeight - blockY;
         if (ctx.amplitudeMultiplier() != 1.0) {
-            heightComponent *= ctx.amplitudeMultiplier();
+            h *= ctx.amplitudeMultiplier();
         }
+        if (ctx.heightOffset() != 0.0) {
+            h += ctx.heightOffset();
+        }
+        return h;
+    }
+
+    /**
+     * Applies cave noise component to density: {@code density += caveNoise * amplitude * modifier}.
+     */
+    private double applyCaveNoise(double density, double caveNoiseValue, ColumnContext ctx) {
+        double caveComponent = caveNoiseValue * config.caveAmplitude();
         if (ctx.caveModifier() != 1.0) {
             caveComponent *= ctx.caveModifier();
         }
-        double density = heightComponent + caveComponent;
-        if (ctx.heightOffset() != 0.0) {
-            density += ctx.heightOffset();
-        }
+        return density + caveComponent;
+    }
 
-        // Enhanced cave system (v2+)
+    /**
+     * Applies enhanced cave system (v2+): three-type cave carving for blocks well below the surface.
+     */
+    private double applyEnhancedCaves(double density, int blockX, int blockY, int blockZ,
+                                      double caveNoiseValue, ColumnContext ctx) {
         if (config.configVersion() >= 2 && config.caveAmplitude() > 0
                 && blockY < ctx.targetHeight() - config.caveSurfaceCutoff()) {
             double noodleFreq = config.caveNoodleFrequency();
             double noodleA = noodleNoise.sample3D(
-                    blockX * noodleFreq,
-                    blockY * noodleFreq,
-                    blockZ * noodleFreq);
+                    blockX * noodleFreq, blockY * noodleFreq, blockZ * noodleFreq);
             double noodleB = noodleNoise.sample3D(
-                    (blockX + 1000) * noodleFreq,
-                    blockY * noodleFreq,
-                    (blockZ + 1000) * noodleFreq);
+                    (blockX + 1000) * noodleFreq, blockY * noodleFreq, (blockZ + 1000) * noodleFreq);
             density = EnhancedCaveSystem.carve(
-                    density, cave, noodleA, noodleB,
+                    density, caveNoiseValue, noodleA, noodleB,
                     blockY, ctx.targetHeight(), config);
         }
+        return density;
+    }
 
+    /**
+     * Applies river carving weighted by the column's valley factor.
+     */
+    private double applyRiverCarving(double density, int blockX, int blockY, int blockZ, ColumnContext ctx) {
         double carved = riverCarver.carve(density, blockX, blockY, blockZ);
-        double weightedDensity = density + (carved - density) * ctx.valleyFactor();
-        return DensityGuard.clamp(weightedDensity,
-                config.minHeight(), config.maxHeight());
+        return density + (carved - density) * ctx.valleyFactor();
     }
 
     /**
