@@ -342,6 +342,21 @@ public record GeoForgeConfig(
                     "boundaryWarpAmplitude must be >= 0, got %s"
                             .formatted(boundaryWarpAmplitude));
         }
+        if (caveWarpAmplitude < 0) {
+            throw new IllegalArgumentException(
+                    "caveWarpAmplitude must be >= 0, got %s"
+.formatted(caveWarpAmplitude));
+        }
+        if (noodleWarpAmplitude < 0) {
+            throw new IllegalArgumentException(
+                    "noodleWarpAmplitude must be >= 0, got %s"
+.formatted(noodleWarpAmplitude));
+        }
+        if (riverWarpAmplitude < 0) {
+            throw new IllegalArgumentException(
+                    "riverWarpAmplitude must be >= 0, got %s"
+.formatted(riverWarpAmplitude));
+        }
         if (treeDensityFrequency <= 0) {
             throw new IllegalArgumentException(
                     "treeDensityFrequency must be > 0, got %s"

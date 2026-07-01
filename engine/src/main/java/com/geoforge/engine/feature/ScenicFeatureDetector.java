@@ -106,7 +106,7 @@ public final class ScenicFeatureDetector {
         }
 
         // HIDDEN_VALLEY: check 4 cardinal directions at full search radius
-        // Uses getHeightAt() (O(1)) for fast height screening, then verifies with getSurfaceHeight()
+        // Uses getWarpedHeightAt() (domain-warped) for fast height screening, then verifies with getSurfaceHeight()
         int[][] dirs = {{10, 0}, {-10, 0}, {0, 10}, {0, -10}};
         for (int[] d : dirs) {
             int nx = blockX + d[0];
