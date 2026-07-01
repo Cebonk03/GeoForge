@@ -21,7 +21,6 @@ package com.geoforge.engine.biome;
  * @param maxTreeHeight         Maximum tree height in blocks (0 = use global default).
  * @param surfaceDepth          Depth of surface blocks below the top block (3 = default).
  */
-@Deprecated
 public record BiomeTerrainConfig(
         double heightOffset,
         double amplitudeMultiplier,
