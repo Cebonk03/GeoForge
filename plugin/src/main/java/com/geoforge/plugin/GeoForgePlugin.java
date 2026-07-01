@@ -84,7 +84,7 @@ public final class GeoForgePlugin extends JavaPlugin {
         .treeDensityFrequency(cfg.getDouble("decorations.tree-density-frequency", 0.02))
 .erosionDropletCount(cfg.getInt("erosion.droplet-count", 1024))
 .erosionGravity((float) cfg.getDouble("erosion.gravity", 0.2))
-.noiseBackend(cfg.getString("noise.backend", "simplex"))
+.noiseBackend(cfg.getString("noise.backend", "gradient"))
             .domainWarpAmplitude(cfg.getDouble("domain-warp.amplitude", 1.5))
             .boundaryWarpFrequency(cfg.getDouble("boundary-warp.frequency", 0.001))
             .boundaryWarpAmplitude(cfg.getDouble("boundary-warp.amplitude", 0.15))
