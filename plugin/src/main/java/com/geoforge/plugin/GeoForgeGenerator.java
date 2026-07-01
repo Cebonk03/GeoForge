@@ -114,7 +114,8 @@ public final class GeoForgeGenerator extends ChunkGenerator {
                 int blockX = chunkX * CHUNK_SIZE + x;
                 int blockZ = chunkZ * CHUNK_SIZE + z;
                 int surfaceY = Math.round(erodedHeights[z * CHUNK_SIZE + x]);
-
+                // Pre-compute ColumnContext once per column for optimal getDensity performance
+                var ctx = com.geoforge.engine.ColumnContext.compute(engine, blockX, blockZ);
                 boolean ocean = false;
                 for (int y = minY; y < maxY; y++) {
                     // Place bedrock at bottom layers
@@ -123,7 +124,7 @@ public final class GeoForgeGenerator extends ChunkGenerator {
                         continue;
                     }
 
-                    double density = engine.getDensity(blockX, y, blockZ);
+                    double density = engine.getDensity(blockX, y, blockZ, ctx);
                     // When erosion is active, constrain blocks to at or below the eroded surface;
                     // when inactive, use original density-only placement (identical to pre-erosion)
                     if (density > 0 && (y <= surfaceY || !erosionActive)) {

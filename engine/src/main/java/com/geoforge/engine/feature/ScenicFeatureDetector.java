@@ -128,9 +128,9 @@ public final class ScenicFeatureDetector {
         }
 
         // EMERGENCE: check if cave noise is active near the surface
-        // and the gradient suggests a cliff face nearby
-        double caveNearSurface = engine.getDensity(blockX, surfaceY - 3, blockZ)
-                - engine.getDensity(blockX, surfaceY, blockZ);
+        var ctx = com.geoforge.engine.ColumnContext.compute(engine, blockX, blockZ);
+        double caveNearSurface = engine.getDensity(blockX, surfaceY - 3, blockZ, ctx)
+                - engine.getDensity(blockX, surfaceY, blockZ, ctx);
         if (caveNearSurface < -EMERGENCE_CAVE_THRESHOLD && gradientMag > 2.0) {
             return new FeatureResult(FeatureType.EMERGENCE,
                     Math.min(1.0, -caveNearSurface / 2.0),

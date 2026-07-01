@@ -68,19 +68,6 @@ public final class GeoForgeEngine {
     private final DensityFunctionTree domainWarpedHeight;
     private final ScenicFeatureDetector scenicDetector;
 
-    // Per-column biome modifier cache: ThreadLocal avoids redundant getBiomeId() calls
-    // across different Y samples in the same column during chunk generation
-    private final ThreadLocal<BiomeModifierCache> biomeModifierCache =
-            ThreadLocal.withInitial(BiomeModifierCache::new);
-
-    private static final class BiomeModifierCache {
-        int lastX = Integer.MIN_VALUE;
-        int lastZ = Integer.MIN_VALUE;
-        double caveModifier;
-        double heightOffset;
-        double amplitudeMultiplier;
-        double valleyFactor;
-    }
 
     /**
      * Creates a new engine with the given world seed and configuration.
@@ -274,52 +261,45 @@ public final class GeoForgeEngine {
      * @return density value (positive = solid, negative = air)
      */
     public double getDensity(int blockX, int blockY, int blockZ) {
-        double targetHeight = domainWarpedHeight.sample(blockX, 0, blockZ);
+        return getDensity(blockX, blockY, blockZ,
+                ColumnContext.compute(this, blockX, blockZ));
+    }
+
+    /**
+     * Returns the 3D density value using a pre-computed ColumnContext.
+     *
+     * <p>This is the canonical density method — no caching or biome lookup.
+     * All per-column data comes from the context. Callers iterating multiple Y
+     * values in the same column should compute the context once and reuse it.
+     *
+     * @param blockX the x-coordinate in block space
+     * @param blockY the y-coordinate in block space
+     * @param blockZ the z-coordinate in block space
+     * @param ctx    pre-computed column context
+     * @return density value (positive = solid, negative = air)
+     */
+    public double getDensity(int blockX, int blockY, int blockZ, ColumnContext ctx) {
         double cave = caveNoise.sample3D(
                 blockX * config.caveFrequency(),
                 blockY * config.caveFrequency(),
                 blockZ * config.caveFrequency());
-        // Per-biome modifiers with column cache
-        BiomeModifierCache cache = biomeModifierCache.get();
-        if (cache.lastX != blockX || cache.lastZ != blockZ) {
-            BiomeTerrainConfig cfg = toTerrainConfig(
-                    biomeRegistry.forBiome(getBiomeId(blockX, blockY, blockZ)));
-            cache.lastX = blockX;
-            cache.lastZ = blockZ;
-            cache.caveModifier = cfg.caveAmplitudeModifier();
-            cache.heightOffset = cfg.heightOffset();
-            cache.amplitudeMultiplier = cfg.amplitudeMultiplier();
-            // Compute terrain gradient for topographic river carving
-            // Low gradient magnitude = valley bottom = rivers carve here
-            // High gradient magnitude = slope/ridge = rivers suppressed
-            double hDx = domainWarpedHeight.sample(blockX + 5, 0, blockZ);
-            double hDz = domainWarpedHeight.sample(blockX, 0, blockZ + 5);
-            double gradX = (hDx - targetHeight) / 5.0;
-            double gradZ = (hDz - targetHeight) / 5.0;
-            double gradientMag = Math.sqrt(gradX * gradX + gradZ * gradZ);
-            // valleyFactor: 1.0 in flat valley bottoms, ~0.0 on steep slopes
-            cache.valleyFactor = Math.max(0.0, Math.min(1.0, 1.0 - gradientMag * 2.0));
-        }
 
-        // Apply biome-specific terrain modifiers
-        double heightComponent = targetHeight - blockY;
+        double heightComponent = ctx.targetHeight() - blockY;
         double caveComponent = cave * config.caveAmplitude();
-        if (cache.amplitudeMultiplier != 1.0) {
-            heightComponent *= cache.amplitudeMultiplier;
+        if (ctx.amplitudeMultiplier() != 1.0) {
+            heightComponent *= ctx.amplitudeMultiplier();
         }
-        if (cache.caveModifier != 1.0) {
-            caveComponent *= cache.caveModifier;
+        if (ctx.caveModifier() != 1.0) {
+            caveComponent *= ctx.caveModifier();
         }
         double density = heightComponent + caveComponent;
-        if (cache.heightOffset != 0.0) {
-            density += cache.heightOffset;
+        if (ctx.heightOffset() != 0.0) {
+            density += ctx.heightOffset();
         }
 
-        // Enhanced cave system (v2+): additional three-type cave carving
-        // Only applies to blocks well below the surface (outside the envelope cutoff zone)
-        // to preserve a smooth density transition at the terrain surface
+        // Enhanced cave system (v2+)
         if (config.configVersion() >= 2 && config.caveAmplitude() > 0
-                && blockY < targetHeight - config.caveSurfaceCutoff()) {
+                && blockY < ctx.targetHeight() - config.caveSurfaceCutoff()) {
             double noodleFreq = config.caveNoodleFrequency();
             double noodleA = noodleNoise.sample3D(
                     blockX * noodleFreq,
@@ -331,11 +311,11 @@ public final class GeoForgeEngine {
                     (blockZ + 1000) * noodleFreq);
             density = EnhancedCaveSystem.carve(
                     density, cave, noodleA, noodleB,
-                    blockY, targetHeight, config);
+                    blockY, ctx.targetHeight(), config);
         }
-        // Topographic river carving: weight by valley factor so rivers flow through valley bottoms
+
         double carved = riverCarver.carve(density, blockX, blockY, blockZ);
-        double weightedDensity = density + (carved - density) * cache.valleyFactor;
+        double weightedDensity = density + (carved - density) * ctx.valleyFactor();
         return DensityGuard.clamp(weightedDensity,
                 config.minHeight(), config.maxHeight());
     }
@@ -357,14 +337,13 @@ public final class GeoForgeEngine {
      * @return the Y coordinate of the surface (highest solid block)
      */
     public int getSurfaceHeight(int blockX, int blockZ) {
+        // Pre-compute ColumnContext once for this column (fixes Y-bug + optimization)
+        ColumnContext ctx = ColumnContext.compute(this, blockX, blockZ);
         int low = config.minHeight();
         int high = config.maxHeight() - 1;
-        // Binary search for highest Y with density >= 0.
-        // Upper bound is maxHeight - 1 (not clamped to heightFunction) because
-        // cave noise can push the surface up to caveAmplitude blocks higher.
         while (low < high) {
             int mid = (low + high + 1) / 2;
-            if (getDensity(blockX, mid, blockZ) >= 0) {
+            if (getDensity(blockX, mid, blockZ, ctx) >= 0) {
                 low = mid;
             } else {
                 high = mid - 1;
@@ -452,13 +431,15 @@ public final class GeoForgeEngine {
             float[] orig = new float[size * size];
             System.arraycopy(heightmap, 0, orig, 0, size * size);
             erosion.erode(heightmap, size, config.erosionDropletCount(), erosionSeed);
-            // Apply surface hardness: blend eroded heights toward original
+            // Apply surface hardness using pre-computed ColumnContext per column
             for (int x = 0; x < size; x++) {
                 for (int z = 0; z < size; z++) {
                     int idx = z * size + x;
                     int surfaceY = Math.round(orig[idx]);
+                    ColumnContext ctx = ColumnContext.compute(this,
+                            blockX + x, blockZ + z);
                     double h = toTerrainConfig(
-                            biomeRegistry.forBiome(getBiomeId(blockX + x, surfaceY, blockZ + z))).surfaceHardness();
+                            biomeRegistry.forBiome(ctx.biomeId())).surfaceHardness();
                     if (Math.abs(h - 0.5) > 1e-12) {
                         float blend = (float) Math.max(0.0, Math.min(2.0, (1.0 - h) / 0.5));
                         heightmap[idx] = orig[idx] + (heightmap[idx] - orig[idx]) * blend;
