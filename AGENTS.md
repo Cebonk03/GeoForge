@@ -71,21 +71,29 @@ Positive density = solid, negative density = air
 | `VanillaFallbackAdapter` | impl | api | 1 | Degraded fallback — always STONE + plains biome |
 | `GeoForgeEngine` | core | engine | 3 | Density = heightFunc - y + caveNoise*ampl, surface via binary search |
 | `GeoForgeConfig` | record | engine | 2 | 48 immutable terrain params |
+|| `ColumnContext` | record | engine | — | Per-column immutable context (targetHeight, valleyFactor, biomeId, modifiers) replacing ad-hoc BiomeModifierCache
 | `DensityFunctionTree` | @FunctionalInterface | engine | 9 | sample(x,y,z)→double; composable tree (Add/Clamp/Constant/Multiply/PlateContinentalness) |
 | `NoiseSource` | @FunctionalInterface | engine | 33 | sample2D/sample3D — SimplexNoise or FastNoiseLiteSource via config switch |
 | `FastNoiseLiteSource` | noise | engine | 1 | FastNoiseLite adapter implementing NoiseSource interface |
+|| `GradientNoise` | noise | engine | — | Renamed from SimplexNoise — Perlin-style gradient noise implementation
+|| `DomainWarpedNoiseSource` | noise | engine | — | NoiseSource domain-warping decorator with zero-overhead passthrough
 | `GeoForgeBiomeDefaults` | defaults | engine | 1 | Hardcoded BiomeDefinition map for all 60+ vanilla biomes — replaces YAML loader |
 | `BiomeRegistry` | registry | engine | 1 | Thread-safe runtime registry of biome definitions |
 | `ClimateResolver` | resolver | engine | 1 | Climate-based biome resolution from temperature×humidity×continentalness |
 | `TectonicPlateMapper` | geology | engine | 1 | 12 plates with Voronoi centres + coastline modulation |
 | `HydraulicErosion` | geology | engine | 1 | 2D droplet-based heightmap erosion |
 | `RiverCarver` | @FunctionalInterface | engine | 1 | Pluggable 3D river carving (current: SimplexRiverCarver) |
+|| `CanyonRiverCarver` | RiverCarver impl | engine | 1 | Steep-walled flat-bottom canyon carving
+|| `FloodplainRiverCarver` | RiverCarver impl | engine | 1 | Wide shallow floodplain carving
+|| `DomainWarpedRiverCarver` | RiverCarver impl | engine | — | RiverCarver domain-warping decorator
+|| `DomainWarpDensity` | DensityFunctionTree | engine | — | Domain-warping density function decorator
 | `SimplexRiverCarver` | RiverCarver impl | engine | 1 | 2D simplex noise river valley carving with configurable frequency/depth/width |
 | `StructurePlateauModifier` | util | engine | 0 | Terrain flattening with feathered border (wired in erodeColumn when plateauSize > 0) |
 | `ServerVersion` | record | api | 2 | Regex-parsed major.minor.patch version |
 | `FoliaDetector` | util | api | 2 | Class.forName("io.papermc.paper.threadedregions.RegionizedServer") |
 | `TreeRegistry` | registry | engine | 1 | Default biome→TreeType map + config lookup via biomeTreeMap() |
 | `TreePlacer` | placer | engine | 1 | 9-type tree placement in generateSurface() |
+|| `ScenicFeatureDetector` | feature | engine | — | Wow-moment detection (EDGE_VISTA/HIDDEN_VALLEY/EMERGENCE)
 | `TreeType` | enum | engine | 1 | OAK/BIRCH/SPRUCE/JUNGLE/ACACIA/DARK_OAK/PALE_OAK/CHERRY/MANGROVE — maps to 11 canopies × 6 trunks |
 | `CanopyProfile` | @FunctionalInterface | engine | 1 | 9 canopy shapes (Round/Oval/Domed/Conical/Layered/Spreading/FlatHat/Sparse/NoCanopy) — 11 implementations |
 | `TrunkProfile` | @FunctionalInterface | engine | 1 | 6 trunk profiles (Straight/Bent/Leaning/Twisted/MultiStem/Fallen) — 6 implementations |
