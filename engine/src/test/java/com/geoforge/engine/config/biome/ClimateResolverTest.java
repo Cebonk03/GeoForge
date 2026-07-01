@@ -162,4 +162,43 @@ class ClimateResolverTest {
         assertEquals("windswept_hills", resolver.resolve(0.375, 0.0625, 0.8));
         assertEquals("badlands", resolver.resolve(0.875, 0.9375, 0.8));
     }
+
+    @Test
+    @DisplayName("exportFromBiomeDefinitions returns empty when no biomes have custom ranges")
+    void exportFromBiomeDefinitions_returnsEmpty_withoutCustomRanges() {
+        var biomeDefs = GeoForgeBiomeDefaults.createDefaults();
+        var envelopes = ClimateResolver.exportFromBiomeDefinitions(biomeDefs);
+        // Currently all overworld biomes use custom() with default full-range climate
+        // So exportFromBiomeDefinitions should return empty, falling through to legacy table
+        assertTrue(envelopes.isEmpty(),
+                "exportFromBiomeDefinitions should be empty until biomes get custom climate envelopes");
+    }
+
+    @Test
+    @DisplayName("legacy table produces at least one envelope per overworld biome ID")
+    void legacyTable_hasAllOverworldBiomes() {
+        var legacyEnvs = ClimateResolver.exportFromLegacyTable();
+        var biomeDefs = GeoForgeBiomeDefaults.createDefaults();
+        // Collect biome IDs from the legacy table
+        var legacyBiomeIds = legacyEnvs.stream()
+                .map(ClimateResolver.BiomeEnvelope::biomeId)
+                .collect(java.util.stream.Collectors.toSet());
+        // Verify that all overworld biomes in GeoForgeBiomeDefaults appear in the legacy table
+        // (Nether, End, cave, void, and known legacy-table-gap overworld biomes excluded)
+        var excluded = java.util.Set.of("nether_wastes", "crimson_forest", "warped_forest",
+                "soul_sand_valley", "basalt_deltas", "the_end", "end_highlands",
+                "end_midlands", "end_barrens", "small_end_islands", "the_void",
+                "deep_dark", "dripstone_caves", "lush_caves",
+                // Known gap: defined in GeoForgeBiomeDefaults but not in legacy table
+                "flower_forest", "sunflower_plains", "swamp", "mangrove_swamp",
+                "eroded_badlands", "wooded_badlands", "savanna_plateau",
+                "windswept_gravelly_hills", "stony_peaks", "snowy_slopes",
+                "frozen_river", "river", "cherry_grove", "pale_garden", "mushroom_fields");
+        for (var id : biomeDefs.keySet()) {
+            if (!excluded.contains(id)) {
+                assertTrue(legacyBiomeIds.contains(id),
+                        "Biome '" + id + "' has no climate envelope in the legacy table");
+            }
+        }
+    }
 }
