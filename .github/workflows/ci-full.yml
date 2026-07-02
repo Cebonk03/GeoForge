@@ -14,7 +14,7 @@ env:
     -Dorg.gradle.daemon=false
     -Dorg.gradle.parallel=true
     -Dorg.gradle.caching=true
-
+    -Dorg.gradle.configuration-cache=false
 jobs:
   ###########################################################################
   # VALIDATE - Gradle wrapper integrity
