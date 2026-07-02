@@ -409,13 +409,13 @@ jobs:
         run: chmod +x .github/scripts/run-paper-test.sh
       - name: Test plugin on Paper ${{ matrix.mcversion }}
         run: |
-.github/scripts/run-paper-test.sh \
-  "${{ matrix.mcversion }}" \
-  "$JAVA_HOME" \
-  "GeoForge.jar" \
-  120 \
-  "version" \
-  "plugin list" \
-  "plugin enable GeoForge"
+          .github/scripts/run-paper-test.sh \
+            "${{ matrix.mcversion }}" \
+            "$JAVA_HOME" \
+            "GeoForge.jar" \
+            120 \
+            "version" \
+            "plugin list" \
+            "plugin enable GeoForge"
         timeout-minutes: 10
         shell: bash
