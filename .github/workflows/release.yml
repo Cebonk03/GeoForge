@@ -157,7 +157,7 @@ jobs:
     needs: test
     permissions:
       contents: read
-      actions: read
+      actions: write
     timeout-minutes: 10
     steps:
       # actions/checkout@v7
