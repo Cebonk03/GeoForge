@@ -86,10 +86,17 @@ if [[ ! -x "$JAVA_BIN" ]]; then
     exit 1
 fi
 
-if [[ ! -f "$PLUGIN_JAR" ]]; then
-    echo "ERROR: Plugin JAR not found at '$PLUGIN_JAR'" >&2
+# Save original directory and resolve absolute plugin path
+ORIG_DIR=$(pwd)
+case "$PLUGIN_JAR" in
+    /*) PLUGIN_JAR_ABS="$PLUGIN_JAR" ;;
+    *)  PLUGIN_JAR_ABS="${ORIG_DIR}/${PLUGIN_JAR}" ;;
+esac
+if [[ ! -f "$PLUGIN_JAR_ABS" ]]; then
+    echo "ERROR: Plugin JAR not found at $PLUGIN_JAR_ABS" >&2
     exit 1
 fi
+PLUGIN_JAR="$PLUGIN_JAR_ABS"
 
 echo "=== Paper Runtime Test ==="
 echo "MC Version:  $MC_VERSION"
