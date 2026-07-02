@@ -1,5 +1,10 @@
 package com.geoforge.engine.feature.tree;
 
+import java.util.Collections;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 /**
  * Supported vanilla tree types with their associated block material names.
  *
@@ -20,6 +25,10 @@ public enum TreeType {
 
     private final String logName;
     private final String leavesName;
+
+    public static final Map<String, TreeType> LOOKUP =
+        Collections.unmodifiableMap(Stream.of(values())
+            .collect(Collectors.toMap(t -> t.name().toLowerCase(), Function.identity())));
 
     TreeType(String logName, String leavesName) {
         this.logName = logName;

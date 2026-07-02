@@ -331,12 +331,12 @@ public final class TreePlacer implements GeoForgeFeature {
         // Check biome config override first
         BiomeTerrainConfig cfg = biomeConfigs.get(biomeId);
         if (cfg != null && !cfg.treeType().isEmpty()) {
-            try {
-                return TreeType.valueOf(cfg.treeType().toUpperCase());
-            } catch (IllegalArgumentException e) {
-                LOG.warning("Ignoring invalid tree type '" + cfg.treeType()
-                        + "' for biome '" + biomeId + "': " + e.getMessage());
+            TreeType mapped = TreeType.LOOKUP.get(cfg.treeType().toLowerCase());
+            if (mapped != null) {
+                return mapped;
             }
+            LOG.warning("Ignoring invalid tree type '" + cfg.treeType()
+                    + "' for biome '" + biomeId + "': not found in TreeType enum");
         }
 
         // Fall back to TreeRegistry — position-deterministic selection
