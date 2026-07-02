@@ -494,6 +494,94 @@ public record GeoForgeConfig(
     }
 
     /**
+     * Serializes this config to a flat map of dot-path keys suitable for writing to a Bukkit FileConfiguration.
+     *
+     * <p>The returned map mirrors the config.yml layout exactly — each entry is keyed by its
+     * config.yml path (e.g., {@code "terrain.sea-level"}) with the corresponding value. Unknown or
+     * NaN values are omitted.
+     *
+     * @return an unmodifiable map of config path → value entries
+     */
+    public java.util.Map<String, Object> toConfigMap() {
+        var map = new java.util.LinkedHashMap<String, Object>();
+        map.put("config-version", configVersion);
+
+        // terrain section
+        map.put("terrain.min-height", minHeight);
+        map.put("terrain.max-height", maxHeight);
+        map.put("terrain.sea-level", seaLevel);
+        map.put("terrain.continental-base", continentalBase);
+        map.put("terrain.continental-height-amplitude", continentalHeightAmplitude);
+
+        // noise section
+        map.put("noise.backend", noiseBackend);
+        map.put("noise.cave-frequency", caveFrequency);
+        map.put("noise.cave-amplitude", caveAmplitude);
+        map.put("noise.cave-octaves", caveOctaves);
+        map.put("noise.cave-lacunarity", caveLacunarity);
+        map.put("noise.cave-persistence", cavePersistence);
+        map.put("noise.ridge-frequency", ridgeFrequency);
+        map.put("noise.ridge-octaves", ridgeOctaves);
+        map.put("noise.ridge-amplitude", ridgeAmplitude);
+        map.put("noise.fbm-frequency", fbmFrequency);
+        map.put("noise.fbm-octaves", fbmOctaves);
+        map.put("noise.flat-frequency", flatFrequency);
+        map.put("noise.continentalness-blend-sharpness", continentalnessBlendSharpness);
+
+        // climate section
+        map.put("climate.temperature-frequency", temperatureFrequency);
+        map.put("climate.temperature-y-frequency", temperatureYFrequency);
+        map.put("climate.humidity-frequency", humidityFrequency);
+
+        // cave section
+        map.put("cave.center-y", caveCenterY);
+        map.put("cave.spread", caveSpread);
+        map.put("cave.surface-cutoff", caveSurfaceCutoff);
+        map.put("cave.spaghetti-threshold", caveSpaghettiThreshold);
+        map.put("cave.cheese-threshold", caveCheeseThreshold);
+        map.put("cave.noodle-threshold", caveNoodleThreshold);
+        map.put("cave.noodle-frequency", caveNoodleFrequency);
+        // cave domain-warp amplitudes (0 = disabled)
+        map.put("cave.warp-amplitude", caveWarpAmplitude);
+        map.put("cave.noodle-warp-amplitude", noodleWarpAmplitude);
+
+
+        // river section
+        map.put("river.frequency", riverFrequency);
+        map.put("river.depth", riverDepth);
+        map.put("river.width", riverWidth);
+        map.put("river.canyon-depth", riverCanyonDepth);
+        map.put("river.canyon-width", riverCanyonWidth);
+        map.put("river.valley-profile", riverValleyProfile.name().toLowerCase());
+        map.put("river.floodplain-width", riverFloodplainWidth);
+        map.put("river.table-response", riverTableResponse);
+        map.put("river.warp-amplitude", riverWarpAmplitude);
+
+        // erosion section
+        map.put("erosion.max-droplet-steps", erosionMaxDropletSteps);
+        map.put("erosion.iterations", erosionIterations);
+        map.put("erosion.droplet-count", erosionDropletCount);
+        map.put("erosion.gravity", erosionGravity);
+
+        // decorations section
+        map.put("decorations.feature-seed-offset", featureSeedOffset);
+        map.put("decorations.tree-density-frequency", treeDensityFrequency);
+
+        // plateau section
+        map.put("plateau.size", plateauSize);
+        map.put("plateau.target-height", plateauTargetHeight);
+
+        // domain-warp section
+        map.put("domain-warp.amplitude", domainWarpAmplitude);
+
+        // boundary-warp section
+        map.put("boundary-warp.frequency", boundaryWarpFrequency);
+        map.put("boundary-warp.amplitude", boundaryWarpAmplitude);
+
+        return java.util.Collections.unmodifiableMap(map);
+    }
+
+    /**
      * Returns a new {@link Builder} initialized with the default values.
      *
      * @return a builder pre-populated with default parameter values
