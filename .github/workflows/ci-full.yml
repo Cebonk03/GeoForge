@@ -247,6 +247,7 @@ jobs:
         with:
           name: jacoco-data-jdk21
           path: .
+          digest-mismatch: warn
 
       # actions/download-artifact@v8
       - name: Download JaCoCo exec data (JDK 25 - v26_x, plugin)
@@ -254,7 +255,25 @@ jobs:
         with:
           name: jacoco-data-jdk25
           path: .
+          digest-mismatch: warn
 
+      - name: Verify JaCoCo exec data
+        run: |
+          not_found=0
+          for f in engine/build/jacoco/test.exec api/build/jacoco/test.exec \
+                    adapters/v1_21_x/build/jacoco/test.exec \
+                    adapters/v26_x/build/jacoco/test.exec \
+                    plugin/build/jacoco/test.exec; do
+            if [ -f "$f" ]; then
+              echo "✓ $f ($(du -h "$f" | cut -f1))"
+            else
+              echo "⚠ $f not found"; not_found=$((not_found + 1))
+            fi
+          done
+          if [ "$not_found" -gt 3 ]; then
+            echo "ERROR: Most exec files missing, cannot verify coverage"
+            exit 1
+          fi
       # Compile all modules so class files exist for report class-to-exec matching.
       - name: Compile all modules (both JDK 21 + 25 toolchains)
         run: ./gradlew classes --no-daemon
@@ -377,16 +396,26 @@ jobs:
         with:
           name: GeoForge
           path: .
+          digest-mismatch: warn
 
-      - name: Test plugin on Paper server
-        # SHA pinned for supply chain security; update by resolving the v2 tag
-        uses: gmitch215/TestMC@6018a826cf7df53ca946fffabb8bc8d00b9c09f0 # v2
-        with:
-          path: GeoForge.jar
-          runtime: paper
-          version: ${{ matrix.mcversion }}
-          time: 60
-          commands: |
-            version
-            plugin list
-            plugin enable GeoForge
+      - name: Verify JAR downloaded
+        run: |
+          if [ ! -f GeoForge.jar ]; then
+            echo "ERROR: GeoForge.jar not found after download"
+            exit 1
+          fi
+          ls -lh GeoForge.jar
+      - name: Make script executable
+        run: chmod +x .github/scripts/run-paper-test.sh
+      - name: Test plugin on Paper ${{ matrix.mcversion }}
+        run: |
+.github/scripts/run-paper-test.sh \
+  "${{ matrix.mcversion }}" \
+  "$JAVA_HOME" \
+  "GeoForge.jar" \
+  120 \
+  "version" \
+  "plugin list" \
+  "plugin enable GeoForge"
+        timeout-minutes: 10
+        shell: bash

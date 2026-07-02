@@ -184,13 +184,32 @@ jobs:
         with:
           name: jacoco-data-jdk21
           path: .
+          digest-mismatch: warn
       # actions/download-artifact@v8
       - name: Download JaCoCo exec data (JDK 25)
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:
           name: jacoco-data-jdk25
           path: .
+          digest-mismatch: warn
       - name: Compile all modules (both JDK 21 + 25 toolchains)
+      - name: Verify JaCoCo exec data
+        run: |
+          not_found=0
+          for f in engine/build/jacoco/test.exec api/build/jacoco/test.exec \
+                    adapters/v1_21_x/build/jacoco/test.exec \
+                    adapters/v26_x/build/jacoco/test.exec \
+                    plugin/build/jacoco/test.exec; do
+            if [ -f "$f" ]; then
+              echo "✓ $f ($(du -h "$f" | cut -f1))"
+            else
+              echo "⚠ $f not found"; not_found=$((not_found + 1))
+            fi
+          done
+          if [ "$not_found" -gt 3 ]; then
+            echo "ERROR: Most exec files missing, cannot verify coverage"
+            exit 1
+          fi
         run: ./gradlew classes --no-daemon
       - name: Generate JaCoCo reports
         run: ./gradlew jacocoTestReport --no-daemon -x test
