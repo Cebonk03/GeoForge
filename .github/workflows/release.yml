@@ -192,7 +192,6 @@ jobs:
           name: jacoco-data-jdk25
           path: .
           digest-mismatch: warn
-      - name: Compile all modules (both JDK 21 + 25 toolchains)
       - name: Verify JaCoCo exec data
         run: |
           not_found=0
@@ -210,6 +209,8 @@ jobs:
             echo "ERROR: Most exec files missing, cannot verify coverage"
             exit 1
           fi
+      # Compile all modules so class files exist for report class-to-exec matching.
+      - name: Compile all modules (both JDK 21 + 25 toolchains)
         run: ./gradlew classes --no-daemon
       - name: Generate JaCoCo reports
         run: ./gradlew jacocoTestReport --no-daemon -x test
