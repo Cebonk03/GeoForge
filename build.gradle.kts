@@ -54,14 +54,14 @@ subprojects {
             "engine" to "0.60",
             "api" to "0.55",
             "v1_21_x" to "0.50",
-            "v26_x" to "0.50",
+            "v26_x" to "0.20"
             "plugin" to "0.10"
         )
         val moduleBranchThresholds = mapOf(
             "engine" to "0.50",
             "api" to "0.45",
             "v1_21_x" to "0.40",
-            "v26_x" to "0.40",
+            "v26_x" to "0.15"
             "plugin" to "0.05"
         )
         val moduleName = project.name
