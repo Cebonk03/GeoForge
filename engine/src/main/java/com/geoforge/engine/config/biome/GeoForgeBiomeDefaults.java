@@ -194,7 +194,7 @@ public final class GeoForgeBiomeDefaults {
     private static BiomeDefinition neutral(String id) {
         return BiomeDefinition.defaults().merge(new BiomeDefinition(
                 id, 0.0, 1.0, "", "", 0.5, 1.0, "", -1.0, 0, 0, 3,
-                Map.of(), List.of(), 0.3, false,
+                Map.of(), List.of(), List.of(), 0.3, false,
                 Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, 0));
     }
 
@@ -274,6 +274,7 @@ public final class GeoForgeBiomeDefaults {
                 caveAmp, treeType, treeDensity,
                 minTreeH, maxTreeH, surfaceDepth,
                 tvMods != null ? tvMods : java.util.Map.of(),
+                java.util.List.of(), // surfacePalette (default empty)
                 veg != null ? veg : java.util.List.of(),
                 vegDensity, floatPlants,
                 tMin, tMax, hMin, hMax, cMin, cMax, priority));
@@ -288,7 +289,7 @@ public final class GeoForgeBiomeDefaults {
     private static BiomeDefinition withDepth(BiomeDefinition def, int depth) {
         return def.merge(new BiomeDefinition(
                 "", 0, 1, "", "", 0.5, 1, "", -1.0, 0, 0, depth,
-                Map.of(), List.of(), 0.3, false,
+                Map.of(), List.of(), List.of(), 0.3, false,
                 Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, 0));
     }
 
@@ -297,7 +298,7 @@ public final class GeoForgeBiomeDefaults {
                                               double treeDensity, java.util.List<String> veg) {
         return BiomeDefinition.defaults().merge(new BiomeDefinition(
                 id, 0.0, amp, surface, subSurface, 0.5, caveAmp, "", treeDensity, 0, 0, 3,
-                Map.of(), veg, 0.3, false,
+                Map.of(), List.of(), veg, 0.3, false,
                 Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, 0));
     }
 }

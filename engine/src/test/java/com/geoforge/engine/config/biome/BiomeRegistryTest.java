@@ -29,7 +29,7 @@ class BiomeRegistryTest {
     @DisplayName("registry returns stored biome definition")
     void registry_returnsStoredBiome() {
         var plains = new BiomeDefinition("plains", 0, 1, "", "", 0.5, 1, "", -1, 0, 0, 3,
-                Map.of(), java.util.List.of(), 0.3, false, -1, 1, 0, 1, 0, 1, 0);
+                Map.of(), java.util.List.of(), java.util.List.of(), 0.3, false, -1, 1, 0, 1, 0, 1, 0);
         var resolver = new ClimateResolver(CFG, ClimateResolver.exportFromLegacyTable(), "ocean");
         var registry = new BiomeRegistry(Map.of("plains", plains), resolver);
 
@@ -42,7 +42,7 @@ class BiomeRegistryTest {
     @DisplayName("getAllBiomeIds includes registry and climate biome IDs")
     void getAllBiomeIds_includesBoth() {
         var desert = new BiomeDefinition("desert", 0, 1, "", "", 0.5, 1, "", -1, 0, 0, 3,
-                Map.of(), java.util.List.of(), 0.3, false, -1, 1, 0, 1, 0, 1, 0);
+                Map.of(), java.util.List.of(), java.util.List.of(), 0.3, false, -1, 1, 0, 1, 0, 1, 0);
         var resolver = new ClimateResolver(CFG, ClimateResolver.exportFromLegacyTable(), "ocean");
         var registry = new BiomeRegistry(Map.of("desert", desert), resolver);
 

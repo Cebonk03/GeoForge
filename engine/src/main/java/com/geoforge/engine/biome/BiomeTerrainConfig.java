@@ -14,6 +14,7 @@ package com.geoforge.engine.biome;
  * @param treeType              Tree type identifier (empty string = use global).
  * @param surfaceBlock          Surface block material ID (empty string = use global).
  * @param subSurfaceBlock       Sub-surface block material ID (empty string = use global).
+ * @param surfacePalette        Optional list of alternate surface block names for noise-driven variation.
  * @param allowFloatingPlants   Whether floating plants are permitted in this biome.
  * @param surfaceHardness       Surface block hardness factor in [0, 1]. 0.5 = default.
  * @param treeDensity           Tree density modifier (-1.0 = use global default).
@@ -28,6 +29,7 @@ public record BiomeTerrainConfig(
         String treeType,
         String surfaceBlock,
         String subSurfaceBlock,
+        java.util.List<String> surfacePalette,
         boolean allowFloatingPlants,
         double surfaceHardness,
         double treeDensity,
@@ -47,6 +49,7 @@ public record BiomeTerrainConfig(
                 "",      // treeType
                 "",      // surfaceBlock
                 "",      // subSurfaceBlock
+                java.util.List.of(), // surfacePalette
                 false,   // allowFloatingPlants
                 0.5,     // surfaceHardness
                 -1.0,    // treeDensity

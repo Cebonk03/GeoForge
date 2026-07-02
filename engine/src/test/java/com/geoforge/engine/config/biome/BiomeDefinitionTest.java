@@ -56,6 +56,7 @@ class BiomeDefinitionTest {
                 8,              // maxTreeHeight
                 5,              // surfaceDepth (override from default 3)
                 Map.of("tall", 2.0),  // treeVariantModifiers
+                List.of(),              // surfacePalette
                 List.of("grass"),      // vegetationTypes
                 0.5,            // vegetationDensity
                 true,           // allowFloatingPlants
@@ -99,7 +100,7 @@ class BiomeDefinitionTest {
         var base = BiomeDefinition.defaults();
         var override = new BiomeDefinition(
                 "override", 0.0, 1.0, "", "", 0.5, 1.0, "", -1.0, 0, 0, 0,
-                Map.of(), List.of(), 0.3, false,
+                Map.of(), List.of(), List.of(), 0.3, false,
                 Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, 0);
         var merged = base.merge(override);
 
@@ -117,7 +118,7 @@ class BiomeDefinitionTest {
     void merge_preservesBaseId_whenOverrideEmpty() {
         var base = new BiomeDefinition(
                 "base", 0.0, 1.0, "", "", 0.5, 1.0, "", -1.0, 0, 0, 3,
-                Map.of(), List.of(), 0.3, false,
+                Map.of(), List.of(), List.of(), 0.3, false,
                 -1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 5);
         var override = BiomeDefinition.defaults();
 

@@ -54,6 +54,7 @@ public record BiomeDefinition(
         int maxTreeHeight,
         int surfaceDepth,
         Map<String, Double> treeVariantModifiers,
+        List<String> surfacePalette,
         List<String> vegetationTypes,
         double vegetationDensity,
         boolean allowFloatingPlants,
@@ -85,6 +86,7 @@ public record BiomeDefinition(
                 0,           // maxTreeHeight
                 3,           // surfaceDepth
                 Map.of(),    // treeVariantModifiers
+                List.of(),   // surfacePalette
                 List.of(),   // vegetationTypes
                 0.3,         // vegetationDensity
                 false,       // allowFloatingPlants
@@ -124,6 +126,8 @@ public record BiomeDefinition(
         int mergedSurfaceDepth = override.surfaceDepth() > 0 ? override.surfaceDepth() : this.surfaceDepth();
         Map<String, Double> mergedVariantMods = !override.treeVariantModifiers().isEmpty()
                 ? override.treeVariantModifiers() : this.treeVariantModifiers();
+        List<String> mergedPalette = !override.surfacePalette().isEmpty()
+                ? override.surfacePalette() : this.surfacePalette();
         List<String> mergedVeg = !override.vegetationTypes().isEmpty()
                 ? override.vegetationTypes() : this.vegetationTypes();
         double mergedVegDensity = Math.abs(override.vegetationDensity() - 0.3) > 1e-12 ? override.vegetationDensity() : this.vegetationDensity();
@@ -143,6 +147,7 @@ public record BiomeDefinition(
                 mergedMinHeight, mergedMaxHeight,
                 mergedSurfaceDepth,
                 Collections.unmodifiableMap(mergedVariantMods),
+                Collections.unmodifiableList(mergedPalette),
                 Collections.unmodifiableList(mergedVeg),
                 mergedVegDensity, mergedFloat,
                 mergedTempMin, mergedTempMax,
