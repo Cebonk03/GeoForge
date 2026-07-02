@@ -3,6 +3,11 @@ name: CI - Fast
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/dependabot.yml'
+      - '.gitignore'
   pull_request:
     branches: [main]
 
@@ -11,7 +16,7 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
 
 jobs:
   validate:
@@ -44,11 +49,13 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
           distribution: temurin
-          cache: gradle
 
       # gradle/actions/setup-gradle@v6
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92
+        with:
+          cache-read-only: ${{ matrix.java != 21 }}
+          add-job-summary-as-pr-comment: on-failure
 
       - name: Compile engine + api + v1_21_x (JDK 21)
         if: matrix.java == 21
