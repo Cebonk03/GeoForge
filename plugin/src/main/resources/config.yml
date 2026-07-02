@@ -17,7 +17,7 @@ terrain:
 
 # Fractal noise tuning
 noise:
-  backend: simplex             # Noise backend: "simplex", "gradient", or "fastnoise"
+  backend: gradient            # Noise backend: "gradient", "simplex", or "fastnoise"
   cave-frequency: 0.03         # 3D cave noise frequency (period ~33 blocks)
   cave-amplitude: 8.0          # Cave carving strength (0 = no caves)
   cave-octaves: 3              # Detail octaves for cave shape (was 2)

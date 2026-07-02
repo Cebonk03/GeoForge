@@ -34,30 +34,37 @@ public final class GeoForgeReloadCommand implements CommandExecutor {
             @NotNull String[] args) {
 
         if (!sender.hasPermission("geoforge.reload")) {
-            sender.sendMessage("§cYou don't have permission to reload GeoForge biomes.");
+            sender.sendMessage("\u00a7cYou don't have permission to reload GeoForge biomes.");
             return true;
         }
 
-        sender.sendMessage("§7Reloading GeoForge biome defaults…");
-
-        plugin.getServer().getGlobalRegionScheduler().execute(plugin, () -> {
-            try {
-                var defaults = GeoForgeBiomeDefaults.createDefaults();
-                var engine = plugin.getEngine();
-                var newRegistry = new BiomeRegistry(defaults,
-                        engine.getBiomeRegistry().climateResolver());
-                engine.replaceBiomeRegistry(newRegistry);
-
-                sender.sendMessage("§aGeoForge biomes reloaded! §7"
-                        + newRegistry.size() + " biomes registered from built-in defaults.");
-                plugin.getLogger().info("Biome reload complete — "
-                        + newRegistry.size() + " biomes registered from built-in defaults");
-            } catch (Exception e) {
-                sender.sendMessage("§cReload failed: " + e.getMessage());
-                plugin.getLogger().severe("Biome reload failed: " + e.getMessage());
+        if (args.length > 0) {
+            // Reload specific world
+            String worldName = args[0];
+            GeoForgeEngine engine = plugin.getEngine(worldName);
+            if (engine == null) {
+                sender.sendMessage("\u00a7cNo GeoForge engine found for world: " + worldName);
+                return true;
             }
-        });
+            reloadEngine(engine, sender);
+            sender.sendMessage("\u00a7aGeoForge biomes reloaded for world: " + worldName);
+        } else {
+            // Reload all worlds synchronously — replaceBiomeRegistry is an atomic reference swap
+            var engines = plugin.getWorldEngines();
+            for (var entry : engines.entrySet()) {
+                reloadEngine(entry.getValue(), sender);
+            }
+            sender.sendMessage("\u00a7aGeoForge biomes reloaded for all " + engines.size() + " worlds");
+            plugin.getLogger().info("Biome reload complete \u2014 " + engines.size() + " worlds updated from built-in defaults");
+        }
 
         return true;
+    }
+
+    private void reloadEngine(GeoForgeEngine engine, CommandSender sender) {
+        var defaults = GeoForgeBiomeDefaults.createDefaults();
+        var newRegistry = new BiomeRegistry(defaults,
+                engine.getBiomeRegistry().climateResolver());
+        engine.replaceBiomeRegistry(newRegistry);
     }
 }
