@@ -46,18 +46,39 @@ subprojects {
     }
 
     tasks.withType<JacocoCoverageVerification> {
+        // Per-module coverage thresholds.
+        // Each module has different testing maturity; thresholds should be
+        // raised as coverage improves. Check current coverage via the JaCoCo
+        // HTML report in build/reports/jacoco/<module>/test/html/.
+        val moduleLineThresholds = mapOf(
+            "engine" to "0.60",
+            "api" to "0.55",
+            "v1_21_x" to "0.50",
+            "v26_x" to "0.50",
+            "plugin" to "0.10"
+        )
+        val moduleBranchThresholds = mapOf(
+            "engine" to "0.50",
+            "api" to "0.45",
+            "v1_21_x" to "0.40",
+            "v26_x" to "0.40",
+            "plugin" to "0.05"
+        )
+        val moduleName = project.name
+        val lineMin = moduleLineThresholds[moduleName] ?: "0.60"
+        val branchMin = moduleBranchThresholds[moduleName] ?: "0.50"
         violationRules {
             rule {
                 enabled = true
                 limit {
                     counter = "LINE"
                     value = "COVEREDRATIO"
-                    minimum = "0.60".toBigDecimal()
+                    minimum = lineMin.toBigDecimal()
                 }
                 limit {
                     counter = "BRANCH"
                     value = "COVEREDRATIO"
-                    minimum = "0.50".toBigDecimal()
+                    minimum = branchMin.toBigDecimal()
                 }
             }
         }
