@@ -4,6 +4,11 @@ on:
   push:
     tags:
       - "v*"
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/dependabot.yml'
+      - '.gitignore'
   workflow_dispatch:
     inputs:
       version:
@@ -53,9 +58,11 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
           distribution: 'temurin'
-          cache: gradle
       # gradle/actions/setup-gradle@v6
       - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92
+        with:
+          cache-read-only: ${{ matrix.java != 21 }}
+          add-job-summary-as-pr-comment: on-failure
       - name: Compile engine + api + v1_21_x (JDK 21)
         if: matrix.java == 21
         run: ./gradlew :engine:compileJava :api:compileJava :adapters:v1_21_x:compileJava --no-daemon
@@ -68,6 +75,15 @@ jobs:
       - name: Run tests (JDK 25)
         if: matrix.java == 25
         run: ./gradlew :adapters:v26_x:test :plugin:test --no-daemon
+      # actions/upload-artifact@v7
+      - name: Upload JaCoCo coverage data (JDK ${{ matrix.java }})
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: jacoco-data-jdk${{ matrix.java }}
+          path: '**/build/jacoco/'
+          include-hidden-files: true
+          retention-days: 1
 
   quality:
     name: Quality gate - SpotBugs + Checkstyle + ArchUnit + banned API scan
@@ -87,7 +103,6 @@ jobs:
         with:
           java-version: 21
           distribution: 'temurin'
-          cache: gradle
 
       # actions/setup-java@v5
       - name: Set up JDK 25 (additional toolchain)
@@ -99,6 +114,8 @@ jobs:
       # gradle/actions/setup-gradle@v6
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92
+        with:
+          add-job-summary-as-pr-comment: on-failure
 
       # Pre-compile ALL modules so SpotBugs/Checkstyle have classes to analyze.
       - name: Compile all modules (both JDK 21 + 25 toolchains)
@@ -133,6 +150,56 @@ jobs:
       - name: Quality gate passed
         run: echo "✓ All quality checks passed"
 
+  coverage:
+    name: Coverage - JaCoCo aggregated report
+    runs-on: ubuntu-latest
+    needs: test
+    timeout-minutes: 10
+    steps:
+      # actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      # actions/setup-java@v5
+      - name: Set up JDK 21
+        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          java-version: 21
+          distribution: 'temurin'
+      # actions/setup-java@v5
+      - name: Set up JDK 25
+        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          java-version: 25
+          distribution: 'temurin'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92
+        with:
+          add-job-summary-as-pr-comment: on-failure
+      # actions/download-artifact@v8
+      - name: Download JaCoCo exec data (JDK 21)
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: jacoco-data-jdk21
+          path: .
+      # actions/download-artifact@v8
+      - name: Download JaCoCo exec data (JDK 25)
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: jacoco-data-jdk25
+          path: .
+      - name: Compile all modules (both JDK 21 + 25 toolchains)
+        run: ./gradlew classes --no-daemon
+      - name: Generate JaCoCo reports
+        run: ./gradlew jacocoTestReport --no-daemon -x test
+      - name: Verify coverage thresholds
+        run: ./gradlew jacocoTestCoverageVerification --no-daemon -x test
+      # actions/upload-artifact@v7
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: coverage-reports
+          path: '**/build/reports/jacoco/'
+          retention-days: 30
   build:
     name: Build release JAR
     runs-on: ubuntu-latest
@@ -140,7 +207,7 @@ jobs:
     permissions:
       contents: read
       actions: write
-    needs: quality
+    needs: [quality, coverage]
     steps:
       # actions/checkout@v7
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
@@ -149,9 +216,10 @@ jobs:
         with:
           java-version: 25
           distribution: temurin
-          cache: gradle
       # gradle/actions/setup-gradle@v6
       - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92
+        with:
+          add-job-summary-as-pr-comment: on-failure
       - name: Build ShadowJAR
         run: ./gradlew :plugin:shadowJar --no-daemon
       - name: Generate checksums
@@ -167,6 +235,7 @@ jobs:
           path: |
             plugin/build/libs/GeoForge.jar
             plugin/build/libs/GeoForge.jar.sha256
+          retention-days: 90
 
   github-release:
     name: GitHub Release
@@ -193,18 +262,6 @@ jobs:
           else
             echo "tag=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
           fi
-      - name: Generate release notes
-        id: notes
-        run: |
-          echo "notes<<EOF" >> $GITHUB_OUTPUT
-          echo "## GeoForge ${{ steps.version.outputs.tag }}" >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_OUTPUT
-          echo "### Changes" >> $GITHUB_OUTPUT
-          git log --oneline --no-decorate $(git describe --tags --abbrev=0 2>/dev/null || git rev-list --max-parents=0 HEAD)..HEAD 2>/dev/null | while read line; do echo "- $line"; done >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_OUTPUT
-          echo "### Downloads" >> $GITHUB_OUTPUT
-          echo "- GeoForge.jar (see assets below)" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
       - name: Verify checksum
         run: sha256sum -c ./artifacts/GeoForge.jar.sha256
       # softprops/action-gh-release@v3
@@ -213,10 +270,9 @@ jobs:
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           name: GeoForge ${{ steps.version.outputs.tag }}
-          body: ${{ steps.notes.outputs.notes }}
           files: |
             ./artifacts/GeoForge.jar
             ./artifacts/GeoForge.jar.sha256
           draft: false
           prerelease: ${{ contains(steps.version.outputs.tag, '-') }}
-          generate_release_notes: false
+          generate_release_notes: true
