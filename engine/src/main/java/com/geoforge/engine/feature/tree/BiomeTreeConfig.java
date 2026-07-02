@@ -1,6 +1,5 @@
 package com.geoforge.engine.feature.tree;
 
-import java.util.Collections;
 import java.util.Map;
 
 /**

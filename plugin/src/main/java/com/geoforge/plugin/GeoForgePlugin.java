@@ -1,11 +1,9 @@
 package com.geoforge.plugin;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import com.geoforge.api.adapter.GeoForgeAdapter;
 import com.geoforge.engine.GeoForgeEngine;
 import com.geoforge.engine.config.GeoForgeConfig;
-import com.geoforge.engine.config.RiverProfile;
 import com.geoforge.plugin.command.GeoForgeReloadCommand;
 
 import org.bukkit.Bukkit;
@@ -251,7 +249,6 @@ public final class GeoForgePlugin extends JavaPlugin {
      *
      * @return the first GeoForgeEngine, or null if no world engines exist
      */
-    @SuppressFBWarnings("EI_EXPOSE_REP")
     public GeoForgeEngine getEngine() {
         return worldEngines.isEmpty() ? null : worldEngines.values().iterator().next();
     }

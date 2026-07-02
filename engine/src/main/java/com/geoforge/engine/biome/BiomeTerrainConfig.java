@@ -1,5 +1,10 @@
 package com.geoforge.engine.biome;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Per-biome terrain configuration modifiers.
  *
@@ -22,6 +27,7 @@ package com.geoforge.engine.biome;
  * @param maxTreeHeight         Maximum tree height in blocks (0 = use global default).
  * @param surfaceDepth          Depth of surface blocks below the top block (3 = default).
  */
+@SuppressFBWarnings("EI_EXPOSE_REP2")
 public record BiomeTerrainConfig(
         double heightOffset,
         double amplitudeMultiplier,
@@ -29,13 +35,19 @@ public record BiomeTerrainConfig(
         String treeType,
         String surfaceBlock,
         String subSurfaceBlock,
-        java.util.List<String> surfacePalette,
+        List<String> surfacePalette,
         boolean allowFloatingPlants,
         double surfaceHardness,
         double treeDensity,
         int minTreeHeight,
         int maxTreeHeight,
         int surfaceDepth) {
+
+    @Override
+    public List<String> surfacePalette() {
+        return Collections.unmodifiableList(surfacePalette);
+    }
+
     /**
      * Returns a default configuration with all neutral/identity values.
      *
@@ -49,7 +61,7 @@ public record BiomeTerrainConfig(
                 "",      // treeType
                 "",      // surfaceBlock
                 "",      // subSurfaceBlock
-                java.util.List.of(), // surfacePalette
+                List.of(), // surfacePalette
                 false,   // allowFloatingPlants
                 0.5,     // surfaceHardness
                 -1.0,    // treeDensity

@@ -35,8 +35,6 @@ import com.geoforge.engine.density.EnhancedCaveSystem;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-
 /**
  * The core world generation engine for GeoForge.
  *

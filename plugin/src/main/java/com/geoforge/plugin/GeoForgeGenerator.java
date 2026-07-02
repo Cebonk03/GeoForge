@@ -6,7 +6,6 @@ import com.geoforge.engine.GeoForgeEngine;
 import com.geoforge.engine.feature.BlockSetter;
 import com.geoforge.engine.feature.TreePlacer;
 import com.geoforge.engine.feature.VegetationPlacer;
-import com.geoforge.engine.feature.ScenicFeatureDetector;
 import com.geoforge.engine.util.ThreadLocalBuffers;
 import com.geoforge.engine.biome.BiomeTerrainConfig;
 import org.bukkit.Material;
