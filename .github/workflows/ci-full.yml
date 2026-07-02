@@ -179,6 +179,11 @@ jobs:
       - name: Banned API scan
         run: ./gradlew bannedApiScan --no-daemon
 
+      - name: JMH - engine microbenchmarks
+        run: ./gradlew :engine:jmh --no-daemon
+        continue-on-error: true
+        timeout-minutes: 10
+
       - name: Final - quality gate summary
         if: always()
         run: |

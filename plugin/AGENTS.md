@@ -29,6 +29,11 @@ shouldGenerateBedrock: false      # custom 5-layer bedrock in noise phase
 shouldGenerateCaves: false        # 3D noise-based caves in density field
 shouldGenerateDecorations: false  # GeoForge handles features in generateSurface()
 shouldGenerateStructures: true    # vanilla (villages, strongholds)
+#
+#     Note: shouldGenerateStructures=true is intentional;
+#     structures (villages, strongholds, etc.) generate on naturally-shaped terrain.
+#     GeoForge does not currently apply structure-aligned plateau flattening,
+#     so structures may sit on un-flattened terrain but function correctly.
 shouldGenerateMobs: true          # vanilla
 ```
 
