@@ -28,6 +28,7 @@ import com.geoforge.engine.noise.FractalNoise;
 import com.geoforge.engine.noise.GradientNoise;
 import com.geoforge.engine.noise.FastNoiseLiteSource;
 import com.geoforge.engine.plateau.StructurePlateauModifier;
+import com.geoforge.engine.util.ThreadLocalBuffers;
 import java.util.Set;
 import com.geoforge.engine.biome.BiomeTerrainConfig;
 import com.geoforge.engine.density.EnhancedCaveSystem;
@@ -474,47 +475,9 @@ public final class GeoForgeEngine {
      * @param seed      the world seed for deterministic erosion
      */
     public void erodeColumn(float[] heightmap, int size, int blockX, int blockZ, long seed) {
-        // Populate heightmap with surface heights from the 3D density field
-        for (int x = 0; x < size; x++) {
-            for (int z = 0; z < size; z++) {
-                heightmap[z * size + x] = (float) getSurfaceHeight(blockX + x, blockZ + z);
-            }
-        }
-
-        // Apply hydraulic erosion when both config guards are satisfied
-        if (config.erosionIterations() > 0 && config.erosionDropletCount() > 0) {
-            long erosionSeed = seed ^ (blockX * 1664525L + blockZ * 1013904223L) ^ 0xE70DE1L;
-            float[] orig = new float[size * size];
-            System.arraycopy(heightmap, 0, orig, 0, size * size);
-            erosion.erode(heightmap, size, config.erosionDropletCount(), erosionSeed);
-            // Apply surface hardness using pre-computed ColumnContext per column
-            for (int x = 0; x < size; x++) {
-                for (int z = 0; z < size; z++) {
-                    int idx = z * size + x;
-                    int surfaceY = Math.round(orig[idx]);
-                    ColumnContext ctx = ColumnContext.compute(this,
-                            blockX + x, blockZ + z);
-                    double h = toTerrainConfig(
-                            biomeRegistry.forBiome(ctx.biomeId())).surfaceHardness();
-                    if (Math.abs(h - 0.5) > 1e-12) {
-                        float blend = (float) Math.max(0.0, Math.min(2.0, (1.0 - h) / 0.5));
-                        heightmap[idx] = orig[idx] + (heightmap[idx] - orig[idx]) * blend;
-                    }
-                }
-            }
-        }
-
-        // Apply structure plateau flattening when plateauSize > 0 (chunk-centered,
-        // for development/testing use — produces a flat area at each chunk's center.
-        // For production structure-aligned placement, the plateau center coordinates
-        // should be derived from a structure locator rather than chunk center.
-
-        if (config.plateauSize() > 0) {
-            int half = config.plateauSize() / 2;
-            int cx = size / 2;
-            int cz = size / 2;
-            StructurePlateauModifier.applyPlateau(heightmap, size, cx - half, cz - half, cx + half, cz + half, (float) config.plateauTargetHeight());
-        }
+        populateHeightmap(heightmap, size, blockX, blockZ);
+        applyErosionWithHardness(heightmap, size, blockX, blockZ, seed);
+        applyPlateauFlattening(heightmap, size);
     }
 
     /**
@@ -595,11 +558,98 @@ public final class GeoForgeEngine {
                 def.treeType(),
                 def.surfaceBlock(),
                 def.subSurfaceBlock(),
+                def.surfacePalette(),
                 def.allowFloatingPlants(),
                 def.surfaceHardness(),
                 def.treeDensity(),
                 def.minTreeHeight(),
                 def.maxTreeHeight(),
                 def.surfaceDepth());
+    }
+
+    /**
+     * Populates the heightmap array with surface heights from the 3D density field.
+     *
+     * <p>Each cell at index {@code z * size + x} is filled with the result of
+     * {@link #getSurfaceHeight} at the corresponding world coordinates.
+     *
+     * @param heightmap the flat float array to populate (size {@code size × size})
+     * @param size      the width and height of the square area
+     * @param blockX    the world x-coordinate of the area origin
+     * @param blockZ    the world z-coordinate of the area origin
+     */
+    private void populateHeightmap(float[] heightmap, int size, int blockX, int blockZ) {
+        // Populate heightmap with surface heights from the 3D density field
+        for (int x = 0; x < size; x++) {
+            for (int z = 0; z < size; z++) {
+                heightmap[z * size + x] = (float) getSurfaceHeight(blockX + x, blockZ + z);
+            }
+        }
+    }
+
+    /**
+     * Applies hydraulic erosion to the heightmap with surface hardness blending.
+     *
+     * <p>When erosion is configured (both {@link GeoForgeConfig#erosionIterations}
+     * and {@link GeoForgeConfig#erosionDropletCount} are positive), hydraulic
+     * erosion runs on the heightmap. After erosion, the original and eroded
+     * heightmaps are blended per column based on the biome's surface hardness,
+     * so harder surfaces resist erosion more.
+     *
+     * @param heightmap the heightmap to erode (modified in place)
+     * @param size      the width and height of the square area
+     * @param blockX    the world x-coordinate of the area origin
+     * @param blockZ    the world z-coordinate of the area origin
+     * @param seed      the world seed for deterministic erosion
+     */
+    private void applyErosionWithHardness(float[] heightmap, int size, int blockX, int blockZ, long seed) {
+        // Apply hydraulic erosion when both config guards are satisfied
+        if (config.erosionIterations() > 0 && config.erosionDropletCount() > 0) {
+            long erosionSeed = seed ^ (blockX * 1664525L + blockZ * 1013904223L) ^ 0xE70DE1L;
+            try (var bufs = ThreadLocalBuffers.acquire()) {
+                float[] orig = bufs.floatArray(size * size);
+                System.arraycopy(heightmap, 0, orig, 0, size * size);
+                erosion.erode(heightmap, size, config.erosionDropletCount(), erosionSeed);
+                // Apply surface hardness using pre-computed ColumnContext per column
+                for (int x = 0; x < size; x++) {
+                    for (int z = 0; z < size; z++) {
+                        int idx = z * size + x;
+                        int surfaceY = Math.round(orig[idx]);
+                        ColumnContext ctx = ColumnContext.compute(this,
+                                blockX + x, blockZ + z);
+                        double h = toTerrainConfig(
+                                biomeRegistry.forBiome(ctx.biomeId())).surfaceHardness();
+                        if (Math.abs(h - 0.5) > 1e-12) {
+                            float blend = (float) Math.max(0.0, Math.min(2.0, (1.0 - h) / 0.5));
+                            heightmap[idx] = orig[idx] + (heightmap[idx] - orig[idx]) * blend;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Applies structure plateau flattening to the heightmap.
+     *
+     * <p>When {@link GeoForgeConfig#plateauSize plateauSize > 0}, flattens a
+     * central area of the heightmap to the configured plateau target height.
+     * This is chunk-centered for development/testing use.
+     *
+     * @param heightmap the heightmap to flatten (modified in place)
+     * @param size      the width and height of the square area
+     */
+    private void applyPlateauFlattening(float[] heightmap, int size) {
+        // Apply structure plateau flattening when plateauSize > 0 (chunk-centered,
+        // for development/testing use — produces a flat area at each chunk's center.
+        // For production structure-aligned placement, the plateau center coordinates
+        // should be derived from a structure locator rather than chunk center.
+
+        if (config.plateauSize() > 0) {
+            int half = config.plateauSize() / 2;
+            int cx = size / 2;
+            int cz = size / 2;
+            StructurePlateauModifier.applyPlateau(heightmap, size, cx - half, cz - half, cx + half, cz + half, (float) config.plateauTargetHeight());
+        }
     }
 }
