@@ -45,6 +45,7 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      actions: write
     needs: validate
     strategy:
       matrix:
@@ -154,6 +155,9 @@ jobs:
     name: Coverage - JaCoCo aggregated report
     runs-on: ubuntu-latest
     needs: test
+    permissions:
+      contents: read
+      actions: read
     timeout-minutes: 10
     steps:
       # actions/checkout@v7
