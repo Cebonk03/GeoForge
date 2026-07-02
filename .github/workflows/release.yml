@@ -267,7 +267,8 @@ jobs:
             echo "tag=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
           fi
       - name: Verify checksum
-        run: sha256sum -c ./artifacts/GeoForge.jar.sha256
+        working-directory: ./artifacts
+        run: sha256sum -c GeoForge.jar.sha256
       # softprops/action-gh-release@v3
       - name: Create Release
         uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b
